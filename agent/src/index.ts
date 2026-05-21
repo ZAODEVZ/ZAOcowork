@@ -28,6 +28,7 @@ import {
   cmdSetPrio,
   cmdStart,
   cmdWip,
+  handleListCallback,
 } from './commands';
 import {
   maybeHandleConfirmation,
@@ -357,6 +358,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
   // Future callback handlers can chain; each returns true if it matched.
   if (await handleAutoConfirmCallback(ctx)) return;
+  if (await handleListCallback(ctx)) return;
   await ctx.answerCallbackQuery().catch(() => {});
 });
 

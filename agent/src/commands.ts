@@ -3,7 +3,7 @@
 // Setfield (v2.10): /setdue /setnote /setprio
 // Each mutation goes through mutateActions() with SHA-dance retry.
 
-import { Context } from 'grammy';
+import { Context, InlineKeyboard } from 'grammy';
 import { fetchActions, makeActionItem, mutateActions } from './actions-store';
 import { notifyAssigned, notifyStatusChange } from './notifications';
 import { rosterView } from './roster';
@@ -169,11 +169,85 @@ export async function cmdMine(ctx: Context): Promise<void> {
   await ctx.reply(`${me} open (${mine.length}):\n${mine.map(formatItem).join('\n')}`);
 }
 
+const STATUS_ORDER: Record<ActionStatus, number> = { WIP: 0, BLOCKED: 1, TODO: 2, DONE: 3 };
+
+// v2.19 - /list with no args shows a compact summary + tappable owner/status
+// filters instead of dumping every open item. A 100+ task list as one wall is
+// unusable in Telegram; drill-down keeps each reply short.
+function buildListSummary(items: ActionItem[]): { text: string; keyboard: InlineKeyboard } {
+  const open = items.filter((i) => i.status !== 'DONE');
+  const todo = open.filter((i) => i.status === 'TODO').length;
+  const wip = open.filter((i) => i.status === 'WIP').length;
+  const blocked = open.filter((i) => i.status === 'BLOCKED').length;
+  const kb = new InlineKeyboard();
+  let col = 0;
+  for (const owner of OWNERS) {
+    const n = open.filter((i) => i.owner === owner).length;
+    if (n === 0) continue;
+    kb.text(`${owner} ${n}`, `list:o:${owner}`);
+    if (++col % 2 === 0) kb.row();
+  }
+  if (col % 2 !== 0) kb.row();
+  if (wip > 0) kb.text(`WIP ${wip}`, 'list:s:WIP');
+  if (blocked > 0) kb.text(`Blocked ${blocked}`, 'list:s:BLOCKED');
+  kb.text('All', 'list:all');
+  return {
+    text: `${open.length} open  -  ${todo} todo / ${wip} wip / ${blocked} blocked\n\ntap to drill in:`,
+    keyboard: kb,
+  };
+}
+
+function renderOwnerSlice(items: ActionItem[], owner: Owner): string {
+  const slice = items
+    .filter((i) => i.status !== 'DONE' && i.owner === owner)
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]);
+  if (slice.length === 0) return `no open items for ${owner}`;
+  return `${owner} - ${slice.length} open:\n${slice.map(formatItem).join('\n')}`;
+}
+
+function renderStatusSlice(items: ActionItem[], status: ActionStatus): string {
+  const slice = items.filter((i) => i.status === status);
+  if (slice.length === 0) return `no ${status} items`;
+  return `${status} - ${slice.length}:\n${slice.map(formatItem).join('\n')}`;
+}
+
 export async function cmdList(ctx: Context, args: string): Promise<void> {
   const { data } = await fetchActions();
   const cat = args.trim();
-  const items = cat ? data.items.filter((i) => i.category.toLowerCase().includes(cat.toLowerCase())) : data.items;
-  await ctx.reply(cat ? `Open in "${cat}":\n${listGrouped(items)}` : `All open items:\n${listGrouped(items)}`);
+  if (!cat) {
+    const { text, keyboard } = buildListSummary(data.items);
+    await ctx.reply(text, { reply_markup: keyboard });
+    return;
+  }
+  // explicit filter: an owner name, or a category substring
+  const owner = canonicalizeOwner(cat);
+  if (owner) {
+    await ctx.reply(renderOwnerSlice(data.items, owner));
+    return;
+  }
+  const items = data.items.filter((i) => i.category.toLowerCase().includes(cat.toLowerCase()));
+  await ctx.reply(`open in "${cat}":\n${listGrouped(items)}`);
+}
+
+// v2.19 - inline-keyboard taps from the /list summary. Returns true if handled.
+export async function handleListCallback(ctx: Context): Promise<boolean> {
+  const data = ctx.callbackQuery?.data;
+  if (!data || !data.startsWith('list:')) return false;
+  const { data: actions } = await fetchActions();
+  let text: string;
+  if (data === 'list:all') {
+    const open = actions.items.filter((i) => i.status !== 'DONE');
+    text = `all open items (${open.length}):\n${listGrouped(actions.items)}`;
+  } else if (data.startsWith('list:o:')) {
+    text = renderOwnerSlice(actions.items, data.slice(7) as Owner);
+  } else if (data.startsWith('list:s:')) {
+    text = renderStatusSlice(actions.items, data.slice(7) as ActionStatus);
+  } else {
+    return false;
+  }
+  await ctx.answerCallbackQuery().catch(() => {});
+  await ctx.reply(text);
+  return true;
 }
 
 // v2.15 - now accepts an optional ownerOverride. When the LLM emits a
