@@ -1,0 +1,458 @@
+// Slash command handlers per doc 662 B.6 + v2.10 setfield extension.
+// Tracker: /start /mine /list /add /wip /blocked /done /assign /daily
+// Setfield (v2.10): /setdue /setnote /setprio
+// Each mutation goes through mutateActions() with SHA-dance retry.
+
+import { Context } from 'grammy';
+import { fetchActions, makeActionItem, mutateActions } from './actions-store';
+import { notifyAssigned, notifyStatusChange } from './notifications';
+import { rosterView } from './roster';
+import { bonfireHook } from './teams';
+import type { TeamEventOp } from './teams';
+import type { ActionItem, ActionStatus, Owner, Priority } from './types';
+import { OWNERS } from './types';
+
+const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3'];
+
+// Fire-and-forget hook to the ZABAL Bonfire (Doc 669 Phase 1). No-op if env
+// vars not configured. Never throws. Always best-effort - the action tracker
+// remains the source of truth; bonfire is an aggregated view layer.
+function fireBonfire(
+  op: TeamEventOp,
+  item: ActionItem,
+  ctx: Context,
+  extras: { reason?: string; previousOwner?: Owner; previousDue?: string; previousPriority?: Priority } = {},
+): void {
+  const actor = callerDisplayName(ctx);
+  const actorTgId = ctx.from?.id ?? 0;
+  bonfireHook({
+    op,
+    item,
+    actor,
+    actorTgId,
+    timestamp: new Date().toISOString(),
+    ...extras,
+  }).catch((err) => {
+    console.error('[bonfire] hook threw (should not):', err);
+  });
+}
+
+interface UserNameMap {
+  [tgUserId: string]: Owner;
+}
+
+function parseUserNames(env: string | undefined): UserNameMap {
+  const map: UserNameMap = {};
+  if (!env) return map;
+  for (const pair of env.split(',')) {
+    const [id, name] = pair.split(':').map((s) => s.trim());
+    if (id && name && (OWNERS as readonly string[]).includes(name)) {
+      map[id] = name as Owner;
+    }
+  }
+  return map;
+}
+
+const USER_NAMES = parseUserNames(process.env.USER_NAMES);
+const ADMIN_IDS = new Set((process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean));
+
+// v2.15 - was only reading USER_NAMES env, which is stale on most installs
+// (Iman not in env -> new items got owner=Open even when Iman created them).
+// Now consults the roster first (data/team.json), then env, then 'Open'.
+// Case-normalises against the OWNERS enum so a roster entry of "IMan"
+// resolves to the canonical "Iman".
+export function canonicalizeOwner(raw: string | undefined | null): Owner | null {
+  if (!raw) return null;
+  const lower = raw.toLowerCase();
+  const match = OWNERS.find((o) => o.toLowerCase() === lower);
+  return match ?? null;
+}
+
+async function ownerForCtx(ctx: Context): Promise<Owner> {
+  const tgId = ctx.from?.id;
+  if (tgId != null) {
+    const view = await rosterView();
+    const rosterOwner = canonicalizeOwner(view.ownerByTgId.get(tgId));
+    if (rosterOwner) return rosterOwner;
+  }
+  const envOwner = canonicalizeOwner(USER_NAMES[String(tgId ?? '')]);
+  return envOwner ?? 'Open';
+}
+
+function callerDisplayName(ctx: Context): string {
+  return ctx.from?.first_name ?? ctx.from?.username ?? `user:${ctx.from?.id ?? '?'}`;
+}
+
+function isAdmin(ctx: Context): boolean {
+  return ADMIN_IDS.has(String(ctx.from?.id ?? ''));
+}
+
+function formatItem(item: ActionItem): string {
+  const flags = [item.important && '!', item.urgent && '*'].filter(Boolean).join('');
+  return `[${item.status}] (${item.owner}) #${item.id} ${item.title}${item.due ? ` - due ${item.due}` : ''}${flags ? ` ${flags}` : ''}`;
+}
+
+function listGrouped(items: ActionItem[]): string {
+  const open = items.filter((i) => i.status !== 'DONE');
+  if (open.length === 0) return 'no open items';
+  const byOwner = new Map<Owner, ActionItem[]>();
+  for (const item of open) {
+    const arr = byOwner.get(item.owner) ?? [];
+    arr.push(item);
+    byOwner.set(item.owner, arr);
+  }
+  const sections: string[] = [];
+  for (const owner of OWNERS) {
+    const arr = byOwner.get(owner);
+    if (!arr || arr.length === 0) continue;
+    sections.push(`${owner}:\n${arr.map((i) => `  ${formatItem(i)}`).join('\n')}`);
+  }
+  return sections.join('\n\n');
+}
+
+function findItemById(items: ActionItem[], id: string): ActionItem | undefined {
+  return items.find((i) => i.id === id);
+}
+
+function updateStatus(items: ActionItem[], id: string, status: ActionStatus, by: string, notes?: string): ActionItem | null {
+  const item = findItemById(items, id);
+  if (!item) return null;
+  item.status = status;
+  item.updatedAt = new Date().toISOString();
+  if (status === 'DONE') {
+    item.completedAt = item.updatedAt;
+    item.completedBy = by;
+  }
+  if (notes && status === 'BLOCKED') {
+    item.notes = notes + (item.notes ? `\n\n${item.notes}` : '');
+  }
+  return item;
+}
+
+export async function cmdStart(ctx: Context): Promise<void> {
+  await ctx.reply(
+    'ZAOcoworkingBot online. Commands:\n\n' +
+      'tracker:\n' +
+      '  /mine - my open items\n' +
+      '  /list [category] - all open items by owner\n' +
+      '  /add <title> - create item assigned to me\n' +
+      '  /wip <id> - move to in-progress\n' +
+      '  /blocked <id> <reason> - mark blocked\n' +
+      '  /done <id> - mark done\n' +
+      '  /assign <id> <Owner> - reassign\n' +
+      '  /setdue <id> <YYYY-MM-DD> - set due date (or "clear")\n' +
+      '  /setnote <id> <text> - replace notes (or "append: <text>")\n' +
+      '  /setprio <id> <P1|P2|P3> - set priority\n' +
+      '  /daily - admin: post digest of open items\n\n' +
+      'team (admin):\n' +
+      '  /team - show roster\n' +
+      '  /adduser <tg_id> <Name> [admin] - add member, no restart\n' +
+      '  /addchat - allow CURRENT group chat\n' +
+      '  /reload - force-refresh roster from github\n\n' +
+      'model / keys:\n' +
+      '  /providers - list available LLM providers\n' +
+      '  /mymodel - show my current provider/model\n' +
+      '  /setmodel <provider> <model> - switch\n' +
+      '  /setkey <provider> <key> - DM only, BYOK\n' +
+      '  /clearkey <provider> - drop BYOK',
+  );
+}
+
+export async function cmdMine(ctx: Context): Promise<void> {
+  const { data } = await fetchActions();
+  const me = await ownerForCtx(ctx);
+  const mine = data.items.filter((i) => (i.owner === me || i.owner === 'Both') && i.status !== 'DONE');
+  if (mine.length === 0) {
+    await ctx.reply(`no open items for ${me}`);
+    return;
+  }
+  await ctx.reply(`${me} open (${mine.length}):\n${mine.map(formatItem).join('\n')}`);
+}
+
+export async function cmdList(ctx: Context, args: string): Promise<void> {
+  const { data } = await fetchActions();
+  const cat = args.trim();
+  const items = cat ? data.items.filter((i) => i.category.toLowerCase().includes(cat.toLowerCase())) : data.items;
+  await ctx.reply(cat ? `Open in "${cat}":\n${listGrouped(items)}` : `All open items:\n${listGrouped(items)}`);
+}
+
+// v2.15 - now accepts an optional ownerOverride. When the LLM emits a
+// json-suggest with {"op":"add", "owner":"Iman", ...}, executeSuggestion
+// passes that through so "add task for Iman" actually assigns to Iman
+// instead of falling back to the caller's owner. Iman bug report
+// 2026-05-18 09:26 "I asked bot to add task for IMan it added it as open".
+export async function cmdAdd(ctx: Context, args: string, ownerOverride?: Owner): Promise<void> {
+  const title = args.trim();
+  if (!title) {
+    await ctx.reply('usage: /add <title>');
+    return;
+  }
+  const me = ownerOverride ?? (await ownerForCtx(ctx));
+  const by = callerDisplayName(ctx);
+  const result = await mutateActions(async (data) => {
+    const item = makeActionItem({ title, owner: me, createdBy: by }, data.items);
+    data.items.push(item);
+    return {
+      data,
+      commitMessage: `bot: add #${item.id} (${me}) ${item.title}`,
+      result: item,
+    };
+  });
+  if (result) {
+    await ctx.reply(`added #${result.id} (${result.owner}): ${result.title}`);
+    fireBonfire('add', result, ctx);
+  }
+}
+
+// v2.16 - batch add. When a user pastes multiple todos in one message the LLM
+// emits a json-suggest ARRAY; this writes every item in ONE commit and sends
+// ONE reply, instead of N commits + N messages (and instead of the raw
+// json-suggest block leaking to chat - the bug this fixes).
+export async function cmdAddBatch(
+  ctx: Context,
+  entries: Array<{ title: string; owner?: Owner }>,
+): Promise<void> {
+  const clean = entries
+    .map((e) => ({ title: e.title.trim(), owner: e.owner }))
+    .filter((e) => e.title.length > 0);
+  if (clean.length === 0) {
+    await ctx.reply('nothing to add - no titles in that batch.');
+    return;
+  }
+  const fallbackOwner = await ownerForCtx(ctx);
+  const by = callerDisplayName(ctx);
+  const created = await mutateActions(async (data) => {
+    const items: ActionItem[] = [];
+    for (const e of clean) {
+      const item = makeActionItem(
+        { title: e.title, owner: e.owner ?? fallbackOwner, createdBy: by },
+        data.items,
+      );
+      data.items.push(item);
+      items.push(item);
+    }
+    return {
+      data,
+      commitMessage: `bot: add ${items.length} items (batch)`,
+      result: items,
+    };
+  });
+  if (created && created.length > 0) {
+    const lines = created.map((i) => `#${i.id} (${i.owner}): ${i.title}`);
+    await ctx.reply(
+      `added ${created.length} item${created.length === 1 ? '' : 's'}:\n${lines.join('\n')}`,
+    );
+    for (const item of created) fireBonfire('add', item, ctx);
+  }
+}
+
+async function applyStatusCommand(ctx: Context, args: string, status: ActionStatus, label: string): Promise<void> {
+  const trimmed = args.trim();
+  const idMatch = trimmed.match(/^(\d+)\s*(.*)$/);
+  if (!idMatch) {
+    await ctx.reply(`usage: /${label} <id>${status === 'BLOCKED' ? ' <reason>' : ''}`);
+    return;
+  }
+  const [, id, rest] = idMatch;
+  const reason = rest.trim() || undefined;
+  if (status === 'BLOCKED' && !reason) {
+    await ctx.reply('usage: /blocked <id> <reason>');
+    return;
+  }
+  const by = callerDisplayName(ctx);
+  const result = await mutateActions(async (data) => {
+    const item = updateStatus(data.items, id, status, by, reason);
+    if (!item) return null;
+    return {
+      data,
+      commitMessage: `bot: ${label} #${id} by ${by}`,
+      result: item,
+    };
+  });
+  if (result) {
+    await ctx.reply(`${label} #${result.id}: ${result.title}`);
+    // v2.8 - notify the owner if someone else updated their item.
+    // v2.14 - pass tg_id (not display name) so self-skip actually works.
+    if (status === 'DONE' || status === 'BLOCKED' || status === 'WIP') {
+      notifyStatusChange(ctx.api, result, status, ctx.from?.id, by, reason).catch(() => { /* best-effort */ });
+    }
+    // doc 669 Phase 1 - emit to ZABAL bonfire (no-op if disabled)
+    const op = status === 'WIP' ? 'wip' : status === 'BLOCKED' ? 'blocked' : 'done';
+    fireBonfire(op, result, ctx, { reason });
+  } else {
+    await ctx.reply(`no item #${id}`);
+  }
+}
+
+export async function cmdWip(ctx: Context, args: string): Promise<void> {
+  await applyStatusCommand(ctx, args, 'WIP', 'wip');
+}
+
+export async function cmdBlocked(ctx: Context, args: string): Promise<void> {
+  await applyStatusCommand(ctx, args, 'BLOCKED', 'blocked');
+}
+
+export async function cmdDone(ctx: Context, args: string): Promise<void> {
+  await applyStatusCommand(ctx, args, 'DONE', 'done');
+}
+
+export async function cmdAssign(ctx: Context, args: string): Promise<void> {
+  const m = args.trim().match(/^(\d+)\s+(\w+)$/);
+  if (!m) {
+    await ctx.reply(`usage: /assign <id> <${OWNERS.join('|')}>`);
+    return;
+  }
+  const [, id, ownerRaw] = m;
+  if (!(OWNERS as readonly string[]).includes(ownerRaw)) {
+    await ctx.reply(`unknown owner ${ownerRaw}. valid: ${OWNERS.join(', ')}`);
+    return;
+  }
+  const owner = ownerRaw as Owner;
+  const by = callerDisplayName(ctx);
+  let previousOwner: Owner | undefined;
+  const result = await mutateActions(async (data) => {
+    const item = data.items.find((i) => i.id === id);
+    if (!item) return null;
+    previousOwner = item.owner;
+    item.owner = owner;
+    item.updatedAt = new Date().toISOString();
+    return {
+      data,
+      commitMessage: `bot: assign #${id} -> ${owner} by ${by}`,
+      result: item,
+    };
+  });
+  if (result) {
+    await ctx.reply(`#${result.id} -> ${result.owner}: ${result.title}`);
+    // v2.8 - notify the new owner instantly
+    notifyAssigned(ctx.api, result, by).catch(() => { /* best-effort */ });
+    // doc 669 Phase 1 - bonfire emit with previous owner edge
+    fireBonfire('assign', result, ctx, { previousOwner });
+  } else {
+    await ctx.reply(`no item #${id}`);
+  }
+}
+
+// v2.10 - setfield commands. Triggered by Iman bug: bot's concierge LLM fabricated
+// a "file doesn't exist" excuse when asked "update rent bill due date" because no
+// slash command for due-date edits existed. Now they do.
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export async function cmdSetDue(ctx: Context, args: string): Promise<void> {
+  const m = args.trim().match(/^(\d+)\s+(.+)$/);
+  if (!m) {
+    await ctx.reply('usage: /setdue <id> <YYYY-MM-DD>  (or "clear" to remove)');
+    return;
+  }
+  const [, id, rawDate] = m;
+  const value = rawDate.trim();
+  const clearing = value.toLowerCase() === 'clear' || value === '-';
+  if (!clearing && !ISO_DATE.test(value)) {
+    await ctx.reply('date must be YYYY-MM-DD format (e.g. 2026-05-28). got: ' + value);
+    return;
+  }
+  const by = callerDisplayName(ctx);
+  const newDue = clearing ? '' : value;
+  let previousDue: string | undefined;
+  const result = await mutateActions(async (data) => {
+    const item = findItemById(data.items, id);
+    if (!item) return null;
+    previousDue = item.due || '';
+    const prev = item.due || '(none)';
+    item.due = newDue;
+    item.updatedAt = new Date().toISOString();
+    return {
+      data,
+      commitMessage: `bot: setdue #${id} ${prev} -> ${newDue || '(cleared)'} by ${by}`,
+      result: item,
+    };
+  });
+  if (result) {
+    await ctx.reply(`#${result.id} due ${result.due ? '-> ' + result.due : 'cleared'}: ${result.title}`);
+    fireBonfire('setdue', result, ctx, { previousDue });
+  } else {
+    await ctx.reply(`no item #${id}`);
+  }
+}
+
+export async function cmdSetNote(ctx: Context, args: string): Promise<void> {
+  const m = args.trim().match(/^(\d+)\s+([\s\S]+)$/);
+  if (!m) {
+    await ctx.reply('usage: /setnote <id> <text>  (prefix text with "append: " to add to existing notes)');
+    return;
+  }
+  const [, id, rawText] = m;
+  const text = rawText.trim();
+  const isAppend = /^append:\s*/i.test(text);
+  const newContent = isAppend ? text.replace(/^append:\s*/i, '') : text;
+  if (!newContent) {
+    await ctx.reply('note text cannot be empty');
+    return;
+  }
+  const by = callerDisplayName(ctx);
+  const result = await mutateActions(async (data) => {
+    const item = findItemById(data.items, id);
+    if (!item) return null;
+    if (isAppend && item.notes) {
+      item.notes = `${item.notes}\n\n${newContent}`;
+    } else {
+      item.notes = newContent;
+    }
+    item.updatedAt = new Date().toISOString();
+    return {
+      data,
+      commitMessage: `bot: ${isAppend ? 'append-note' : 'set-note'} #${id} by ${by}`,
+      result: item,
+    };
+  });
+  if (result) {
+    await ctx.reply(`#${result.id} notes ${isAppend ? 'appended' : 'set'}: ${result.title}`);
+    fireBonfire('setnote', result, ctx);
+  } else {
+    await ctx.reply(`no item #${id}`);
+  }
+}
+
+export async function cmdSetPrio(ctx: Context, args: string): Promise<void> {
+  const m = args.trim().match(/^(\d+)\s+(P[123])$/i);
+  if (!m) {
+    await ctx.reply('usage: /setprio <id> <P1|P2|P3>');
+    return;
+  }
+  const [, id, rawPrio] = m;
+  const prio = rawPrio.toUpperCase() as Priority;
+  if (!PRIORITIES.includes(prio)) {
+    await ctx.reply('priority must be P1, P2, or P3');
+    return;
+  }
+  const by = callerDisplayName(ctx);
+  let previousPriority: Priority | undefined;
+  const result = await mutateActions(async (data) => {
+    const item = findItemById(data.items, id);
+    if (!item) return null;
+    previousPriority = item.priority;
+    item.priority = prio;
+    item.updatedAt = new Date().toISOString();
+    return {
+      data,
+      commitMessage: `bot: setprio #${id} ${previousPriority} -> ${prio} by ${by}`,
+      result: item,
+    };
+  });
+  if (result) {
+    await ctx.reply(`#${result.id} priority -> ${result.priority}: ${result.title}`);
+    fireBonfire('setprio', result, ctx, { previousPriority });
+  } else {
+    await ctx.reply(`no item #${id}`);
+  }
+}
+
+export async function cmdDaily(ctx: Context): Promise<void> {
+  if (!isAdmin(ctx)) {
+    await ctx.reply('admin only');
+    return;
+  }
+  const { data } = await fetchActions();
+  await ctx.reply(`Daily digest:\n${listGrouped(data.items)}`);
+}

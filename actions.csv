@@ -1,0 +1,8 @@
+ID,Title,Owner,Status,Due,Notes
+1,Finalize action tracker (markdown + Google Sheet),Zaal,WIP,2026-05-06,Markdown live. Sheet pending import.
+2,Review current ZAO Devz website,Iman + Zaal,TODO,Wed session,Walk site list gaps prioritize fixes
+3,Social media chat + record,Iman + Zaal,TODO,Wed session,Record convo for reuse as content
+4,Teach Iman to post via ZAO OS,Zaal,TODO,Wed session,Onboard Iman onto ZAO accounts doc in SOCIAL-PLAYBOOK
+5,Host public Space (ZAO Devz / WaveWarZ Zambia / Iman projects),Iman + Zaal,TODO,TBD,Pick date announce on FC + X
+6,POIDH bounty for next funds-sharing round,Zaal,TODO,Pre-Space,Draft in BOUNTY-POIDH community top-ups open
+7,Add tracker module into ZAO OS,Zaal,TODO,After Sheet stable,Replace Sheet with native ZAO OS view

@@ -1,0 +1,18 @@
+[Unit]
+Description=ZAOcoworkingBot - cowork-zaodevz Telegram concierge (v2)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/cowork-zaodevz/agent
+ExecStart=%h/cowork-zaodevz/agent/node_modules/.bin/tsx %h/cowork-zaodevz/agent/src/index.ts
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=%h/cowork-zaodevz/agent/.env
+Environment=NODE_ENV=production
+Environment=PATH=%h/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[Install]
+WantedBy=default.target

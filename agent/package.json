@@ -1,0 +1,23 @@
+{
+  "name": "zaocoworking-agent",
+  "version": "0.3.1",
+  "private": true,
+  "type": "module",
+  "description": "ZAOcoworkingBot - Telegram concierge for cowork-zaodevz. Hermes pattern + Letta memory + Octokit + multi-model + roster + proactive DMs.",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2",
+    "dotenv": "^17.0.0",
+    "grammy": "^1.43.0",
+    "node-cron": "^3.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
