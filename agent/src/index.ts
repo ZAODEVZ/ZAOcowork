@@ -238,6 +238,15 @@ bot.on('message:text', async (ctx) => {
   const llm = await resolveLLMForUser(ctx.from?.id ?? 0);
   const started = Date.now();
   await ctx.replyWithChatAction('typing').catch(() => {});
+  // v2.18 - explicit ack so the sender sees their message landed. The LLM path
+  // can take several seconds; the typing indicator alone is easy to miss. The
+  // ack bubble is deleted once the real reply is ready, so the chat stays clean.
+  const ackMsg = await ctx.reply('message received, thinking...').catch(() => null);
+  const clearAck = async (): Promise<void> => {
+    if (ackMsg && ctx.chat?.id) {
+      await ctx.api.deleteMessage(ctx.chat.id, ackMsg.message_id).catch(() => {});
+    }
+  };
   try {
     const raw = await callLLM({
       provider: llm.provider,
@@ -248,6 +257,7 @@ bot.on('message:text', async (ctx) => {
     });
     const final = await maybeStartSuggestionFlow(ctx, raw);
     const latency = Date.now() - started;
+    await clearAck();
     if (!final) {
       await ctx.reply('(empty reply - check logs)');
       return;
@@ -255,6 +265,7 @@ bot.on('message:text', async (ctx) => {
     await ctx.reply(final);
     await logOutgoing(ctx, final, latency, `${llm.provider}/${llm.model}`);
   } catch (err) {
+    await clearAck();
     console.error('[zaocoworking] llm failed:', (err as Error).message);
     await ctx.reply(`error: ${(err as Error).message.slice(0, 200)}`);
   }
