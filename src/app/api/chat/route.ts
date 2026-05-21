@@ -77,7 +77,8 @@ function boardSnapshot(items: ActionItem[]): string {
 }
 
 function systemPrompt(user: string, items: ActionItem[]): string {
-  const who = user === "zaal" ? "Zaal" : "Iman";
+  const who =
+    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : user === "thyrev" ? "ThyRev" : "Samantha";
   const open = items.filter((x) => x.status !== "DONE").length;
   const blocked = items.filter((x) => x.status === "BLOCKED").length;
   const aging = items.filter(

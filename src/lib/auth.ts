@@ -4,7 +4,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const COOKIE_NAME = "iman-session";
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
-export type SessionUser = "zaal" | "iman" | "thyrev";
+export type SessionUser = "zaal" | "iman" | "thyrev" | "samantha";
 
 export function isLead(user: SessionUser): boolean {
   return user === "zaal" || user === "iman";
@@ -33,9 +33,11 @@ export function verifyPassword(password: string): SessionUser | null {
   const zp = process.env.ZAAL_PASSWORD;
   const ip = process.env.IMAN_PASSWORD;
   const tp = process.env.THYREV_PASSWORD;
+  const sp = process.env.SAMANTHA_PASSWORD;
   if (zp && password === zp) return "zaal";
   if (ip && password === ip) return "iman";
   if (tp && password === tp) return "thyrev";
+  if (sp && password === sp) return "samantha";
   return null;
 }
 
@@ -70,7 +72,9 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!safeEqual(sig, expected)) return null;
   const exp = parseInt(expStr, 10);
   if (!Number.isFinite(exp) || exp * 1000 < Date.now()) return null;
-  if (user !== "zaal" && user !== "iman" && user !== "thyrev") return null;
+  if (user !== "zaal" && user !== "iman" && user !== "thyrev" && user !== "samantha") {
+    return null;
+  }
   return user as SessionUser;
 }
 

@@ -54,8 +54,8 @@ export const DEV_CATEGORIES: string[] = ["ZAO Devz", "Site / Tech", "Ops", "Boun
 export const MUSIC_CATEGORIES: string[] = ["WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding"];
 export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Campaigns"];
 
-export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Open";
-export const OWNERS: Owner[] = ["Zaal", "Iman", "ThyRev", "Open"];
+export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Open";
+export const OWNERS: Owner[] = ["Zaal", "Iman", "ThyRev", "Samantha", "Open"];
 
 export interface Comment {
   id: string;
