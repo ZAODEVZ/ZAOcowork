@@ -64,6 +64,50 @@ if (!token) {
 
 const bot = new Bot(token);
 
+// Telegram caps a message at 4096 chars. /list, /mine and the digests over a
+// large task set blow past that - sendMessage 400s and the user sees nothing.
+// This transformer splits any oversized text on line boundaries and sends the
+// pieces in order, so every command stays reliable regardless of list size.
+const TG_LIMIT = 4096;
+function splitForTelegram(text: string): string[] {
+  if (text.length <= TG_LIMIT) return [text];
+  const chunks: string[] = [];
+  let buf = '';
+  for (const line of text.split('\n')) {
+    if (line.length > TG_LIMIT) {
+      if (buf) {
+        chunks.push(buf);
+        buf = '';
+      }
+      for (let i = 0; i < line.length; i += TG_LIMIT) {
+        chunks.push(line.slice(i, i + TG_LIMIT));
+      }
+      continue;
+    }
+    if (buf.length + line.length + 1 > TG_LIMIT) {
+      chunks.push(buf);
+      buf = line;
+    } else {
+      buf = buf ? `${buf}\n${line}` : line;
+    }
+  }
+  if (buf) chunks.push(buf);
+  return chunks;
+}
+bot.api.config.use(async (prev, method, payload, signal) => {
+  if (method === 'sendMessage' && 'text' in payload && typeof payload.text === 'string') {
+    const parts = splitForTelegram(payload.text);
+    if (parts.length > 1) {
+      let result = await prev(method, { ...payload, text: parts[0] }, signal);
+      for (let i = 1; i < parts.length; i++) {
+        result = await prev(method, { ...payload, text: parts[i] }, signal);
+      }
+      return result;
+    }
+  }
+  return prev(method, payload, signal);
+});
+
 await ensureCoworkHome();
 
 // Roster is loaded from data/team.json in repo via Octokit + cached locally.
