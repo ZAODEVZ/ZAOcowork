@@ -28,6 +28,9 @@ tracker:
   /assign <id> <Owner>         - reassign to Zaal|Iman|Both|ThyRev|Samantha|Open
   /daily                       - admin: post open-items digest
 
+live audio:
+  /juke <title>                - create a ZAO Live audio space on Juke
+
 model / BYOK (v2.5):
   /providers                   - list claude-max | claude-api | openai | minimax
   /mymodel                     - show my current provider/model + key source
@@ -80,7 +83,18 @@ COWORK_HOME=/root/.zaocoworking
 BOT_MODEL=haiku
 GITHUB_REPO=songchaindao-dot/cowork-zaodevz
 GITHUB_BRANCH=main
+JUKE_CREATE_PASSWORD=<shared password, must match ZAOOS>
+ZAOOS_API_BASE=https://zaoos.com
 ```
+
+### `/juke` - ZAO Live audio spaces
+
+`/juke <title>` creates a Farcaster-native live audio space on Juke and replies
+with a `/live/{id}` link. The bot does not talk to Juke directly - it POSTs the
+ZAOOS Path B route (`/api/juke/space`), which holds the Juke developer
+credentials server-side. The bot only needs `JUKE_CREATE_PASSWORD`, and it must
+match the value set on ZAOOS. Until ZAOOS has its Juke key, `/juke` replies that
+Juke is not connected yet. See ZAOOS research docs 695 + 710.
 
 ## Deploy
 
