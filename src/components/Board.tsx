@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   STATUSES,
@@ -155,7 +156,8 @@ export function Board({
   defaultCategory: string;
 }) {
   const router = useRouter();
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  // Land on "my open work" by default, not the full firehose.
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, mineOnly: true });
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
   const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
   const [todoOpen, setTodoOpen] = useState(false);
@@ -599,6 +601,9 @@ function Column({
   defaultCategory: string;
   isWorker: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, 25);
+  const hiddenCount = items.length - visible.length;
   const pendingCount = items.reduce(
     (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
     0,
@@ -627,9 +632,17 @@ function Column({
       />
 
       <div className="flex flex-col gap-2">
-        {items.map((it) => (
+        {visible.map((it) => (
           <Card key={it.id} item={it} onOpenRoom={onOpenRoom} isWorker={isWorker} />
         ))}
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white/55 hover:bg-white/5 hover:text-white/90 transition"
+          >
+            Show {hiddenCount} more
+          </button>
+        )}
         {items.length === 0 && (
           <div className="text-xs text-white/30 italic px-1 py-2">No items.</div>
         )}
@@ -975,6 +988,17 @@ function HelpModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// Renders children into document.body. Without this, a fixed-position modal
+// nested under a backdrop-blur/transform ancestor is positioned relative to
+// that ancestor (the tall task board) instead of the viewport - which dropped
+// the welcome + tour prompts to the middle of the page.
+function Portal({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+  return createPortal(children, document.body);
+}
+
 function WelcomeModal({
   userLabel,
   onClose,
@@ -985,37 +1009,40 @@ function WelcomeModal({
   onTour: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Hi {userLabel}</h2>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white text-xl leading-none"
-          >
-            ×
-          </button>
-        </div>
-        <p className="mt-2 text-sm text-white/70">
-          Welcome to The Zao Co-Works — your operational workspace. Click any task to open its
-          dedicated room with comments, history, and the approval workflow.
-        </p>
-        <div className="mt-4 flex gap-2 justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70"
-          >
-            Not now
-          </button>
-          <button
-            onClick={onTour}
-            className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
-          >
-            Yes, tour me
-          </button>
+    <Portal>
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100vw-2rem)] max-w-md">
+        <div className="bg-[#0d1f35] border border-white/10 rounded-2xl p-5 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold">Hi {userLabel}</h2>
+            <button
+              onClick={onClose}
+              className="text-white/50 hover:text-white text-xl leading-none"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+          <p className="mt-2 text-sm text-white/70">
+            Welcome to The Zao Co-Works — your operational workspace. Click any task to open its
+            dedicated room with comments, history, and the approval workflow.
+          </p>
+          <div className="mt-4 flex gap-2 justify-end">
+            <button
+              onClick={onClose}
+              className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70"
+            >
+              Not now
+            </button>
+            <button
+              onClick={onTour}
+              className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
+            >
+              Yes, tour me
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </Portal>
   );
 }
 
@@ -1033,7 +1060,8 @@ function TourModal({
   const s = TOUR_STEPS[Math.max(0, Math.min(TOUR_STEPS.length - 1, step))];
   const last = step >= TOUR_STEPS.length - 1;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <Portal>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <div className="text-xs text-white/45">
@@ -1076,7 +1104,8 @@ function TourModal({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Portal>
   );
 }
 
@@ -1123,7 +1152,8 @@ function DailyReminderModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <Portal>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Daily check-in</h2>
@@ -1195,7 +1225,8 @@ function DailyReminderModal({
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </Portal>
   );
 }
 
