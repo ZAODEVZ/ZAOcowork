@@ -517,7 +517,13 @@ export async function claimTask(form: FormData): Promise<void> {
   if (idx < 0) return;
   const cur = doc.items[idx];
   const ownerName =
-    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : displayName(user);
+    user === "zaal"
+      ? "Zaal"
+      : user === "iman"
+      ? "Iman"
+      : user === "thyrev"
+      ? "ThyRev"
+      : "Samantha";
   const now = new Date().toISOString();
   doc.items[idx] = {
     ...cur,

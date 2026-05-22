@@ -12,6 +12,8 @@ export async function callLLM(req: LLMRequest): Promise<string> {
     case 'claude-api': return callClaudeApi(req);
     case 'openai': return callOpenAI(req);
     case 'minimax': return callMinimax(req);
+    default:
+      throw new Error(`unknown LLM provider: ${String(req.provider)}`);
   }
 }
 

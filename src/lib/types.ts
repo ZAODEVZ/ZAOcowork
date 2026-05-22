@@ -42,20 +42,24 @@ export type Category =
   | "Social"
   | "Brand"
   | "Content"
-  | "Campaigns";
+  | "Campaigns"
+  | "Infrastructure"
+  | "Security";
 
 export const CATEGORIES: Category[] = [
   "ZAO Devz", "Site / Tech", "Ops", "Bounty", "Other",
   "WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding",
-  "Social", "Brand", "Content", "Campaigns",
+  "Social", "Brand", "Content", "Campaigns", "Infrastructure", "Security",
 ];
 
-export const DEV_CATEGORIES: string[] = ["ZAO Devz", "Site / Tech", "Ops", "Bounty", "Other"];
+export const DEV_CATEGORIES: string[] = [
+  "ZAO Devz", "Site / Tech", "Ops", "Bounty", "Infrastructure", "Security", "Other",
+];
 export const MUSIC_CATEGORIES: string[] = ["WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding"];
 export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Campaigns"];
 
 export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Open";
-export const OWNERS: Owner[] = ["Zaal", "Iman", "ThyRev", "Samantha", "Open"];
+export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Open"];
 
 export interface Comment {
   id: string;
