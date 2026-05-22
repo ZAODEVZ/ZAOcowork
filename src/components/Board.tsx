@@ -44,6 +44,7 @@ const OWNER_BADGE: Record<string, string> = {
   Zaal: "bg-blue-500/20 text-blue-300 border-blue-500/40",
   Iman: "bg-purple-500/20 text-purple-300 border-purple-500/40",
   ThyRev: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  Samantha: "bg-pink-500/20 text-pink-300 border-pink-500/40",
   Both: "bg-slate-500/20 text-slate-200 border-slate-500/40",
   Open: "bg-amber-500/20 text-amber-300 border-amber-500/40",
 };
@@ -70,6 +71,7 @@ function ownerInitial(o: string): string {
   if (o === "Both") return "Z+I";
   if (o === "Open") return "?";
   if (o === "ThyRev") return "TR";
+  if (o === "Samantha") return "SM";
   return o.slice(0, 1).toUpperCase();
 }
 
@@ -172,7 +174,7 @@ export function Board({
       ? "Iman"
       : currentUser.trim().toLowerCase() === "thyrev"
       ? "ThyRev"
-      : currentUser;
+      : "Samantha";
   const storageUserKey = userLabel.trim().toLowerCase() || "user";
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -300,7 +302,7 @@ export function Board({
 
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const claimableCount = items.filter((it) => it.claimable).length;
-  const isWorker = currentUser.trim().toLowerCase() === "thyrev";
+  const isWorker = ["thyrev", "samantha"].includes(currentUser.trim().toLowerCase());
   const filtersActive =
     filters.search ||
     filters.owner ||
@@ -653,6 +655,7 @@ function QuickAddForm({
     if (me === "zaal") return "Zaal";
     if (me === "iman") return "Iman";
     if (me === "thyrev") return "ThyRev";
+    if (me === "samantha") return "Samantha";
     return "Open";
   })();
   const [important, setImportant] = useState(false);

@@ -18,7 +18,8 @@ export default async function ChatPage() {
     (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,
   ).length;
 
-  const userLabel = user === "zaal" ? "Zaal" : "Iman";
+  const userLabel =
+    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : user === "thyrev" ? "ThyRev" : "Samantha";
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#03141f] overflow-hidden">

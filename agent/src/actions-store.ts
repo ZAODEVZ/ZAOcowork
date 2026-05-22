@@ -1,37 +1,171 @@
-// Octokit Contents API wrapper for data/actions.json.
-// SHA dance per doc 662 B.5: every write requires the SHA from the last read.
-// On 409 Conflict, re-read + re-apply + retry up to 3x with exponential backoff.
+// Supabase-backed store for the unified `tasks` table (doc 692 unification).
+// Replaces the GitHub Contents API + SHA-dance. The bot's command surface is
+// unchanged: fetchActions / mutateActions / makeActionItem / nextItemId keep
+// their signatures. Each tasks row maps to the legacy ActionItem shape; the
+// bot identifies its items by `legacy_id` within `legacy_source`.
 
-import { Octokit } from '@octokit/rest';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { promises as fs } from 'node:fs';
 import { COWORK_PATHS } from './paths';
-import type { ActionsFile, ActionItem, Owner, Phase, Priority } from './types';
+import type { ActionsFile, ActionItem, ActionStatus, Owner, Phase, Priority } from './types';
 
-const OWNER = process.env.GITHUB_REPO?.split('/')[0] ?? 'songchaindao-dot';
-const REPO = process.env.GITHUB_REPO?.split('/')[1] ?? 'cowork-zaodevz';
-const PATH = 'data/actions.json';
-const BRANCH = process.env.GITHUB_BRANCH ?? 'main';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-function octokit(): Octokit {
-  const auth = process.env.GITHUB_TOKEN;
-  if (!auth) throw new Error('GITHUB_TOKEN missing - cannot read/write data/actions.json');
-  return new Octokit({ auth });
+// Only cowork-sourced rows belong to this bot. ZAOstock + other projects
+// share the unified table but stay out of the bot's view.
+const LEGACY_SOURCE = 'cowork-actions.json';
+
+const STATUS_TO_DB: Record<ActionStatus, string> = {
+  TODO: 'todo',
+  WIP: 'in_progress',
+  BLOCKED: 'blocked',
+  DONE: 'done',
+};
+const STATUS_FROM_DB: Record<string, ActionStatus> = {
+  todo: 'TODO',
+  in_progress: 'WIP',
+  blocked: 'BLOCKED',
+  done: 'DONE',
+};
+
+const TASK_COLUMNS =
+  'legacy_id, title, status, owner_id, created_by, completed_by, category, ' +
+  'priority, phase, important, urgent, due, notes, completed_at, created_at, ' +
+  'updated_at, metadata';
+
+let cachedClient: SupabaseClient | null = null;
+function db(): SupabaseClient {
+  if (cachedClient) return cachedClient;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY missing - cannot reach the tasks table');
+  }
+  cachedClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return cachedClient;
+}
+
+interface TaskRow {
+  legacy_id: string | null;
+  title: string;
+  status: string;
+  owner_id: string | null;
+  created_by: string | null;
+  completed_by: string | null;
+  category: string | null;
+  priority: string | null;
+  phase: string | null;
+  important: boolean | null;
+  urgent: boolean | null;
+  due: string | null;
+  notes: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  metadata: Record<string, unknown> | null;
+}
+
+interface TeamMaps {
+  idToOwner: Map<string, string>; // team_members.id -> legacy_owner
+  ownerToId: Map<string, string>; // legacy_owner lowercased -> team_members.id
+}
+
+let cachedTeam: TeamMaps | null = null;
+async function teamMaps(): Promise<TeamMaps> {
+  if (cachedTeam) return cachedTeam;
+  const { data, error } = await db().from('team_members').select('id, legacy_owner');
+  if (error) throw new Error(`team_members read failed: ${error.message}`);
+  const idToOwner = new Map<string, string>();
+  const ownerToId = new Map<string, string>();
+  for (const row of (data ?? []) as Array<{ id: string; legacy_owner: string | null }>) {
+    if (!row.legacy_owner) continue;
+    idToOwner.set(row.id, row.legacy_owner);
+    ownerToId.set(row.legacy_owner.toLowerCase(), row.id);
+  }
+  cachedTeam = { idToOwner, ownerToId };
+  return cachedTeam;
+}
+
+function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
+  const meta = row.metadata ?? {};
+  const ownerName = row.owner_id ? team.idToOwner.get(row.owner_id) : null;
+  const createdByName = row.created_by ? team.idToOwner.get(row.created_by) : null;
+  const completedByName = row.completed_by ? team.idToOwner.get(row.completed_by) : null;
+  const dueMeta = typeof meta.due === 'string' ? meta.due : null;
+  return {
+    id: row.legacy_id ?? '',
+    title: row.title,
+    createdBy: createdByName ?? '',
+    owner: (ownerName as Owner) ?? 'Both',
+    status: STATUS_FROM_DB[row.status] ?? 'TODO',
+    category: row.category ?? 'Other',
+    priority: (row.priority as Priority) ?? 'P2',
+    important: Boolean(row.important),
+    urgent: Boolean(row.urgent),
+    completedAt: row.completed_at ?? '',
+    completedBy: completedByName ?? '',
+    phase: (row.phase as Phase) ?? 'Define',
+    due: dueMeta ?? row.due ?? '',
+    notes: row.notes ?? '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
+  // 'Both' / 'Open' are not real people - they resolve to a null owner FK.
+  const ownerKey =
+    item.owner && item.owner !== 'Both' && item.owner !== 'Open'
+      ? String(item.owner).toLowerCase()
+      : null;
+  const dueIsDate = /^\d{4}-\d{2}-\d{2}$/.test(item.due);
+  return {
+    legacy_source: LEGACY_SOURCE,
+    legacy_id: item.id,
+    kind: 'task',
+    project: /wavewarz/i.test(item.category) ? 'wavewarz' : 'zaodevz',
+    title: item.title,
+    status: STATUS_TO_DB[item.status] ?? 'todo',
+    owner_id: ownerKey ? (team.ownerToId.get(ownerKey) ?? null) : null,
+    created_by: item.createdBy ? (team.ownerToId.get(item.createdBy.toLowerCase()) ?? null) : null,
+    completed_by: item.completedBy
+      ? (team.ownerToId.get(item.completedBy.toLowerCase()) ?? null)
+      : null,
+    category: item.category || null,
+    priority: item.priority || null,
+    phase: item.phase || null,
+    important: Boolean(item.important),
+    urgent: Boolean(item.urgent),
+    // structured date column for SQL filtering; raw string preserved in metadata
+    due: dueIsDate ? item.due : null,
+    notes: item.notes || null,
+    completed_at: item.completedAt || null,
+    created_at: item.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    metadata: item.due ? { due: item.due } : {},
+  };
 }
 
 export interface ActionsWithSha {
   data: ActionsFile;
+  /** Retained for call-site compatibility; Supabase has no SHA. Always ''. */
   sha: string;
 }
 
 export async function fetchActions(): Promise<ActionsWithSha> {
-  const res = await octokit().repos.getContent({ owner: OWNER, repo: REPO, path: PATH, ref: BRANCH });
-  if (Array.isArray(res.data) || res.data.type !== 'file') {
-    throw new Error(`expected file at ${PATH}, got ${'type' in res.data ? res.data.type : 'array'}`);
-  }
-  const content = Buffer.from(res.data.content, 'base64').toString('utf8');
-  const data = JSON.parse(content) as ActionsFile;
-  await cacheActions(data, res.data.sha);
-  return { data, sha: res.data.sha };
+  const team = await teamMaps();
+  const { data, error } = await db()
+    .from('tasks')
+    .select(TASK_COLUMNS)
+    .eq('legacy_source', LEGACY_SOURCE);
+  if (error) throw new Error(`tasks read failed: ${error.message}`);
+  const items = ((data ?? []) as unknown as TaskRow[])
+    .map((row) => rowToItem(row, team))
+    .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+  const file: ActionsFile = { updatedAt: new Date().toISOString(), items };
+  await cacheActions(file);
+  return { data: file, sha: '' };
 }
 
 export async function readActionsCache(): Promise<ActionsFile | null> {
@@ -43,53 +177,83 @@ export async function readActionsCache(): Promise<ActionsFile | null> {
   }
 }
 
-async function cacheActions(data: ActionsFile, sha: string): Promise<void> {
-  await fs.mkdir(COWORK_PATHS.home, { recursive: true });
-  await fs.writeFile(COWORK_PATHS.actionsCache, JSON.stringify(data, null, 2), 'utf8');
-  await fs.writeFile(COWORK_PATHS.actionsSha, sha, 'utf8');
+async function cacheActions(data: ActionsFile): Promise<void> {
+  // Local cache is a best-effort read fallback; Supabase is the source of truth.
+  try {
+    await fs.mkdir(COWORK_PATHS.home, { recursive: true });
+    await fs.writeFile(COWORK_PATHS.actionsCache, JSON.stringify(data, null, 2), 'utf8');
+  } catch {
+    // ignore - a missing cache just forces a Supabase read next time
+  }
 }
 
-async function commitActions(data: ActionsFile, sha: string, message: string): Promise<string> {
-  data.updatedAt = new Date().toISOString();
-  const res = await octokit().repos.createOrUpdateFileContents({
-    owner: OWNER,
-    repo: REPO,
-    path: PATH,
-    branch: BRANCH,
-    message,
-    sha,
-    content: Buffer.from(JSON.stringify(data, null, 2)).toString('base64'),
+async function applyDiff(
+  before: ActionItem[],
+  after: ActionItem[],
+  team: TeamMaps,
+): Promise<void> {
+  const beforeById = new Map(before.map((i) => [i.id, i]));
+  const afterById = new Map(after.map((i) => [i.id, i]));
+
+  const inserts = after.filter((i) => !beforeById.has(i.id));
+  const updates = after.filter((i) => {
+    const prev = beforeById.get(i.id);
+    return prev && JSON.stringify(prev) !== JSON.stringify(i);
   });
-  const newSha = res.data.content?.sha;
-  if (!newSha) throw new Error('commit returned no sha');
-  await cacheActions(data, newSha);
-  return newSha;
+  const deletes = before.filter((i) => !afterById.has(i.id)).map((i) => i.id);
+
+  if (inserts.length) {
+    const { error } = await db()
+      .from('tasks')
+      .insert(inserts.map((i) => itemToRow(i, team)));
+    if (error) throw new Error(`task insert failed: ${error.message}`);
+  }
+  for (const item of updates) {
+    const { error } = await db()
+      .from('tasks')
+      .update(itemToRow(item, team))
+      .eq('legacy_source', LEGACY_SOURCE)
+      .eq('legacy_id', item.id);
+    if (error) throw new Error(`task update failed (${item.id}): ${error.message}`);
+  }
+  if (deletes.length) {
+    const { error } = await db()
+      .from('tasks')
+      .delete()
+      .eq('legacy_source', LEGACY_SOURCE)
+      .in('legacy_id', deletes);
+    if (error) throw new Error(`task delete failed: ${error.message}`);
+  }
 }
 
 /**
- * Apply a mutation to data/actions.json with SHA-dance retry on conflict.
- * mutator is called with the FRESHEST data and must return either:
- * - a mutated data object to commit
- * - null/undefined to skip the commit (no-op)
+ * Apply a mutation to the cowork tasks with retry on a unique-id race.
+ * The mutator is called with the FRESHEST data and must return either:
+ * - a mutated ActionsFile to persist (the `commitMessage` field is accepted
+ *   for call-site compatibility but no longer used - Supabase has no commit)
+ * - null/undefined to skip persistence (no-op)
  */
 export async function mutateActions<T>(
-  mutator: (data: ActionsFile) => Promise<{ data: ActionsFile; commitMessage: string; result: T } | null>,
+  mutator: (
+    data: ActionsFile,
+  ) => Promise<{ data: ActionsFile; commitMessage: string; result: T } | null>,
   maxAttempts = 3,
 ): Promise<T | null> {
+  const team = await teamMaps();
   let lastErr: Error | null = null;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const { data, sha } = await fetchActions();
-      const out = await mutator(structuredClone(data));
+      const { data: before } = await fetchActions();
+      const out = await mutator(structuredClone(before));
       if (!out) return null;
-      await commitActions(out.data, sha, out.commitMessage);
+      await applyDiff(before.items, out.data.items, team);
+      await cacheActions(out.data);
       return out.result;
-    } catch (err) {
-      lastErr = err as Error;
-      const status = (err as { status?: number }).status;
-      if (status !== 409 && status !== 422) throw err;
-      const backoffMs = 100 * 2 ** attempt;
-      await new Promise((r) => setTimeout(r, backoffMs));
+    } catch (err: unknown) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      // Only a duplicate legacy_id race is retriable - re-fetch picks a fresh id.
+      if (!/duplicate key|23505/.test(lastErr.message)) throw lastErr;
+      await new Promise((r) => setTimeout(r, 100 * 2 ** attempt));
     }
   }
   throw new Error(`actions mutation failed after ${maxAttempts} attempts: ${lastErr?.message}`);

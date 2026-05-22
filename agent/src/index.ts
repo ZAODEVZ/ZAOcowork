@@ -28,6 +28,7 @@ import {
   cmdSetPrio,
   cmdStart,
   cmdWip,
+  handleListCallback,
 } from './commands';
 import {
   maybeHandleConfirmation,
@@ -63,6 +64,50 @@ if (!token) {
 }
 
 const bot = new Bot(token);
+
+// Telegram caps a message at 4096 chars. /list, /mine and the digests over a
+// large task set blow past that - sendMessage 400s and the user sees nothing.
+// This transformer splits any oversized text on line boundaries and sends the
+// pieces in order, so every command stays reliable regardless of list size.
+const TG_LIMIT = 4096;
+function splitForTelegram(text: string): string[] {
+  if (text.length <= TG_LIMIT) return [text];
+  const chunks: string[] = [];
+  let buf = '';
+  for (const line of text.split('\n')) {
+    if (line.length > TG_LIMIT) {
+      if (buf) {
+        chunks.push(buf);
+        buf = '';
+      }
+      for (let i = 0; i < line.length; i += TG_LIMIT) {
+        chunks.push(line.slice(i, i + TG_LIMIT));
+      }
+      continue;
+    }
+    if (buf.length + line.length + 1 > TG_LIMIT) {
+      chunks.push(buf);
+      buf = line;
+    } else {
+      buf = buf ? `${buf}\n${line}` : line;
+    }
+  }
+  if (buf) chunks.push(buf);
+  return chunks;
+}
+bot.api.config.use(async (prev, method, payload, signal) => {
+  if (method === 'sendMessage' && 'text' in payload && typeof payload.text === 'string') {
+    const parts = splitForTelegram(payload.text);
+    if (parts.length > 1) {
+      let result = await prev(method, { ...payload, text: parts[0] }, signal);
+      for (let i = 1; i < parts.length; i++) {
+        result = await prev(method, { ...payload, text: parts[i] }, signal);
+      }
+      return result;
+    }
+  }
+  return prev(method, payload, signal);
+});
 
 await ensureCoworkHome();
 
@@ -238,6 +283,15 @@ bot.on('message:text', async (ctx) => {
   const llm = await resolveLLMForUser(ctx.from?.id ?? 0);
   const started = Date.now();
   await ctx.replyWithChatAction('typing').catch(() => {});
+  // v2.18 - explicit ack so the sender sees their message landed. The LLM path
+  // can take several seconds; the typing indicator alone is easy to miss. The
+  // ack bubble is deleted once the real reply is ready, so the chat stays clean.
+  const ackMsg = await ctx.reply('message received, thinking...').catch(() => null);
+  const clearAck = async (): Promise<void> => {
+    if (ackMsg && ctx.chat?.id) {
+      await ctx.api.deleteMessage(ctx.chat.id, ackMsg.message_id).catch(() => {});
+    }
+  };
   try {
     const raw = await callLLM({
       provider: llm.provider,
@@ -248,6 +302,7 @@ bot.on('message:text', async (ctx) => {
     });
     const final = await maybeStartSuggestionFlow(ctx, raw);
     const latency = Date.now() - started;
+    await clearAck();
     if (!final) {
       await ctx.reply('(empty reply - check logs)');
       return;
@@ -255,6 +310,7 @@ bot.on('message:text', async (ctx) => {
     await ctx.reply(final);
     await logOutgoing(ctx, final, latency, `${llm.provider}/${llm.model}`);
   } catch (err) {
+    await clearAck();
     console.error('[zaocoworking] llm failed:', (err as Error).message);
     await ctx.reply(`error: ${(err as Error).message.slice(0, 200)}`);
   }
@@ -302,6 +358,7 @@ bot.on('callback_query:data', async (ctx) => {
   }
   // Future callback handlers can chain; each returns true if it matched.
   if (await handleAutoConfirmCallback(ctx)) return;
+  if (await handleListCallback(ctx)) return;
   await ctx.answerCallbackQuery().catch(() => {});
 });
 
