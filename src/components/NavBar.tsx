@@ -6,24 +6,10 @@ import { usePathname } from "next/navigation";
 const PORTALS = [
   {
     href: "/",
-    label: "Dev",
-    sub: "Development & Ops",
+    label: "Board",
+    sub: "Every task - filter by owner or category",
     dot: "bg-blue-400",
     activeClass: "bg-blue-500/20 text-blue-200 border-blue-500/40",
-  },
-  {
-    href: "/music",
-    label: "Music",
-    sub: "WaveWarZ & Artist Ops",
-    dot: "bg-purple-400",
-    activeClass: "bg-purple-500/20 text-purple-200 border-purple-500/40",
-  },
-  {
-    href: "/marketing",
-    label: "Marketing",
-    sub: "Social, Brand & Campaigns",
-    dot: "bg-amber-400",
-    activeClass: "bg-amber-500/20 text-amber-200 border-amber-500/40",
   },
   {
     href: "/chat",

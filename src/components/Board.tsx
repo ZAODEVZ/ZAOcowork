@@ -156,7 +156,8 @@ export function Board({
   defaultCategory: string;
 }) {
   const router = useRouter();
-  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  // Land on "my open work" by default, not the full firehose.
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, mineOnly: true });
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
   const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
   const [todoOpen, setTodoOpen] = useState(false);
@@ -600,6 +601,9 @@ function Column({
   defaultCategory: string;
   isWorker: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, 25);
+  const hiddenCount = items.length - visible.length;
   const pendingCount = items.reduce(
     (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
     0,
@@ -628,9 +632,17 @@ function Column({
       />
 
       <div className="flex flex-col gap-2">
-        {items.map((it) => (
+        {visible.map((it) => (
           <Card key={it.id} item={it} onOpenRoom={onOpenRoom} isWorker={isWorker} />
         ))}
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setExpanded(true)}
+            className="rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white/55 hover:bg-white/5 hover:text-white/90 transition"
+          >
+            Show {hiddenCount} more
+          </button>
+        )}
         {items.length === 0 && (
           <div className="text-xs text-white/30 italic px-1 py-2">No items.</div>
         )}
@@ -1140,7 +1152,8 @@ function DailyReminderModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <Portal>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Daily check-in</h2>
@@ -1212,7 +1225,8 @@ function DailyReminderModal({
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </Portal>
   );
 }
 

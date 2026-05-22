@@ -5,7 +5,7 @@ import { logout } from "./actions";
 import { Board } from "@/components/Board";
 import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
-import { DEV_CATEGORIES } from "@/lib/types";
+import { CATEGORIES } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -14,9 +14,9 @@ export default async function Page() {
   if (!user) redirect("/login");
   const doc = await getActions();
 
-  const portalItems = doc.items.filter((x) =>
-    DEV_CATEGORIES.includes(String(x.category)),
-  );
+  // Unified board: every category in one place. Category is a filter, not 3
+  // separate pages. Stat cards below now count the true totals.
+  const portalItems = doc.items;
 
   const open = portalItems.filter((x) => x.status !== "DONE");
   const wipMine = portalItems.filter(
@@ -72,13 +72,13 @@ export default async function Page() {
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-blue-400" />
-            <span className="text-sm font-semibold text-white/80">Dev Board</span>
-            <span className="text-xs text-white/40">— ZAO Devz · Site / Tech · Ops · Bounty</span>
+            <span className="text-sm font-semibold text-white/80">Board</span>
+            <span className="text-xs text-white/40">— every task, filter by owner or category</span>
           </div>
           <Board
             items={portalItems}
             currentUser={user}
-            portalCategories={DEV_CATEGORIES}
+            portalCategories={CATEGORIES}
             defaultCategory="ZAO Devz"
           />
         </div>
