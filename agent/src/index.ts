@@ -53,6 +53,7 @@ import {
 } from './user-commands';
 import { cmdAddChat, cmdAddUser, cmdReload, cmdTeam, cmdWhoami } from './roster-commands';
 import { cmdNotify } from './notify-commands';
+import { cmdJuke } from './juke-commands';
 import { rosterView } from './roster';
 import { startScheduler } from './scheduler';
 import { resolveLLMForUser } from './users';
@@ -233,6 +234,9 @@ bot.command('whoami', (ctx) => withErrorReply(ctx, () => cmdWhoami(ctx)));
 // v2.8 - proactive notification opt-out (per-user)
 bot.command('notify', withArgs(cmdNotify));
 
+// Juke live audio - create a ZAO Live space via the ZAOOS Path B route
+bot.command('juke', withArgs(cmdJuke));
+
 bot.on('message:text', async (ctx) => {
   const text = ctx.message?.text ?? '';
   if (text.startsWith('/')) return; // already handled
@@ -338,6 +342,7 @@ const TG_COMMANDS = [
   { command: 'reload', description: 'admin: refresh roster from github' },
   { command: 'whoami', description: 'show my telegram id (for joining)' },
   { command: 'notify', description: 'manage my proactive DM channels' },
+  { command: 'juke', description: 'create a ZAO Live audio space on Juke' },
   { command: 'providers', description: 'list LLM providers' },
   { command: 'mymodel', description: 'my current provider + model' },
   { command: 'setmodel', description: 'choose provider and model' },
