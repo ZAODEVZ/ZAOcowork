@@ -1,0 +1,52 @@
+{
+  "updatedAt": "2026-05-18T09:34:14.862Z",
+  "members": [
+    {
+      "name": "Zaal",
+      "telegram_id": 1447437687,
+      "owner_value": "Zaal",
+      "role": "lead",
+      "admin": true,
+      "added_at": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "name": "Iman",
+      "telegram_id": null,
+      "owner_value": "Iman",
+      "role": "lead",
+      "admin": true,
+      "added_at": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "name": "ThyRev",
+      "telegram_id": null,
+      "owner_value": "ThyRev",
+      "role": "worker",
+      "admin": false,
+      "added_at": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "name": "Samantha",
+      "telegram_id": null,
+      "owner_value": "Samantha",
+      "role": "worker",
+      "admin": false,
+      "added_at": "2026-05-06T00:00:00.000Z"
+    },
+    {
+      "name": "IMan",
+      "telegram_id": 7955994215,
+      "owner_value": "IMan",
+      "role": "lead",
+      "admin": true,
+      "added_at": "2026-05-18T09:34:14.858Z"
+    }
+  ],
+  "allowed_chats": [
+    {
+      "chat_id": -1003953353016,
+      "title": "ZAO coworking supergroup",
+      "added_at": "2026-05-17T00:00:00.000Z"
+    }
+  ]
+}
