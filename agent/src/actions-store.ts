@@ -32,7 +32,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   'legacy_id, title, status, owner_id, created_by, completed_by, category, ' +
   'priority, phase, important, urgent, due, notes, completed_at, created_at, ' +
-  'updated_at, metadata';
+  'updated_at, metadata, brands';
 
 let cachedClient: SupabaseClient | null = null;
 function db(): SupabaseClient {
@@ -64,6 +64,7 @@ interface TaskRow {
   created_at: string;
   updated_at: string;
   metadata: Record<string, unknown> | null;
+  brands: string[] | null;
 }
 
 interface TeamMaps {
@@ -110,6 +111,7 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
     notes: row.notes ?? '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    brands: Array.isArray(row.brands) ? row.brands : [],
   };
 }
 
@@ -144,6 +146,7 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     created_at: item.createdAt || new Date().toISOString(),
     updated_at: new Date().toISOString(),
     metadata: item.due ? { due: item.due } : {},
+    brands: Array.isArray(item.brands) ? item.brands : [],
   };
 }
 
@@ -275,6 +278,7 @@ export interface NewActionInput {
   priority?: Priority;
   phase?: Phase;
   notes?: string;
+  brands?: string[];
 }
 
 export function makeActionItem(input: NewActionInput, items: ActionItem[]): ActionItem {
@@ -296,5 +300,6 @@ export function makeActionItem(input: NewActionInput, items: ActionItem[]): Acti
     notes: input.notes ?? '',
     createdAt: now,
     updatedAt: now,
+    brands: Array.isArray(input.brands) ? input.brands : [],
   };
 }

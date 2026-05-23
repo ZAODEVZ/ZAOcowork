@@ -91,6 +91,7 @@ create table tasks (
   completed_by   uuid references team_members(id),
   legacy_id      text,                                   -- old actions.json / todos id
   legacy_source  text,                                   -- cowork-actions.json | zaostock-todos | zaostock-timeline
+  brands         text[] not null default '{}',           -- ecosystem brand tags (ZAOstock, ZABAL Games, ...)
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
@@ -99,6 +100,7 @@ create index tasks_project_idx on tasks(project);
 create index tasks_status_idx  on tasks(status);
 create index tasks_owner_idx   on tasks(owner_id);
 create index tasks_circle_idx  on tasks(circle_id);
+create index tasks_brands_gin_idx on tasks using gin (brands);
 
 -- ============================================================
 -- activity_log - absorbs ZAOcoworking comments[]/activity[]

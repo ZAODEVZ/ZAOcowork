@@ -16,6 +16,7 @@ import {
   type Owner,
   type Priority,
 } from "@/lib/types";
+import { BRANDS, brandColor } from "@/lib/brands";
 import { quickCreate, patchField, claimTask } from "@/app/actions";
 import { TaskRoom } from "./TaskRoom";
 import { TodoPanel, TodoTrigger } from "./TodoPanel";
@@ -82,6 +83,7 @@ type Filters = {
   category: string;
   priority: string;
   phase: string;
+  brand: string;
   mineOnly: boolean;
   agingOnly: boolean;
 };
@@ -92,6 +94,7 @@ const EMPTY_FILTERS: Filters = {
   category: "",
   priority: "",
   phase: "",
+  brand: "",
   mineOnly: true,
   agingOnly: false,
 };
@@ -156,8 +159,29 @@ export function Board({
   defaultCategory: string;
 }) {
   const router = useRouter();
-  // Land on "my open work" by default, not the full firehose.
-  const [filters, setFilters] = useState<Filters>({ ...EMPTY_FILTERS, mineOnly: true });
+  // Land on "my open work" by default, not the full firehose. Subsequent
+  // visits restore the last filter state from localStorage so the board picks
+  // up where you left off (per-user key so teammates do not share state).
+  const filterStorageKey = `cowork-board-filters:${currentUser || "anon"}`;
+  const [filters, setFilters] = useState<Filters>(() => {
+    if (typeof window === "undefined") return { ...EMPTY_FILTERS, mineOnly: true };
+    try {
+      const raw = window.localStorage.getItem(filterStorageKey);
+      if (!raw) return { ...EMPTY_FILTERS, mineOnly: true };
+      const parsed = JSON.parse(raw) as Partial<Filters>;
+      return { ...EMPTY_FILTERS, ...parsed };
+    } catch {
+      return { ...EMPTY_FILTERS, mineOnly: true };
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(filterStorageKey, JSON.stringify(filters));
+    } catch {
+      // localStorage full / disabled - silently ignore, view just will not persist.
+    }
+  }, [filters, filterStorageKey]);
   const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
   const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
   const [todoOpen, setTodoOpen] = useState(false);
@@ -267,6 +291,7 @@ export function Board({
       if (filters.category && it.category !== filters.category) return false;
       if (filters.priority && it.priority !== filters.priority) return false;
       if (filters.phase && it.phase !== filters.phase) return false;
+      if (filters.brand && !(it.brands ?? []).includes(filters.brand)) return false;
       if (filters.mineOnly) {
         const mine = currentUser.toLowerCase();
         const o = String(it.owner).toLowerCase();
@@ -311,6 +336,7 @@ export function Board({
     filters.category ||
     filters.priority ||
     filters.phase ||
+    filters.brand ||
     filters.mineOnly ||
     filters.agingOnly;
 
@@ -520,6 +546,12 @@ function FilterBar({
           onChange={(v) => set({ phase: v })}
           options={["", ...PHASES]}
           placeholder="DMAIC phase"
+        />
+        <SelectPill
+          value={filters.brand}
+          onChange={(v) => set({ brand: v })}
+          options={["", ...BRANDS]}
+          placeholder="Brand"
         />
       </div>
     </div>
@@ -854,6 +886,15 @@ function Card({
         >
           {item.category}
         </span>
+        {(item.brands ?? []).map((b) => (
+          <span
+            key={b}
+            className={`px-1.5 py-0.5 rounded text-[10px] border ${brandColor(b)}`}
+            title={`Brand: ${b}`}
+          >
+            {b}
+          </span>
+        ))}
         <span
           className="px-1.5 py-0.5 rounded text-[10px] border border-white/10 text-white/60"
           title="DMAIC phase"

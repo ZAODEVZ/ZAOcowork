@@ -28,6 +28,9 @@ export interface ActionItem {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  // Ecosystem brand tags - empty array = no brand assigned. Canonical names
+  // defined in agent/src/brands.ts (kept in sync with src/lib/brands.ts).
+  brands: string[];
 }
 
 export interface ActionsFile {

@@ -5,6 +5,7 @@
 
 import { Context, InlineKeyboard } from 'grammy';
 import { fetchActions, makeActionItem, mutateActions } from './actions-store';
+import { parseBrandHashtags } from './brands';
 import { notifyAssigned, notifyStatusChange } from './notifications';
 import { rosterView } from './roster';
 import { bonfireHook } from './teams';
@@ -256,15 +257,24 @@ export async function handleListCallback(ctx: Context): Promise<boolean> {
 // instead of falling back to the caller's owner. Iman bug report
 // 2026-05-18 09:26 "I asked bot to add task for IMan it added it as open".
 export async function cmdAdd(ctx: Context, args: string, ownerOverride?: Owner): Promise<void> {
-  const title = args.trim();
+  const raw = args.trim();
+  if (!raw) {
+    await ctx.reply('usage: /add <title> (tip: prepend #brand-slug to tag a brand, e.g. /add #zaostock book the parklet)');
+    return;
+  }
+  // #brand-slug tokens in the body resolve to ecosystem brands and are
+  // stripped from the title (e.g. "/add #zaostock book the parklet" lands
+  // with brands=["ZAOstock"] and title="book the parklet").
+  const { brands, cleaned } = parseBrandHashtags(raw);
+  const title = cleaned;
   if (!title) {
-    await ctx.reply('usage: /add <title>');
+    await ctx.reply('usage: /add <title> - a hashtag alone is not a task, give me a title');
     return;
   }
   const me = ownerOverride ?? (await ownerForCtx(ctx));
   const by = callerDisplayName(ctx);
   const result = await mutateActions(async (data) => {
-    const item = makeActionItem({ title, owner: me, createdBy: by }, data.items);
+    const item = makeActionItem({ title, owner: me, createdBy: by, brands }, data.items);
     data.items.push(item);
     return {
       data,
@@ -273,7 +283,8 @@ export async function cmdAdd(ctx: Context, args: string, ownerOverride?: Owner):
     };
   });
   if (result) {
-    await ctx.reply(`added #${result.id} (${result.owner}): ${result.title}`);
+    const brandStr = brands.length ? ` [${brands.join(', ')}]` : '';
+    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}: ${result.title}`);
     fireBonfire('add', result, ctx);
   }
 }
@@ -298,8 +309,11 @@ export async function cmdAddBatch(
   const created = await mutateActions(async (data) => {
     const items: ActionItem[] = [];
     for (const e of clean) {
+      // Parse #brand hashtags from each batch entry's title.
+      const { brands, cleaned } = parseBrandHashtags(e.title);
+      const title = cleaned || e.title;
       const item = makeActionItem(
-        { title: e.title, owner: e.owner ?? fallbackOwner, createdBy: by },
+        { title, owner: e.owner ?? fallbackOwner, createdBy: by, brands },
         data.items,
       );
       data.items.push(item);
