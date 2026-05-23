@@ -12,6 +12,9 @@ export const STATUSES: readonly ActionStatus[] = ['TODO', 'WIP', 'BLOCKED', 'DON
 export const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3'];
 
 export interface ActionItem {
+  // Supabase row UUID - the real primary key. Used to scope writes so a
+  // task can be updated/deleted regardless of its legacy_source.
+  dbId?: string;
   id: string;
   title: string;
   createdBy: string;

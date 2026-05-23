@@ -30,7 +30,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 };
 
 const TASK_COLUMNS =
-  'legacy_id, title, status, owner_id, created_by, completed_by, category, ' +
+  'id, legacy_id, title, status, owner_id, created_by, completed_by, category, ' +
   'priority, phase, important, urgent, due, notes, completed_at, created_at, ' +
   'updated_at, metadata, brands';
 
@@ -47,6 +47,7 @@ function db(): SupabaseClient {
 }
 
 interface TaskRow {
+  id: string;
   legacy_id: string | null;
   title: string;
   status: string;
@@ -95,7 +96,8 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   const completedByName = row.completed_by ? team.idToOwner.get(row.completed_by) : null;
   const dueMeta = typeof meta.due === 'string' ? meta.due : null;
   return {
-    id: row.legacy_id ?? '',
+    dbId: row.id,
+    id: row.legacy_id ?? row.id,
     title: row.title,
     createdBy: createdByName ?? '',
     owner: (ownerName as Owner) ?? 'Both',
@@ -158,10 +160,14 @@ export interface ActionsWithSha {
 
 export async function fetchActions(): Promise<ActionsWithSha> {
   const team = await teamMaps();
+  // Read EVERY task regardless of legacy_source. Pre-this-PR the read was
+  // scoped to legacy_source='cowork-actions.json' which hid meeting-captured
+  // and bug-fix tasks from the bot. Now they all show; writes target the
+  // row by UUID (dbId), so cross-source tasks are fully editable from /done,
+  // /assign, /wip, etc.
   const { data, error } = await db()
     .from('tasks')
-    .select(TASK_COLUMNS)
-    .eq('legacy_source', LEGACY_SOURCE);
+    .select(TASK_COLUMNS);
   if (error) throw new Error(`tasks read failed: ${error.message}`);
   const items = ((data ?? []) as unknown as TaskRow[])
     .map((row) => rowToItem(row, team))
@@ -203,7 +209,12 @@ async function applyDiff(
     const prev = beforeById.get(i.id);
     return prev && JSON.stringify(prev) !== JSON.stringify(i);
   });
-  const deletes = before.filter((i) => !afterById.has(i.id)).map((i) => i.id);
+  // Map deleted items to their Supabase UUIDs (dbId). Items missing dbId are
+  // not in the DB yet, so they are no-op deletes - drop them safely.
+  const deleteDbIds = before
+    .filter((i) => !afterById.has(i.id))
+    .map((i) => i.dbId)
+    .filter((v): v is string => Boolean(v));
 
   if (inserts.length) {
     const { error } = await db()
@@ -212,19 +223,21 @@ async function applyDiff(
     if (error) throw new Error(`task insert failed: ${error.message}`);
   }
   for (const item of updates) {
+    if (!item.dbId) {
+      console.warn(`[actions-store] update skipped: item ${item.id} has no dbId`);
+      continue;
+    }
     const { error } = await db()
       .from('tasks')
       .update(itemToRow(item, team))
-      .eq('legacy_source', LEGACY_SOURCE)
-      .eq('legacy_id', item.id);
+      .eq('id', item.dbId);
     if (error) throw new Error(`task update failed (${item.id}): ${error.message}`);
   }
-  if (deletes.length) {
+  if (deleteDbIds.length) {
     const { error } = await db()
       .from('tasks')
       .delete()
-      .eq('legacy_source', LEGACY_SOURCE)
-      .in('legacy_id', deletes);
+      .in('id', deleteDbIds);
     if (error) throw new Error(`task delete failed: ${error.message}`);
   }
 }
