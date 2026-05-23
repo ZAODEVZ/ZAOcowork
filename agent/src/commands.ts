@@ -8,7 +8,7 @@ import { fetchActions, makeActionItem, mutateActions } from './actions-store';
 import { parseBrandHashtags } from './brands';
 import { notifyAssigned, notifyStatusChange } from './notifications';
 import { rosterView } from './roster';
-import { tgIdToOwnerSupabase } from './supabase-roster';
+import { ownerToTgIdSupabase, tgIdToOwnerSupabase } from './supabase-roster';
 import { bonfireHook } from './teams';
 import type { TeamEventOp } from './teams';
 import type { ActionItem, ActionStatus, Owner, Priority } from './types';
@@ -150,6 +150,7 @@ export async function cmdStart(ctx: Context): Promise<void> {
       '  /blocked <id> <reason> - mark blocked\n' +
       '  /done <id> - mark done\n' +
       '  /assign <id> <Owner> - reassign\n' +
+      '  /ping <name> [#id] [msg] - DM a teammate (e.g. /ping zaal #45 urgent)\n' +
       '  /setdue <id> <YYYY-MM-DD> - set due date (or "clear")\n' +
       '  /setnote <id> <text> - replace notes (or "append: <text>")\n' +
       '  /setprio <id> <P1|P2|P3> - set priority\n' +
@@ -391,6 +392,107 @@ export async function cmdBlocked(ctx: Context, args: string): Promise<void> {
 
 export async function cmdDone(ctx: Context, args: string): Promise<void> {
   await applyStatusCommand(ctx, args, 'DONE', 'done');
+}
+
+// /ping <name> [#id] [message] - DM a teammate via the bot.
+// Resolves target tg_id via Supabase team_members first, then GitHub roster.
+// Token order is flexible: "/ping zaal #45 urgent" == "/ping zaal urgent #45".
+// `urgent` tag bolds the DM. If #id resolves to a known task, includes title.
+// Examples:
+//   /ping zaal                   -> "Iman pinged you"
+//   /ping zaal can you check     -> "Iman pinged you: can you check"
+//   /ping zaal #45               -> "Iman pinged you re #45: <task title>"
+//   /ping zaal #45 urgent        -> "Iman pinged you [URGENT] re #45: <title>"
+export async function cmdPing(ctx: Context, args: string): Promise<void> {
+  const raw = args.trim();
+  if (!raw) {
+    await ctx.reply(
+      'usage: /ping <name> [#id] [message]\n' +
+        'examples:\n' +
+        '  /ping zaal #45\n' +
+        '  /ping zaal can you check this\n' +
+        '  /ping zaal urgent #45',
+    );
+    return;
+  }
+  const tokens = raw.split(/\s+/);
+  const rawName = tokens.shift() ?? '';
+  const target = canonicalizeOwner(rawName);
+  if (!target || target === 'Both' || target === 'Open') {
+    await ctx.reply(
+      `cannot ping "${rawName}". valid people: ${OWNERS.filter((o) => o !== 'Both' && o !== 'Open').join(', ')}.`,
+    );
+    return;
+  }
+  // Tokens after the name: #id, urgent flag, or free-text message bits.
+  let taskId: string | null = null;
+  let urgent = false;
+  const msgTokens: string[] = [];
+  for (const t of tokens) {
+    const idMatch = t.match(/^#?(\d+)$/);
+    if (idMatch && !taskId) {
+      taskId = idMatch[1];
+      continue;
+    }
+    if (t.toLowerCase() === 'urgent' || t === '!') {
+      urgent = true;
+      continue;
+    }
+    msgTokens.push(t);
+  }
+  const message = msgTokens.join(' ').trim();
+
+  // Resolve target tg_id - Supabase first, GitHub roster fallback.
+  let tgId = await ownerToTgIdSupabase(target);
+  if (tgId == null) {
+    const view = await rosterView();
+    for (const [id, ownerStr] of view.ownerByTgId) {
+      if (canonicalizeOwner(ownerStr) === target) {
+        tgId = id;
+        break;
+      }
+    }
+  }
+  if (tgId == null) {
+    await ctx.reply(
+      `no telegram_id mapped for ${target}. add via /adduser <tg_id> ${target}.`,
+    );
+    return;
+  }
+
+  // Resolve task title if id was given (best-effort - missing is non-fatal).
+  let taskTitle: string | null = null;
+  if (taskId) {
+    try {
+      const { data } = await fetchActions();
+      const item = data.items.find((i) => i.id === taskId);
+      if (item) taskTitle = item.title;
+    } catch {
+      // ignore - render without title
+    }
+  }
+
+  const from = callerDisplayName(ctx);
+  const tag = urgent ? ' [URGENT]' : '';
+  const headerLines: string[] = [];
+  if (taskId && taskTitle) {
+    headerLines.push(`${from} pinged you${tag} re #${taskId}: ${taskTitle}`);
+  } else if (taskId) {
+    headerLines.push(`${from} pinged you${tag} re #${taskId} (task not found)`);
+  } else {
+    headerLines.push(`${from} pinged you${tag}`);
+  }
+  if (message) headerLines.push(message);
+  const dmText = headerLines.join('\n');
+
+  try {
+    await ctx.api.sendMessage(tgId, dmText);
+    await ctx.reply(
+      `pinged ${target}${taskId ? ` re #${taskId}` : ''}${urgent ? ' (urgent)' : ''}`,
+    );
+  } catch (err) {
+    await ctx.reply(`could not DM ${target}: ${(err as Error).message.slice(0, 100)}`);
+  }
 }
 
 export async function cmdAssign(ctx: Context, args: string): Promise<void> {
