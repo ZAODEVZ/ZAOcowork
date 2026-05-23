@@ -32,6 +32,30 @@ function db(): SupabaseClient | null {
 const cache = new Map<number, Owner | null>();
 
 /**
+ * Inverse lookup: canonical Owner name -> Telegram user id, via Supabase
+ * team_members.telegram_id. Used by /ping to DM a teammate by name.
+ * Case-insensitive match on legacy_owner. Returns null if the person is
+ * not mapped (no team_member row, or row has no telegram_id).
+ */
+export async function ownerToTgIdSupabase(name: string): Promise<number | null> {
+  if (!name) return null;
+  const client = db();
+  if (!client) return null;
+  try {
+    const { data, error } = await client
+      .from('team_members')
+      .select('telegram_id')
+      .ilike('legacy_owner', name)
+      .maybeSingle();
+    if (error || !data) return null;
+    const tg = data.telegram_id;
+    return typeof tg === 'number' ? tg : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Look up a Telegram user id in Supabase team_members and return the
  * canonical Owner ('Iman', 'Zaal', 'ThyRev', 'Samantha') if mapped, or null
  * if not (caller should fall back to GitHub team.json / env).

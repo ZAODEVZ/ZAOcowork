@@ -23,6 +23,7 @@ import {
   cmdDone,
   cmdList,
   cmdMine,
+  cmdPing,
   cmdSetDue,
   cmdSetNote,
   cmdSetPrio,
@@ -208,6 +209,7 @@ bot.command('wip', withArgs(cmdWip));
 bot.command('blocked', withArgs(cmdBlocked));
 bot.command('done', withArgs(cmdDone));
 bot.command('assign', withArgs(cmdAssign));
+bot.command('ping', withArgs(cmdPing));
 bot.command('setdue', withArgs(cmdSetDue));
 bot.command('setnote', withArgs(cmdSetNote));
 bot.command('setprio', withArgs(cmdSetPrio));
