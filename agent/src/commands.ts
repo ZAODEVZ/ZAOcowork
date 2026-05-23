@@ -8,6 +8,7 @@ import { fetchActions, makeActionItem, mutateActions } from './actions-store';
 import { parseBrandHashtags } from './brands';
 import { notifyAssigned, notifyStatusChange } from './notifications';
 import { rosterView } from './roster';
+import { tgIdToOwnerSupabase } from './supabase-roster';
 import { bonfireHook } from './teams';
 import type { TeamEventOp } from './teams';
 import type { ActionItem, ActionStatus, Owner, Priority } from './types';
@@ -72,6 +73,14 @@ export function canonicalizeOwner(raw: string | undefined | null): Owner | null 
 async function ownerForCtx(ctx: Context): Promise<Owner> {
   const tgId = ctx.from?.id;
   if (tgId != null) {
+    // Supabase team_members is the canonical roster post-2026-05-23 (doc 713
+    // follow-up). Hit it first - it's the single source of truth for the
+    // unified tracker and avoids the GitHub team.json staleness class of bug.
+    const fromSupabase = await tgIdToOwnerSupabase(tgId);
+    if (fromSupabase) return fromSupabase;
+    // GitHub team.json fallback - kept until allowlist + admin + chats also
+    // migrate to Supabase (the deeper follow-up). For users not in Supabase
+    // yet, this still resolves correctly.
     const view = await rosterView();
     const rosterOwner = canonicalizeOwner(view.ownerByTgId.get(tgId));
     if (rosterOwner) return rosterOwner;
