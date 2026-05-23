@@ -93,6 +93,11 @@ export interface ActivityEvent {
 }
 
 export type ActionItem = {
+  // Supabase row UUID - the real primary key. Used to scope writes so update/
+  // delete works for any task regardless of legacy_source (meeting captures,
+  // PR-test tasks, bug-fix tasks, etc all live alongside the cowork-actions
+  // ones). Missing only for newly-built items before their first insert.
+  dbId?: string;
   id: string;
   title: string;
   createdBy: string;
