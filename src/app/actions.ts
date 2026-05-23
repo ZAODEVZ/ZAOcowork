@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { destroySession, requireSession, isLead } from "@/lib/auth";
+import { pingOwnerAssigned } from "@/lib/telegram-notify";
 import {
   getActions,
   saveActions,
@@ -128,6 +129,7 @@ export async function createItem(form: FormData): Promise<void> {
   item.activity = [makeActivity(user, "created", undefined, item.createdAt)];
   doc.items.push(item);
   await saveActions(doc, user, `add #${id} ${item.title.slice(0, 40)}`);
+  pingOwnerAssigned({ title: item.title, newOwner: String(item.owner), by: user }).catch(() => undefined);
   revalidateAll();
 }
 
@@ -146,6 +148,7 @@ export async function quickCreate(form: FormData): Promise<void> {
   item.activity = [makeActivity(user, "created", undefined, item.createdAt)];
   doc.items.push(item);
   await saveActions(doc, user, `quick-add #${id} ${title.slice(0, 40)}`);
+  pingOwnerAssigned({ title: item.title, newOwner: String(item.owner), by: user }).catch(() => undefined);
   revalidateAll();
 }
 
@@ -167,6 +170,14 @@ export async function updateItem(form: FormData): Promise<void> {
   }
   doc.items[idx] = next;
   await saveActions(doc, user, `edit #${id}`);
+  if (String(prev.owner) !== String(next.owner)) {
+    pingOwnerAssigned({
+      title: next.title,
+      newOwner: String(next.owner),
+      previousOwner: String(prev.owner),
+      by: user,
+    }).catch(() => undefined);
+  }
   revalidateAll();
 }
 
@@ -230,6 +241,16 @@ export async function patchField(form: FormData): Promise<void> {
   }
   doc.items[idx] = next;
   await saveActions(doc, user, `${field} #${id}`);
+  // Best-effort: ping the new owner on Telegram if assignment changed.
+  // Never blocks the write; silent skip if no bot token / no tg_id / network.
+  if (field === "owner" && String(cur.owner) !== String(next.owner)) {
+    pingOwnerAssigned({
+      title: next.title,
+      newOwner: String(next.owner),
+      previousOwner: String(cur.owner),
+      by: user,
+    }).catch(() => undefined);
+  }
   revalidateAll();
 }
 
