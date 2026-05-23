@@ -83,7 +83,10 @@ type Filters = {
   category: string;
   priority: string;
   phase: string;
-  brand: string;
+  // Multi-select brand filter. Matches any task whose `brands` overlaps.
+  // Empty array = no brand constraint. Schema already supports tags via
+  // tasks.brands text[] (doc 713 follow-up).
+  brands: string[];
   mineOnly: boolean;
   agingOnly: boolean;
 };
@@ -94,10 +97,21 @@ const EMPTY_FILTERS: Filters = {
   category: "",
   priority: "",
   phase: "",
-  brand: "",
+  brands: [],
   mineOnly: true,
   agingOnly: false,
 };
+
+// Backward-compat: localStorage from before this PR stored `brand: string`.
+// Migrate to `brands: string[]` so persisted filters still apply.
+function migrateFilters(raw: Partial<Filters> & { brand?: string }): Partial<Filters> {
+  if (!raw || typeof raw !== "object") return raw;
+  if ("brand" in raw && typeof raw.brand === "string") {
+    const { brand, ...rest } = raw;
+    return { ...rest, brands: brand ? [brand] : [] };
+  }
+  return raw;
+}
 
 function parseDueDate(raw: string): Date | null {
   const s = String(raw ?? "").trim();
@@ -168,8 +182,8 @@ export function Board({
     try {
       const raw = window.localStorage.getItem(filterStorageKey);
       if (!raw) return { ...EMPTY_FILTERS, mineOnly: true };
-      const parsed = JSON.parse(raw) as Partial<Filters>;
-      return { ...EMPTY_FILTERS, ...parsed };
+      const parsed = JSON.parse(raw) as Partial<Filters> & { brand?: string };
+      return { ...EMPTY_FILTERS, ...migrateFilters(parsed) };
     } catch {
       return { ...EMPTY_FILTERS, mineOnly: true };
     }
@@ -291,7 +305,7 @@ export function Board({
       if (filters.category && it.category !== filters.category) return false;
       if (filters.priority && it.priority !== filters.priority) return false;
       if (filters.phase && it.phase !== filters.phase) return false;
-      if (filters.brand && !(it.brands ?? []).includes(filters.brand)) return false;
+      if (filters.brands.length && !filters.brands.some((b) => (it.brands ?? []).includes(b))) return false;
       if (filters.mineOnly) {
         const mine = currentUser.toLowerCase();
         const o = String(it.owner).toLowerCase();
@@ -336,7 +350,7 @@ export function Board({
     filters.category ||
     filters.priority ||
     filters.phase ||
-    filters.brand ||
+    filters.brands.length > 0 ||
     filters.mineOnly ||
     filters.agingOnly;
 
@@ -547,13 +561,71 @@ function FilterBar({
           options={["", ...PHASES]}
           placeholder="DMAIC phase"
         />
-        <SelectPill
-          value={filters.brand}
-          onChange={(v) => set({ brand: v })}
-          options={["", ...BRANDS]}
-          placeholder="Brand"
-        />
       </div>
+      <BrandPills
+        items={items}
+        active={filters.brands}
+        onToggle={(b) => {
+          const next = filters.brands.includes(b)
+            ? filters.brands.filter((x) => x !== b)
+            : [...filters.brands, b];
+          set({ brands: next });
+        }}
+        onClear={() => set({ brands: [] })}
+      />
+    </div>
+  );
+}
+
+// BrandPills renders one toggle pill per brand actually present on the
+// current task set. Multi-select: clicking adds to filters.brands, clicking
+// again removes. "Clear" wipes the multi-select. Brands that never appear on
+// any task stay hidden so the row is small (4 today, grows as meetings tag
+// new brands).
+function BrandPills({
+  items,
+  active,
+  onToggle,
+  onClear,
+}: {
+  items: ActionItem[];
+  active: string[];
+  onToggle: (brand: string) => void;
+  onClear: () => void;
+}) {
+  const used = useMemo(() => {
+    const set = new Set<string>();
+    for (const it of items) for (const b of it.brands ?? []) if (b) set.add(b);
+    return Array.from(set).sort();
+  }, [items]);
+  if (used.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-white/5">
+      <span className="text-[10px] uppercase tracking-wider text-white/40 pr-1">Brands</span>
+      {used.map((b) => {
+        const on = active.includes(b);
+        return (
+          <button
+            key={b}
+            onClick={() => onToggle(b)}
+            className={`px-2 py-0.5 rounded-full text-[11px] border transition whitespace-nowrap ${
+              on ? brandColor(b) : "border-white/10 text-white/50 hover:text-white hover:bg-white/5"
+            }`}
+            title={on ? `Click to remove ${b} from filter` : `Click to add ${b} to filter`}
+          >
+            {on ? "✓ " : ""}{b}
+          </button>
+        );
+      })}
+      {active.length > 0 && (
+        <button
+          onClick={onClear}
+          className="ml-1 text-[10px] uppercase tracking-wider text-white/40 hover:text-white/70 px-1"
+          title="Clear all brand filters"
+        >
+          clear
+        </button>
+      )}
     </div>
   );
 }
