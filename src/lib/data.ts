@@ -64,7 +64,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   "legacy_id, title, status, owner_id, created_by, completed_by, category, " +
   "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-  "updated_at, metadata";
+  "updated_at, metadata, brands";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -102,6 +102,7 @@ interface TaskRow {
   created_at: string;
   updated_at: string;
   metadata: Record<string, unknown> | null;
+  brands: string[] | null;
 }
 
 interface TeamMaps {
@@ -146,6 +147,7 @@ export function normalizeItem(
     notes: raw.notes || "",
     createdAt: created,
     updatedAt: raw.updatedAt || created,
+    brands: Array.isArray(raw.brands) ? raw.brands : [],
   };
   // Preserve optional operational workspace fields
   if (raw.taskType !== undefined) base.taskType = raw.taskType as TaskType;
@@ -181,6 +183,7 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
     notes: row.notes ?? "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    brands: Array.isArray(row.brands) ? row.brands : [],
   };
   // Operational workspace fields live in the metadata jsonb column
   if (typeof meta.taskType === "string") item.taskType = meta.taskType as TaskType;
@@ -236,6 +239,7 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     created_at: item.createdAt || nowIso(),
     updated_at: nowIso(),
     metadata: buildMetadata(item),
+    brands: Array.isArray(item.brands) ? item.brands : [],
   };
 }
 

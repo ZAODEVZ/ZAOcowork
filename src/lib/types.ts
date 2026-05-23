@@ -109,6 +109,9 @@ export type ActionItem = {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  // Ecosystem brand tags - empty array = no brand assigned. Multiple brands
+  // allowed for cross-brand tasks. Canonical names defined in lib/brands.ts.
+  brands: string[];
   // Operational workspace extensions
   taskType?: TaskType;
   requiresApproval?: boolean;
