@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "description": "Pending research dispatches. Each topic spawns N parallel subagents (one per dimension). Status: pending | in_progress | done. Run via `node scripts/run-dispatch.mjs --slug <slug>` or `--next` for first pending.",
+  "topics": [
+    {
+      "slug": "hats-protocol",
+      "name": "Hats Protocol Deep Dive",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "tree-architecture",
+          "name": "Hats Protocol Tree Architecture",
+          "focus": "How treeId 226 (ZAO governance on Optimism) is structured. What hats exist, who admin-mints, the parent-child role flow. ERC-1155 non-transferable specifics."
+        },
+        {
+          "slug": "zao-governance-usage",
+          "name": "ZAO Governance Usage of Hats",
+          "focus": "Which ZAO roles are gated by hat ownership. How role checks integrate into ZOE, Hermes, Bonfire, BetterCallZaal. The Optimism vs Base split for ZAO governance vs ZABAL Games event NFTs."
+        },
+        {
+          "slug": "zabal-games-finisher-champion",
+          "name": "ZABAL Games Finisher + Champion NFT Plan",
+          "focus": "The plan to mint Finisher NFTs to all Finalists and Champion NFTs to top-3 via Hats on Base. Cost per mint, batch minting, who issues, how it ties to POIDH proof submission."
+        },
+        {
+          "slug": "tooling-and-sdk",
+          "name": "Hats Tooling + SDK",
+          "focus": "@hatsprotocol/sdk-v1-core usage patterns, the Hats UI app at app.hatsprotocol.xyz, the modules registry (eligibility, toggle, claims). What ZAO uses today vs what is on the roadmap."
+        }
+      ]
+    },
+    {
+      "slug": "ardrive-permastorage",
+      "name": "ArDrive + AR.IO Permanent Storage for ZAO Music",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "ardrive-cli-vs-app",
+          "name": "ArDrive CLI vs Web App",
+          "focus": "When ZAO uses ArDrive CLI vs the web app. Bulk upload patterns for music masters + cover art. AR.IO gateway pricing 2026."
+        },
+        {
+          "slug": "music-master-pipeline",
+          "name": "Music Master Upload Pipeline",
+          "focus": "Exact flow for uploading a finalized track (WAV master + stems + cover + metadata) to Arweave via ArDrive. ANS-104 manifests. How the upload txid becomes a permaweb URL."
+        },
+        {
+          "slug": "cost-and-funding",
+          "name": "Cost Per GB + AR Token Funding",
+          "focus": "Current AR token price + USD-per-GB for music masters. How BCZ Strategies funds the storage (treasury wallet, recurring top-up, sponsor model)."
+        },
+        {
+          "slug": "integration-with-distrokid",
+          "name": "Integration With DistroKid + 0xSplits",
+          "focus": "Does the Arweave upload happen BEFORE or AFTER DistroKid distribution? How does the permaweb URL get referenced in the on-chain Creator Fund split records via 0xSplits?"
+        }
+      ]
+    },
+    {
+      "slug": "talent-vs-quotient",
+      "name": "Talent Protocol vs Quotient Comparison",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "scoring-methodology",
+          "name": "Scoring Methodology",
+          "focus": "How Talent Protocol's Builder Score is computed vs Quotient's PageRank-variant. Inputs, weights, refresh cadence. What kind of behavior each rewards."
+        },
+        {
+          "slug": "empire-builder-integration",
+          "name": "Empire Builder Booster Integration",
+          "focus": "Which reputation booster type Empire Builder V3 supports for each (TALENT_PROTOCOL vs QUOTIENT). Multiplier formula differences. Examples of empires using each."
+        },
+        {
+          "slug": "zao-fit",
+          "name": "Which Fits The ZAO Better",
+          "focus": "ZAO is Farcaster-native music community. Quotient measures Farcaster engagement; Talent Protocol is broader builder reputation. Which signal matters more for ZAO contributor ranking? Recommendation."
+        }
+      ]
+    },
+    {
+      "slug": "music-rights-pipeline",
+      "name": "BMI MLC DistroKid 0xSplits Music Rights Pipeline",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "registration-order",
+          "name": "Registration Order",
+          "focus": "Exact order: BMI publisher registration -> MLC songwriter affiliation -> DistroKid upload -> ISWC + ISRC issuance -> 0xSplits creator fund deployment. Why this order matters."
+        },
+        {
+          "slug": "splits-architecture",
+          "name": "0xSplits Architecture for ZAO Music",
+          "focus": "How a per-release split is deployed on Base. Who gets what percentage (artist, producer, ZAO treasury, BCZ Strategies as publisher). Updating splits after release."
+        },
+        {
+          "slug": "creator-fund-onchain",
+          "name": "On-Chain Creator Fund Mechanic",
+          "focus": "The 25% middleman replacement claim - what specifically is replaced. How streaming royalties flow back through 0xSplits. Current implementation vs aspirational."
+        },
+        {
+          "slug": "post-umg-distrokid-only",
+          "name": "Why Skip CD Baby Post-UMG Acquisition",
+          "focus": "UMG's acquisition of CD Baby. Why DistroKid is the chosen distributor now. What was lost in the transition. Alternatives considered (DistroKid Musician Plus vs Pro plan)."
+        }
+      ]
+    },
+    {
+      "slug": "tip-zols-architecture",
+      "name": "$TIP Token + ZOLs Ledger Architecture",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "tip-token-mechanics",
+          "name": "$TIP Token Mechanics",
+          "focus": "Contract address (if deployed), chain, supply, distribution mechanism. How ZOE bot's /tip command routes value. Is it a real token or a virtual ledger entry?"
+        },
+        {
+          "slug": "zols-credits-system",
+          "name": "ZOLs (ZAO contribution credits)",
+          "focus": "What ZOLs are. How they accrue (per contribution type). Where they're recorded (Supabase table, on-chain attestation, or both). How they convert to ZABAL distribution (if at all)."
+        },
+        {
+          "slug": "tip-vs-zol-vs-zabal",
+          "name": "Three-Token Reconciliation",
+          "focus": "$TIP, ZOLs, $ZABAL all exist. Are they distinct value layers or overlapping? When does a contributor get which? Should they collapse?"
+        }
+      ]
+    },
+    {
+      "slug": "tool-stack-deep-dive",
+      "name": "32-Tool Stack One-Entity-Per-Tool",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "music-infra-tools",
+          "name": "Music Infra Tools",
+          "focus": "DistroKid, BMI, MLC, 0xSplits, ArDrive, AR.IO, FireWavez. Per-tool: cost, auth, where ZAO uses it, integration point in our stack."
+        },
+        {
+          "slug": "agent-infra-tools",
+          "name": "Agent Infra Tools",
+          "focus": "Claude Code Max, Ollama, Anthropic API, OpenRouter, Bonfire, Hermes, ZOE. Per-tool: cost tier, auth method, what it powers in ZAO."
+        },
+        {
+          "slug": "ops-infra-tools",
+          "name": "Ops Infra Tools",
+          "focus": "Lu.ma, Cal.com, Magnetic, Telegram, Farcaster, X Spaces, Riverside, Descript. Per-tool: cost, how it integrates with the agent stack."
+        },
+        {
+          "slug": "crypto-infra-tools",
+          "name": "Crypto Infra Tools",
+          "focus": "Helius (Solana), Alchemy (Base/ETH), Coinflow, x402, Empire Builder, Clanker, Hats Protocol, POIDH. Per-tool: chain, fee, integration."
+        }
+      ]
+    },
+    {
+      "slug": "calendar-automation",
+      "name": "Lu.ma + Cal.com Workshop Calendar Automation",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "luma-api",
+          "name": "Lu.ma API Capabilities",
+          "focus": "Lu.ma's API: creating events programmatically, attendee list pulls, calendar sync. Required auth. ZAO's existing Lu.ma calendar URL if known."
+        },
+        {
+          "slug": "calcom-api",
+          "name": "Cal.com API + Webhook Patterns",
+          "focus": "Cal.com booking webhooks, event types, integration with Telegram + Farcaster notifications."
+        },
+        {
+          "slug": "zabal-games-calendar-flow",
+          "name": "ZABAL Games Calendar Flow",
+          "focus": "How a workshop lead (e.g. Tyler/Magnetic) becomes a scheduled event. The end-to-end: lead submitted -> approved -> Cal.com booking link sent -> Lu.ma event created -> RSVPs collected -> Farcaster cast announces."
+        }
+      ]
+    },
+    {
+      "slug": "songjam-x-empire",
+      "name": "SongJam X-Scraper to Empire Builder Migration",
+      "status": "pending",
+      "added": "2026-05-23",
+      "dimensions": [
+        {
+          "slug": "old-x-scraper-architecture",
+          "name": "Old X Scraper Architecture",
+          "focus": "How SongJam's X scraper worked before the Empire Builder migration. Rate limits, breakage points, the trigger for the move."
+        },
+        {
+          "slug": "new-empire-builder-flow",
+          "name": "New Empire Builder Flow",
+          "focus": "How SongJam scores feed Empire Builder via apiLeaderboards. Multiple leaderboard slots (Season 1, Season 2 Ep1, Ep2). What inputs to outputs."
+        },
+        {
+          "slug": "sang-token-utility",
+          "name": "SANG Token Utility in The Stack",
+          "focus": "SANG as SongJam's native token. How it's earned (via leaderboard?), how spent, how it boosts $ZABAL. The 250k SANG stake minimum mentioned in ZABAL Empire docs."
+        }
+      ]
+    }
+  ]
+}

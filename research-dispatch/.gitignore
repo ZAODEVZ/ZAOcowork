@@ -1,0 +1,6 @@
+# research-dispatch local-only artifacts
+dispatch-runs/
+.env
+.env.local
+*.log
+.cache/
