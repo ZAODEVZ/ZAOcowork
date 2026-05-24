@@ -265,7 +265,16 @@ export async function handleListCallback(ctx: Context): Promise<boolean> {
 // passes that through so "add task for Iman" actually assigns to Iman
 // instead of falling back to the caller's owner. Iman bug report
 // 2026-05-18 09:26 "I asked bot to add task for IMan it added it as open".
-export async function cmdAdd(ctx: Context, args: string, ownerOverride?: Owner): Promise<void> {
+export async function cmdAdd(
+  ctx: Context,
+  args: string,
+  ownerOverride?: Owner,
+  // Extras let the NL extractor pass full metadata in one shot (doc 713
+  // follow-up 2026-05-23). Without these, the LLM was emitting separate
+  // setdue / setprio / setnote ops on a random existing task id because the
+  // add op schema only had title/owner/category.
+  extras?: { due?: string; priority?: Priority; notes?: string; category?: string },
+): Promise<void> {
   const raw = args.trim();
   if (!raw) {
     await ctx.reply('usage: /add <title> (tip: prepend #brand-slug to tag a brand, e.g. /add #zaostock book the parklet)');
@@ -283,7 +292,19 @@ export async function cmdAdd(ctx: Context, args: string, ownerOverride?: Owner):
   const me = ownerOverride ?? (await ownerForCtx(ctx));
   const by = callerDisplayName(ctx);
   const result = await mutateActions(async (data) => {
-    const item = makeActionItem({ title, owner: me, createdBy: by, brands }, data.items);
+    const item = makeActionItem(
+      {
+        title,
+        owner: me,
+        createdBy: by,
+        brands,
+        category: extras?.category,
+        priority: extras?.priority,
+        notes: extras?.notes,
+        due: extras?.due,
+      },
+      data.items,
+    );
     data.items.push(item);
     return {
       data,
@@ -293,7 +314,9 @@ export async function cmdAdd(ctx: Context, args: string, ownerOverride?: Owner):
   });
   if (result) {
     const brandStr = brands.length ? ` [${brands.join(', ')}]` : '';
-    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}: ${result.title}`);
+    const dueStr = result.due ? ` (due ${result.due})` : '';
+    const prioStr = extras?.priority && extras.priority !== 'P2' ? ` ${extras.priority}` : '';
+    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}${prioStr}${dueStr}: ${result.title}`);
     fireBonfire('add', result, ctx);
   }
 }

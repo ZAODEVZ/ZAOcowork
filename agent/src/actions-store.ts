@@ -292,6 +292,9 @@ export interface NewActionInput {
   phase?: Phase;
   notes?: string;
   brands?: string[];
+  // due in YYYY-MM-DD form. Lets NL extractor put the date on the add op
+  // itself instead of fanning out to a separate setdue on a phantom id.
+  due?: string;
 }
 
 export function makeActionItem(input: NewActionInput, items: ActionItem[]): ActionItem {
@@ -309,7 +312,7 @@ export function makeActionItem(input: NewActionInput, items: ActionItem[]): Acti
     completedAt: '',
     completedBy: '',
     phase: input.phase ?? 'Define',
-    due: '',
+    due: input.due ?? '',
     notes: input.notes ?? '',
     createdAt: now,
     updatedAt: now,

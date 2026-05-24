@@ -35,6 +35,15 @@ const SUGGEST_RE = /```json-suggest\s*([\s\S]*?)\s*```/i;
 const YES_RE = /^(y|yes|yep|yeah|sure|do it|confirm|ok|okay|👍)\b/i;
 const NO_RE = /^(n|no|nope|nah|cancel|stop|skip|nvm|nevermind)\b/i;
 
+// Strip ALL fenced code blocks from chat-bound text. The LLM still wraps
+// short quoted strings in ``` (file paths, ids, notes echoes) which Telegram
+// renders as ugly monospace blocks. doc 713 follow-up 2026-05-23. The
+// json-suggest block has its own regex above + is removed before this runs.
+const GENERIC_FENCE_RE = /```[a-zA-Z0-9_-]*\n?([\s\S]*?)```/g;
+export function stripCodeFences(text: string): string {
+  return text.replace(GENERIC_FENCE_RE, (_, inner: string) => inner.trim());
+}
+
 export function stripSuggestionBlock(text: string): string {
   return text.replace(SUGGEST_RE, '').trim();
 }
@@ -144,7 +153,7 @@ export async function maybeStartSuggestionFlow(
   ctx: Context,
   botReply: string,
 ): Promise<string> {
-  if (!SUGGEST_RE.test(botReply)) return botReply;
+  if (!SUGGEST_RE.test(botReply)) return stripCodeFences(botReply);
 
   const suggestions = extractSuggestions(botReply);
   const narration = stripSuggestionBlock(botReply);
@@ -237,8 +246,17 @@ async function executeSuggestion(ctx: Context, s: SuggestActionOp): Promise<void
       // v2.15 - was dropping s.owner entirely so "add task for Iman" fell
       // back to the caller's owner (or worse, 'Open' if caller not in
       // USER_NAMES env). Canonicalise + pass through.
+      // v2.20 (doc 713 fix 2026-05-23) - also pass due/priority/notes/category
+      // through so the LLM stops splitting one "add task with metadata" into
+      // an add + 3 set ops on a phantom id (which was landing on random
+      // existing tasks like #43 Onboard Candy).
       const overrideOwner = canonicalizeOwner(s.owner) ?? undefined;
-      await cmdAdd(ctx, s.title ?? '', overrideOwner);
+      await cmdAdd(ctx, s.title ?? '', overrideOwner, {
+        due: s.due,
+        priority: s.priority,
+        notes: s.notes,
+        category: s.category,
+      });
       return;
     }
     case 'wip':
