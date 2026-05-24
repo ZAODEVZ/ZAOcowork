@@ -53,6 +53,12 @@ End with a pointer to the Bonfire kEngram name. Max 280 words.)
 ]
 ```
 
+**STRICT EDGE FIELD NAMES** (do not invent alternatives, the aggregator parses these exact keys):
+- `from` (entity name, must match a name in BONFIRE_ENTITIES above) - REQUIRED
+- `to` (entity name) - REQUIRED
+- `type` (string, e.g. "USES", "DEPENDS_ON", "PAID_FOR_BY") - REQUIRED. **DO NOT** use `relation`, `relationship`, or `name` instead.
+- `properties` (object, optional). For human-readable label put it in `properties.fact`. Other keys stored as edge metadata.
+
 ## SOURCES
 - [FULL|PARTIAL|FAILED] URL or absolute file path - one-line note on what was found there
 ```
