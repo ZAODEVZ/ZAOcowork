@@ -1,8 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+// Public routes: anyone can visit, no login redirect. The homepage `/` is
+// public (renders a landing page when no session, the board when logged in -
+// see src/app/page.tsx). /login + /api/login obviously have to stay public
+// since that's where you go to get a session in the first place.
+const PUBLIC_PATHS = new Set(["/", "/login"]);
+const PUBLIC_PREFIXES = ["/login", "/api/login"];
+
+function isPublic(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true;
+  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  if (pathname.startsWith("/login") || pathname.startsWith("/api/login")) {
+  if (isPublic(pathname)) {
     return NextResponse.next();
   }
   const cookie = req.cookies.get("iman-session")?.value;

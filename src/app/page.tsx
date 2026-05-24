@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSession } from "@/lib/auth";
 import { getActions, ageDays } from "@/lib/data";
 import { logout } from "./actions";
@@ -11,7 +11,10 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const user = await getSession();
-  if (!user) redirect("/login");
+  // Public homepage: no session = render a small landing with a Login CTA.
+  // Anyone can hit the site root without being kicked to /login automatically.
+  // The middleware allows `/` through; /login is where the password lives.
+  if (!user) return <PublicLanding />;
   const doc = await getActions();
 
   // Unified board: every category in one place. Category is a filter, not 3
@@ -109,6 +112,57 @@ function UserBadge({ name }: { name: string }) {
       </span>
       <span className="text-xs">{name}</span>
     </div>
+  );
+}
+
+function PublicLanding() {
+  return (
+    <main className="min-h-screen relative text-white px-4 bg-[#041225] overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.18),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.10),transparent_60%)]" />
+      <div className="relative max-w-3xl mx-auto py-16 md:py-28 flex flex-col items-center text-center">
+        <span className="text-[11px] uppercase tracking-[0.25em] text-zao-accent/80 mb-3">
+          The ZAO Co-Works
+        </span>
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+          One board for every ZAO ecosystem brand
+        </h1>
+        <p className="mt-5 text-white/65 text-base md:text-lg max-w-xl leading-relaxed">
+          Operational tracker for The ZAO team. Tasks sync across the web board
+          and @ZAOcoworkingBot in Telegram - tag by brand (ZAOstock, ZABAL
+          Games, WaveWarZ, BCZ, more), filter by owner, ping a teammate when
+          something is urgent. Sign in to your account to access the board.
+        </p>
+        <div className="mt-9 flex items-center gap-3">
+          <Link
+            href="/login"
+            className="rounded-xl bg-zao-accent text-black font-bold px-6 py-3 text-sm md:text-base hover:bg-amber-300 transition"
+          >
+            Sign in
+          </Link>
+          <a
+            href="https://t.me/ZAOcoworkingBot"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl border border-white/15 px-5 py-3 text-sm md:text-base text-white/70 hover:text-white hover:bg-white/5 transition"
+          >
+            Open the Telegram bot
+          </a>
+        </div>
+        <p className="mt-12 text-xs text-white/35 max-w-md">
+          Access is by team password. Not a teammate yet? Ping{" "}
+          <a href="https://farcaster.xyz/zaal" className="text-white/55 hover:text-white">
+            @zaal on Farcaster
+          </a>{" "}
+          to get on the roster.
+        </p>
+        <footer className="mt-16 pt-6 text-xs text-white/30 border-t border-white/10 w-full flex items-center justify-between">
+          <a href="https://github.com/ZAODEVZ/ZAOcowork" className="hover:text-white/60">
+            source on github
+          </a>
+          <span>part of The ZAO operational stack</span>
+        </footer>
+      </div>
+    </main>
   );
 }
 
