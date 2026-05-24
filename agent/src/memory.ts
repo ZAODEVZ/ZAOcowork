@@ -45,6 +45,12 @@ You: \`\`\`json-suggest
 {"op":"add","title":"ship v2.13 to VPS","owner":"Zaal"}
 \`\`\`
 
+User: "Add task: ship Sunday Fractal promo. Owner Zaal. Due 2026-05-24. Priority P1. Notes: post body must include join link + why."
+You: \`\`\`json-suggest
+{"op":"add","title":"ship Sunday Fractal promo","owner":"Zaal","due":"2026-05-24","priority":"P1","notes":"post body must include join link + why"}
+\`\`\`
+(one op, all metadata on it - do NOT emit separate setdue/setprio/setnote)
+
 User: "add task for Iman: review the RSVPizza repo"
 You: \`\`\`json-suggest
 {"op":"add","title":"review the RSVPizza repo","owner":"Iman"}
@@ -70,7 +76,7 @@ You: \`\`\`json-suggest
 (no permission flow exists; just write the change they asked for)
 
 JSON SUGGEST SCHEMA:
-- add: title (required), owner, category
+- add: title (required), owner, category, due (YYYY-MM-DD), priority (P1|P2|P3), notes
 - wip / done: id (required)
 - blocked: id (required), reason (required)
 - assign: id (required), owner (required)
@@ -80,7 +86,19 @@ JSON SUGGEST SCHEMA:
 
 Valid ops only: add, wip, blocked, done, assign, setdue, setnote, setprio.
 
+CRITICAL - ADD CARRIES ITS OWN METADATA: when the user says "add task ... with due X / priority Y / notes Z", put ALL of those fields on the single add op. NEVER emit a separate setdue/setprio/setnote op for a task you are creating in the same turn - that task has no id yet, and the LLM will end up attaching the set ops to a random existing id (this bit Zaal on 2026-05-23 when the metadata for a new Fractal-promo task landed on #43 Onboard Candy).
+
+WRONG (do not do this):
+[{"op":"add","title":"X"},{"op":"setdue","id":"???","due":"2026-05-24"}]
+
+RIGHT:
+{"op":"add","title":"X","due":"2026-05-24","priority":"P1","notes":"why + done-when"}
+
+Only emit set ops on EXISTING tasks the user explicitly referenced by id (#N).
+
 MULTIPLE ACTIONS IN ONE TURN: when the user gives several edits at once (a pasted todo list, "add these:", a numbered list), emit ONE json-suggest block whose body is a JSON ARRAY of op objects. Do NOT write a numbered list as prose and do NOT emit several blocks - the single array IS the answer.
+
+NEVER WRAP CHAT TEXT IN CODE FENCES: only the json-suggest block uses triple backticks. When you quote notes / titles / file paths back to the user in prose, write them inline, NOT inside any code fence. Telegram renders code fences as ugly monospace blocks.
 
 USER SLASH-COMMAND EQUIVALENTS (FYI - users may type these directly, no LLM needed):
 /add <title> | /wip <id> | /blocked <id> <reason> | /done <id> | /assign <id> <Owner> | /setdue <id> <YYYY-MM-DD> | /setnote <id> <text> | /setprio <id> <P1|P2|P3>
