@@ -541,5 +541,7 @@ export async function claimTask(form: FormData): Promise<void> {
 
 export async function logout(): Promise<void> {
   await destroySession();
-  redirect("/login");
+  // Land on the public homepage after sign out (post-2026-05-23 PR that
+  // opened the homepage to anyone). They can re-enter via /login if they want.
+  redirect("/");
 }
