@@ -5,7 +5,7 @@
     {
       "slug": "hats-protocol",
       "name": "Hats Protocol Deep Dive",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -28,12 +28,19 @@
           "name": "Hats Tooling + SDK",
           "focus": "@hatsprotocol/sdk-v1-core usage patterns, the Hats UI app at app.hatsprotocol.xyz, the modules registry (eligibility, toggle, claims). What ZAO uses today vs what is on the roadmap."
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "tree-architecture",
+        "zao-governance-usage",
+        "zabal-games-finisher-champion",
+        "tooling-and-sdk"
       ]
     },
     {
       "slug": "ardrive-permastorage",
       "name": "ArDrive + AR.IO Permanent Storage for ZAO Music",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -56,12 +63,19 @@
           "name": "Integration With DistroKid + 0xSplits",
           "focus": "Does the Arweave upload happen BEFORE or AFTER DistroKid distribution? How does the permaweb URL get referenced in the on-chain Creator Fund split records via 0xSplits?"
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "ardrive-cli-vs-app",
+        "music-master-pipeline",
+        "cost-and-funding",
+        "integration-with-distrokid"
       ]
     },
     {
       "slug": "talent-vs-quotient",
       "name": "Talent Protocol vs Quotient Comparison",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -79,12 +93,18 @@
           "name": "Which Fits The ZAO Better",
           "focus": "ZAO is Farcaster-native music community. Quotient measures Farcaster engagement; Talent Protocol is broader builder reputation. Which signal matters more for ZAO contributor ranking? Recommendation."
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "scoring-methodology",
+        "empire-builder-integration",
+        "zao-fit"
       ]
     },
     {
       "slug": "music-rights-pipeline",
       "name": "BMI MLC DistroKid 0xSplits Music Rights Pipeline",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -107,12 +127,19 @@
           "name": "Why Skip CD Baby Post-UMG Acquisition",
           "focus": "UMG's acquisition of CD Baby. Why DistroKid is the chosen distributor now. What was lost in the transition. Alternatives considered (DistroKid Musician Plus vs Pro plan)."
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "registration-order",
+        "splits-architecture",
+        "creator-fund-onchain",
+        "post-umg-distrokid-only"
       ]
     },
     {
       "slug": "tip-zols-architecture",
       "name": "$TIP Token + ZOLs Ledger Architecture",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -130,12 +157,18 @@
           "name": "Three-Token Reconciliation",
           "focus": "$TIP, ZOLs, $ZABAL all exist. Are they distinct value layers or overlapping? When does a contributor get which? Should they collapse?"
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "tip-token-mechanics",
+        "zols-credits-system",
+        "tip-vs-zol-vs-zabal"
       ]
     },
     {
       "slug": "tool-stack-deep-dive",
       "name": "32-Tool Stack One-Entity-Per-Tool",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -158,12 +191,19 @@
           "name": "Crypto Infra Tools",
           "focus": "Helius (Solana), Alchemy (Base/ETH), Coinflow, x402, Empire Builder, Clanker, Hats Protocol, POIDH. Per-tool: chain, fee, integration."
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "music-infra-tools",
+        "agent-infra-tools",
+        "ops-infra-tools",
+        "crypto-infra-tools"
       ]
     },
     {
       "slug": "calendar-automation",
       "name": "Lu.ma + Cal.com Workshop Calendar Automation",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -181,12 +221,18 @@
           "name": "ZABAL Games Calendar Flow",
           "focus": "How a workshop lead (e.g. Tyler/Magnetic) becomes a scheduled event. The end-to-end: lead submitted -> approved -> Cal.com booking link sent -> Lu.ma event created -> RSVPs collected -> Farcaster cast announces."
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "luma-api",
+        "calcom-api",
+        "zabal-games-calendar-flow"
       ]
     },
     {
       "slug": "songjam-x-empire",
       "name": "SongJam X-Scraper to Empire Builder Migration",
-      "status": "pending",
+      "status": "done",
       "added": "2026-05-23",
       "dimensions": [
         {
@@ -204,6 +250,12 @@
           "name": "SANG Token Utility in The Stack",
           "focus": "SANG as SongJam's native token. How it's earned (via leaderboard?), how spent, how it boosts $ZABAL. The 250k SANG stake minimum mentioned in ZABAL Empire docs."
         }
+      ],
+      "last_run": "2026-05-24T16:28:19.963Z",
+      "last_run_dispatches": [
+        "old-x-scraper-architecture",
+        "new-empire-builder-flow",
+        "sang-token-utility"
       ]
     }
   ]
