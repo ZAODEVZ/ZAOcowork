@@ -15,6 +15,7 @@ import {
   deleteBrand,
   updateBrand,
 } from "@/lib/brands-db";
+import { logAudit } from "@/lib/audit";
 
 function asRole(v: FormDataEntryValue | null): TeamRole {
   const s = String(v ?? "").toLowerCase();
@@ -48,7 +49,7 @@ export async function addUserAction(form: FormData): Promise<void> {
   const telegram_id = tgRaw ? Number(tgRaw) : null;
   if (tgRaw && !Number.isFinite(telegram_id)) bouncedErr("telegram_id must be numeric");
 
-  await addTeamMember({
+  const added = await addTeamMember({
     name,
     legacy_owner: legacy,
     role,
@@ -56,6 +57,15 @@ export async function addUserAction(form: FormData): Promise<void> {
     telegram_id,
     email,
     set_by: userLabel(actor),
+  });
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: added.id,
+    entity_label: name,
+    action: "add_user",
+    detail: `role=${role}, slug=${legacy}`,
+    metadata: { role, legacy_owner: legacy, telegram_id, email },
   });
   revalidatePath("/admin");
 }
@@ -67,29 +77,51 @@ export async function resetPasswordAction(form: FormData): Promise<void> {
   if (!id) bouncedErr("missing id");
   if (password.length < 8) bouncedErr("password must be at least 8 chars");
   await resetMemberPassword(id, password, userLabel(actor));
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: id,
+    action: "reset_password",
+    detail: "password reset",
+  });
   revalidatePath("/admin");
 }
 
 export async function setRoleAction(form: FormData): Promise<void> {
-  await requireAdmin();
+  const actor = await requireAdmin();
   const id = String(form.get("id") ?? "").trim();
   const role = asRole(form.get("role"));
   if (!id) bouncedErr("missing id");
   await setMemberRole(id, role);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: id,
+    action: "set_role",
+    detail: `role -> ${role}`,
+    metadata: { role },
+  });
   revalidatePath("/admin");
 }
 
 export async function setActiveAction(form: FormData): Promise<void> {
-  await requireAdmin();
+  const actor = await requireAdmin();
   const id = String(form.get("id") ?? "").trim();
   const active = String(form.get("active") ?? "false") === "true";
   if (!id) bouncedErr("missing id");
   await setMemberActive(id, active);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: id,
+    action: active ? "reactivate_user" : "deactivate_user",
+    detail: active ? "reactivated" : "deactivated",
+  });
   revalidatePath("/admin");
 }
 
 export async function deleteUserAction(form: FormData): Promise<void> {
-  await requireAdmin();
+  const actor = await requireAdmin();
   const id = String(form.get("id") ?? "").trim();
   if (!id) bouncedErr("missing id");
   // Defense-in-depth: protect the two founders from accidental hard-delete
@@ -99,6 +131,13 @@ export async function deleteUserAction(form: FormData): Promise<void> {
   // DB side. For now, just hard-delete - the UI only shows this button for
   // non-founder rows. Future: add a server-side founder check.
   await deleteTeamMember(id);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: id,
+    action: "delete_user",
+    detail: "hard delete",
+  });
   revalidatePath("/admin");
 }
 
@@ -139,18 +178,27 @@ export async function addBrandAction(form: FormData): Promise<void> {
   const sort_order = Number(sortRaw);
   if (!Number.isFinite(sort_order)) bouncedErr("sort_order must be a number");
 
-  await addBrand({
+  const added = await addBrand({
     name,
     slugs,
     color: color || "bg-white/10 text-white/70 border-white/20",
     sort_order,
     created_by: userLabel(actor),
   });
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "brand",
+    entity_id: added.id,
+    entity_label: name,
+    action: "add_brand",
+    detail: `slugs=[${slugs.join(", ")}], sort=${sort_order}`,
+    metadata: { slugs, sort_order, color: added.color },
+  });
   revalidateAllSurfaces();
 }
 
 export async function updateBrandAction(form: FormData): Promise<void> {
-  await requireAdmin();
+  const actor = await requireAdmin();
   const id = String(form.get("id") ?? "").trim();
   if (!id) bouncedErr("missing id");
   if (id.startsWith("const-")) bouncedErr("seeded const brands can't be edited until the 002 migration is applied");
@@ -189,14 +237,30 @@ export async function updateBrandAction(form: FormData): Promise<void> {
 
   if (Object.keys(patch).length === 0) return;
   await updateBrand(id, patch);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "brand",
+    entity_id: id,
+    entity_label: patch.name ?? null,
+    action: "update_brand",
+    detail: Object.entries(patch).map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(",") : v}`).join("; "),
+    metadata: patch,
+  });
   revalidateAllSurfaces();
 }
 
 export async function deleteBrandAction(form: FormData): Promise<void> {
-  await requireAdmin();
+  const actor = await requireAdmin();
   const id = String(form.get("id") ?? "").trim();
   if (!id) bouncedErr("missing id");
   if (id.startsWith("const-")) bouncedErr("seeded const brands can't be deleted until the 002 migration is applied");
   await deleteBrand(id);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "brand",
+    entity_id: id,
+    action: "delete_brand",
+    detail: "hard delete",
+  });
   revalidateAllSurfaces();
 }

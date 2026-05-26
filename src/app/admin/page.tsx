@@ -5,13 +5,37 @@ import { NavBar } from "@/components/NavBar";
 import { UsersPanel } from "@/components/admin/UsersPanel";
 import { BulkOpsPanel } from "@/components/admin/BulkOpsPanel";
 import { BrandsPanel } from "@/components/admin/BrandsPanel";
+import { AuditPanel } from "@/components/admin/AuditPanel";
 import { listTeamMembers } from "@/lib/team";
 import { listBrands, listActiveBrands } from "@/lib/brands-db";
+import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
 import { getActions } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+const AUDIT_PAGE_SIZE = 50;
+const ENTITY_VALUES: ReadonlyArray<AuditEntityType | "all"> = ["all", "task", "user", "brand", "system"];
+
+function parseEntity(raw: string | undefined): AuditEntityType | "all" {
+  if (!raw) return "all";
+  return (ENTITY_VALUES as readonly string[]).includes(raw) ? (raw as AuditEntityType | "all") : "all";
+}
+
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    audit_entity?: string;
+    audit_actor?: string;
+    audit_page?: string;
+  }>;
+}) {
+  const sp = await searchParams;
+  const auditEntity = parseEntity(sp.audit_entity);
+  const auditActor = sp.audit_actor ? sp.audit_actor.trim() : null;
+  const auditPageRaw = Number(sp.audit_page ?? "1");
+  const auditPage = Number.isFinite(auditPageRaw) && auditPageRaw > 0 ? Math.floor(auditPageRaw) : 1;
+
   const user = await getSession();
   if (!user) redirect("/login");
   if (!(await isAdmin(user))) redirect("/?not-allowed=admin");
@@ -43,6 +67,17 @@ export default async function AdminPage() {
   const allBrands = await listBrands();
   const navBrands = await listActiveBrands();
   const migrationApplied = !allBrands.some((b) => b.id.startsWith("const-"));
+
+  // Audit feed. listAuditLogs returns available=false when the 003 migration
+  // hasn't been applied (rather than throwing), so the AuditPanel can render
+  // a friendly banner without breaking the rest of /admin.
+  const auditPageData = await listAuditLogs({
+    limit: AUDIT_PAGE_SIZE,
+    offset: (auditPage - 1) * AUDIT_PAGE_SIZE,
+    entity_type: auditEntity,
+    actor: auditActor ?? undefined,
+  });
+  const auditActors = auditPageData.available ? await listAuditActors() : [];
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#0a0f1f] overflow-hidden">
@@ -93,7 +128,15 @@ export default async function AdminPage() {
         </Section>
 
         <Section title="Audit log" hint="Who changed what, when">
-          <Placeholder phase="E">Audit log ships in Phase E.</Placeholder>
+          <AuditPanel
+            rows={auditPageData.rows}
+            total={auditPageData.total}
+            available={auditPageData.available}
+            page={auditPage}
+            entity={auditEntity}
+            actor={auditActor}
+            actors={auditActors}
+          />
         </Section>
 
       </div>
@@ -119,17 +162,6 @@ function Section({
       </div>
       {children}
     </section>
-  );
-}
-
-function Placeholder({ phase, children }: { phase: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-6 text-sm text-white/55">
-      <span className="rounded-md border border-fuchsia-500/40 bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-bold tracking-wider text-fuchsia-200">
-        PHASE {phase}
-      </span>
-      <span>{children}</span>
-    </div>
   );
 }
 

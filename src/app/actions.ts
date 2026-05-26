@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { destroySession, requireSession, isLead, userLabel } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
 import {
   getActions,
   saveActions,
@@ -595,6 +596,13 @@ export async function bulkSetStatus(form: FormData): Promise<void> {
   if (touched) {
     await saveActions(doc, user, `bulk set status ${status} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_set_status",
+      detail: `${touched} task${touched === 1 ? "" : "s"} -> ${status}`,
+      metadata: { status, ids, touched },
+    });
   }
 }
 
@@ -618,6 +626,13 @@ export async function bulkSetOwner(form: FormData): Promise<void> {
   if (touched) {
     await saveActions(doc, user, `bulk set owner ${owner} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_set_owner",
+      detail: `${touched} task${touched === 1 ? "" : "s"} -> ${owner}`,
+      metadata: { owner, ids, touched },
+    });
   }
 }
 
@@ -639,6 +654,13 @@ export async function bulkSetPriority(form: FormData): Promise<void> {
   if (touched) {
     await saveActions(doc, user, `bulk set priority ${priority} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_set_priority",
+      detail: `${touched} task${touched === 1 ? "" : "s"} -> ${priority}`,
+      metadata: { priority, ids, touched },
+    });
   }
 }
 
@@ -661,6 +683,13 @@ export async function bulkAddBrand(form: FormData): Promise<void> {
   if (touched) {
     await saveActions(doc, user, `bulk tag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_add_brand",
+      detail: `${touched} task${touched === 1 ? "" : "s"} tagged ${brand}`,
+      metadata: { brand, ids, touched },
+    });
   }
 }
 
@@ -683,6 +712,13 @@ export async function bulkRemoveBrand(form: FormData): Promise<void> {
   if (touched) {
     await saveActions(doc, user, `bulk untag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_remove_brand",
+      detail: `${touched} task${touched === 1 ? "" : "s"} untagged ${brand}`,
+      metadata: { brand, ids, touched },
+    });
   }
 }
 
@@ -697,6 +733,13 @@ export async function bulkDelete(form: FormData): Promise<void> {
   if (removed) {
     await saveActions(doc, user, `bulk delete ${removed} item${removed === 1 ? "" : "s"}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_delete",
+      detail: `${removed} task${removed === 1 ? "" : "s"} deleted`,
+      metadata: { ids: Array.from(ids), removed },
+    });
   }
 }
 
@@ -720,6 +763,13 @@ export async function bulkAssignUnowned(form: FormData): Promise<{ assigned: num
   if (touched) {
     await saveActions(doc, user, `bulk assign ${touched} unowned -> ${owner}`);
     revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_assign_unowned",
+      detail: `${touched} unowned task${touched === 1 ? "" : "s"} -> ${owner}`,
+      metadata: { owner, touched },
+    });
   }
   return { assigned: touched };
 }
