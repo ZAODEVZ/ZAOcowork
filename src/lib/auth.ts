@@ -35,6 +35,19 @@ export function isLead(user: SessionUser): boolean {
   return user === "zaal" || user === "iman";
 }
 
+// Phase A admin set is the two leads. Phase B will swap this for a DB-backed
+// check against team_members.role so admins can grant admin to other users
+// from the /admin UI without a code change.
+export function isAdmin(user: SessionUser): boolean {
+  return user === "zaal" || user === "iman";
+}
+
+export async function requireAdmin(): Promise<SessionUser> {
+  const u = await requireSession();
+  if (!isAdmin(u)) throw new Error("Forbidden");
+  return u;
+}
+
 function getSecret(): string {
   const s = process.env.AUTH_SECRET;
   if (!s || s.length < 16) {
