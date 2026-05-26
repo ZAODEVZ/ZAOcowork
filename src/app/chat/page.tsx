@@ -42,7 +42,7 @@ export default async function ChatPage() {
               </form>
             </div>
           </div>
-          <NavBar isAdmin={isAdmin(user)} />
+          <NavBar isAdmin={await isAdmin(user)} />
         </header>
 
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">

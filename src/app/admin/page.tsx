@@ -2,15 +2,27 @@ import { redirect } from "next/navigation";
 import { getSession, isAdmin, userLabel } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
+import { UsersPanel } from "@/components/admin/UsersPanel";
+import { listTeamMembers } from "@/lib/team";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const user = await getSession();
   if (!user) redirect("/login");
-  if (!isAdmin(user)) redirect("/?not-allowed=admin");
+  if (!(await isAdmin(user))) redirect("/?not-allowed=admin");
 
   const userLabelStr = userLabel(user);
+  // Best-effort fetch - if the role/password_hash columns don't exist yet
+  // (pre-migration deploy), surface a friendly message in the Users section
+  // instead of crashing the whole admin page.
+  let members: Awaited<ReturnType<typeof listTeamMembers>> = [];
+  let membersError: string | null = null;
+  try {
+    members = await listTeamMembers();
+  } catch (err) {
+    membersError = err instanceof Error ? err.message : "team_members read failed";
+  }
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#0a0f1f] overflow-hidden">
@@ -38,7 +50,18 @@ export default async function AdminPage() {
         </header>
 
         <Section title="Users" hint="Add, deactivate, reset password, promote to admin">
-          <Placeholder phase="B">User CRUD ships in Phase B.</Placeholder>
+          {membersError ? (
+            <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+              <div className="font-semibold mb-1">team_members not ready</div>
+              <div className="text-xs text-amber-100/85">
+                Apply <code className="text-amber-300">supabase/migrations/001_team_member_roles_and_passwords.sql</code> in
+                the Supabase SQL editor, then refresh. The migration adds the role + password_hash columns this panel needs.
+              </div>
+              <div className="mt-2 text-[11px] text-amber-200/60">err: {membersError}</div>
+            </div>
+          ) : (
+            <UsersPanel members={members} actorLabel={userLabelStr} />
+          )}
         </Section>
 
         <Section title="Brands" hint="Add or retire brands without a code change">
