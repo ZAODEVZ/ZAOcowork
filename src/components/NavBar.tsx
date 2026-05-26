@@ -56,9 +56,14 @@ export function NavBar({
   const primary = resolved.filter((b) => b.sort_order < PRIMARY_CUTOFF);
   const overflow = resolved.filter((b) => b.sort_order >= PRIMARY_CUTOFF);
 
+  // Layout note: parent is single-row flex (no wrap). The primary-tabs
+  // container scrolls horizontally when content overflows; the right-side
+  // Assistant/Admin block stays pinned with `flex-shrink-0`. flex-wrap on
+  // the parent caused the primary tabs to wrap to a hidden second row on
+  // narrow viewports (Iman bug 2026-05-26 Test 10).
   return (
-    <nav className="flex flex-wrap items-center gap-1.5 rounded-xl bg-black/25 border border-white/10 p-1.5">
-      <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0">
+    <nav className="flex items-center gap-1.5 rounded-xl bg-black/25 border border-white/10 p-1.5">
+      <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
         <BrandTab href="/" label="General" active={onBoard && !activeBrand} color={null} />
         {primary.map((b) => (
           <BrandTab
@@ -76,7 +81,7 @@ export function NavBar({
           />
         )}
       </div>
-      <div className="flex items-center gap-1.5 ml-auto">
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         <SimpleTab
           href="/chat"
           label="Assistant"
