@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession, isAdmin } from "@/lib/auth";
+import { getSession, isAdmin, userLabel } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 
@@ -10,8 +10,7 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (!isAdmin(user)) redirect("/?not-allowed=admin");
 
-  const userLabel =
-    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : user === "thyrev" ? "ThyRev" : "Samantha";
+  const userLabelStr = userLabel(user);
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#0a0f1f] overflow-hidden">
@@ -27,7 +26,7 @@ export default async function AdminPage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <UserBadge name={userLabel} />
+              <UserBadge name={userLabelStr} />
               <form action={logout}>
                 <button className="text-xs rounded-lg border border-white/10 px-2.5 py-1.5 hover:bg-white/5 text-white/70">
                   Sign out

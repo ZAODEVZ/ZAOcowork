@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { destroySession, requireSession, isLead } from "@/lib/auth";
+import { destroySession, requireSession, isLead, userLabel } from "@/lib/auth";
 import {
   getActions,
   saveActions,
@@ -516,14 +516,7 @@ export async function claimTask(form: FormData): Promise<void> {
   const idx = doc.items.findIndex((x) => x.id === id);
   if (idx < 0) return;
   const cur = doc.items[idx];
-  const ownerName =
-    user === "zaal"
-      ? "Zaal"
-      : user === "iman"
-      ? "Iman"
-      : user === "thyrev"
-      ? "ThyRev"
-      : "Samantha";
+  const ownerName = userLabel(user);
   const now = new Date().toISOString();
   doc.items[idx] = {
     ...cur,
