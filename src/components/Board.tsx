@@ -17,10 +17,11 @@ import {
   type Priority,
 } from "@/lib/types";
 import { BRANDS, brandColor } from "@/lib/brands";
-import { quickCreate, patchField, claimTask } from "@/app/actions";
+import { patchField, claimTask } from "@/app/actions";
 import { TaskRoom } from "./TaskRoom";
 import { TodoPanel, TodoTrigger } from "./TodoPanel";
 import { NotificationBell } from "./NotificationBell";
+import { QuickAdd } from "./quickadd/QuickAdd";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TODO: "TO DO",
@@ -405,6 +406,12 @@ export function Board({
         <Toast title={toast.title} message={toast.message} onClose={() => setToast(null)} />
       )}
 
+      <QuickAdd
+        currentUser={currentUser}
+        defaultCategory={defaultCategory}
+        tabBrand={urlBrand ?? null}
+      />
+
       <FilterBar
         filters={filters}
         onChange={setFilters}
@@ -746,12 +753,8 @@ function Column({
         </div>
       </div>
 
-      <QuickAddForm
-        status={status}
-        currentUser={currentUser}
-        defaultCategory={defaultCategory}
-        isWorker={isWorker}
-      />
+      {/* Per-column "+ add item" removed in favor of a single QuickAdd at the
+          top of the board (Cmd+K modal + inline bar + voice + NL parse). */}
 
       <div className="flex flex-col gap-2">
         {visible.map((it) => (
@@ -770,125 +773,6 @@ function Column({
         )}
       </div>
     </div>
-  );
-}
-
-function QuickAddForm({
-  status,
-  currentUser,
-  defaultCategory,
-  isWorker,
-}: {
-  status: ActionStatus;
-  currentUser: string;
-  defaultCategory: string;
-  isWorker: boolean;
-}) {
-  const [pending, start] = useTransition();
-  const defaultOwner = ((): Owner => {
-    const me = currentUser.trim().toLowerCase();
-    if (me === "zaal") return "Zaal";
-    if (me === "iman") return "Iman";
-    if (me === "thyrev") return "ThyRev";
-    if (me === "samantha") return "Samantha";
-    return "Open";
-  })();
-  const [important, setImportant] = useState(false);
-  const [urgent, setUrgent] = useState(false);
-  const [priority, setPriority] = useState<Priority>("P2");
-  const [owner, setOwner] = useState<Owner>(defaultOwner);
-
-  return (
-    <form
-      action={(fd) => {
-        fd.set("status", status);
-        if (!fd.get("category")) fd.set("category", defaultCategory);
-        fd.set("owner", owner);
-        fd.set("priority", priority);
-        if (important) fd.set("important", "1");
-        if (urgent) fd.set("urgent", "1");
-        start(() => quickCreate(fd));
-        const titleEl = document.querySelector<HTMLInputElement>(
-          `input[data-quick-add="${status}"]`,
-        );
-        if (titleEl) titleEl.value = "";
-        setImportant(false);
-        setUrgent(false);
-        setPriority("P2");
-        setOwner(defaultOwner);
-      }}
-      className="rounded-xl bg-black/20 border border-white/10 p-2"
-    >
-      <div className="grid grid-cols-12 gap-2">
-        <input
-          name="title"
-          data-quick-add={status}
-          placeholder="+ add item"
-          className="col-span-12 lg:col-span-6 rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-zao-accent/60"
-          disabled={pending}
-          required
-        />
-        <select
-          value={owner}
-          onChange={(e) => setOwner(e.target.value as Owner)}
-          className="col-span-6 lg:col-span-2 rounded-lg bg-[#0b1220] border border-white/10 px-2 py-2 text-sm text-white/80"
-          disabled={pending}
-          aria-label="Responsible"
-        >
-          {OWNERS.map((o) => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-        <select
-          value={priority}
-          onChange={(e) => setPriority(e.target.value as Priority)}
-          className="col-span-6 lg:col-span-1 rounded-lg bg-[#0b1220] border border-white/10 px-2 py-2 text-sm text-white/80"
-          disabled={pending}
-          aria-label="Priority"
-        >
-          {PRIORITIES.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="col-span-12 lg:col-span-3 rounded-lg bg-zao-accent hover:bg-blue-500 px-3 py-2 text-sm font-medium transition disabled:opacity-60"
-          disabled={pending}
-        >
-          Enter task
-        </button>
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setImportant((v) => !v)}
-          className={`px-2 py-1 rounded-md text-[11px] border transition ${
-            important
-              ? "border-yellow-400/60 bg-yellow-500/15 text-yellow-200"
-              : "border-white/10 text-white/55 hover:text-white/80 hover:bg-white/5"
-          }`}
-          disabled={pending}
-        >
-          Important
-        </button>
-        <button
-          type="button"
-          onClick={() => setUrgent((v) => !v)}
-          className={`px-2 py-1 rounded-md text-[11px] border transition ${
-            urgent
-              ? "border-red-400/60 bg-red-500/15 text-red-200"
-              : "border-white/10 text-white/55 hover:text-white/80 hover:bg-white/5"
-          }`}
-          disabled={pending}
-        >
-          Urgent
-        </button>
-      </div>
-    </form>
   );
 }
 

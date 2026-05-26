@@ -71,6 +71,11 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
   const taskTypeRaw = form.get("taskType");
   const hasApprovalField = form.get("_hasRequiresApproval") === "1";
   const ownerVal = String(form.get("owner") ?? prev?.owner ?? "Open").trim();
+  // Brands come from the QuickAdd NL parser (web) or hashtag parsing (bot).
+  // Multiple `brands` FormData entries -> array. Unknown brand strings are
+  // tolerated here; canonicalization happens in normalizeItem/data.ts.
+  const brandEntries = form.getAll("brands").map((v) => String(v).trim()).filter(Boolean);
+  const brands = brandEntries.length > 0 ? brandEntries : prev?.brands ?? [];
   const next = normalizeItem({
     id,
     title: String(form.get("title") ?? prev?.title ?? "").trim(),
@@ -84,6 +89,7 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     phase: asPhase(form.get("phase") ?? prev?.phase),
     due: String(form.get("due") ?? prev?.due ?? "").trim(),
     notes: String(form.get("notes") ?? prev?.notes ?? "").trim(),
+    brands,
     createdAt: prev?.createdAt || now,
     updatedAt: now,
     completedAt: prev?.completedAt || "",

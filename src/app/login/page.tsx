@@ -8,7 +8,7 @@ async function loginAction(formData: FormData): Promise<void> {
   "use server";
   const password = String(formData.get("password") ?? "");
   const from = String(formData.get("from") ?? "/");
-  const user = verifyPassword(password);
+  const user = await verifyPassword(password);
   if (!user) {
     redirect(`/login?error=1${from ? `&from=${encodeURIComponent(from)}` : ""}`);
   }

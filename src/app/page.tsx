@@ -26,19 +26,25 @@ export default async function Page({
   if (!user) return <PublicLanding />;
   const doc = await getActions();
 
-  // Unified board: every category in one place. Category is a filter, not 3
-  // separate pages. Stat cards below now count the true totals.
+  // Unified board: every category in one place. Brand is a filter via the URL
+  // (?brand=X from the top nav), category remains an in-board dropdown. Stat
+  // cards below recompute for whatever tab is active so flipping brands shows
+  // that brand's open/wip/blocked numbers without a page reload feel.
   const portalItems = doc.items;
+  const totalAll = portalItems.length;
+  const scoped = urlBrand
+    ? portalItems.filter((x) => (x.brands ?? []).includes(urlBrand))
+    : portalItems;
 
-  const open = portalItems.filter((x) => x.status !== "DONE");
-  const wipMine = portalItems.filter(
+  const open = scoped.filter((x) => x.status !== "DONE");
+  const wipMine = scoped.filter(
     (x) => x.status === "WIP" && (String(x.owner).toLowerCase() === user || String(x.owner) === "Both"),
   ).length;
-  const blocked = portalItems.filter((x) => x.status === "BLOCKED").length;
-  const aging = portalItems.filter(
+  const blocked = scoped.filter((x) => x.status === "BLOCKED").length;
+  const aging = scoped.filter(
     (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,
   ).length;
-  const done7d = portalItems.filter((x) => {
+  const done7d = scoped.filter((x) => {
     if (x.status !== "DONE") return false;
     const d = new Date(x.updatedAt).getTime();
     return Date.now() - d < 7 * 24 * 60 * 60 * 1000;
@@ -69,11 +75,15 @@ export default async function Page({
               </form>
             </div>
           </div>
-          <NavBar isAdmin={isAdmin(user)} />
+          <NavBar isAdmin={await isAdmin(user)} />
         </header>
 
         <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Stat label="Open" value={open.length} />
+          <Stat
+            label={urlBrand ? `${urlBrand} open` : "Open"}
+            value={open.length}
+            hint={urlBrand ? `of ${totalAll} all-brand total` : undefined}
+          />
           <Stat label="My WIP" value={wipMine} tone={wipMine > 5 ? "warn" : "ok"} hint="target ≤ 5" />
           <Stat label="Blocked" value={blocked} tone={blocked > 0 ? "red" : "ok"} />
           <Stat label="Aging > 14d" value={aging} tone={aging > 0 ? "red" : "ok"} />
