@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { requireSession } from "@/lib/auth";
+import { requireSession, userLabel, type SessionUser } from "@/lib/auth";
 import { getActions, ageDays, cycleDays, type ActionItem } from "@/lib/data";
 
 // getActions() touches node:fs / fetch and auth touches node:crypto — keep on the
@@ -77,8 +77,7 @@ function boardSnapshot(items: ActionItem[]): string {
 }
 
 function systemPrompt(user: string, items: ActionItem[]): string {
-  const who =
-    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : user === "thyrev" ? "ThyRev" : "Samantha";
+  const who = userLabel(user as SessionUser);
   const open = items.filter((x) => x.status !== "DONE").length;
   const blocked = items.filter((x) => x.status === "BLOCKED").length;
   const aging = items.filter(

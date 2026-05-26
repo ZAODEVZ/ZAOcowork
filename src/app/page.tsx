@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSession } from "@/lib/auth";
+import { getSession, userLabel } from "@/lib/auth";
 import { getActions, ageDays } from "@/lib/data";
 import { logout } from "./actions";
 import { Board } from "@/components/Board";
@@ -35,8 +35,7 @@ export default async function Page() {
     return Date.now() - d < 7 * 24 * 60 * 60 * 1000;
   }).length;
 
-  const userLabel =
-    user === "zaal" ? "Zaal" : user === "iman" ? "Iman" : user === "thyrev" ? "ThyRev" : "Samantha";
+  const userLabelStr = userLabel(user);
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#041225] overflow-hidden">
@@ -53,7 +52,7 @@ export default async function Page() {
             </div>
             <div className="flex items-center gap-2">
               <PWAInstallButton />
-              <UserBadge name={userLabel} />
+              <UserBadge name={userLabelStr} />
               <form action={logout}>
                 <button className="text-xs rounded-lg border border-white/10 px-2.5 py-1.5 hover:bg-white/5 text-white/70">
                   Sign out
