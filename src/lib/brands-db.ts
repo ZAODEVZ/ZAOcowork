@@ -41,16 +41,45 @@ const SELECT_COLUMNS = "id, name, slugs, color, active, sort_order, created_at, 
 // Const projection: same shape as a BrandRow but built from src/lib/brands.ts.
 // Used as the fallback when the brands table doesn't exist yet so a brand-new
 // deploy doesn't render an empty tab strip.
+//
+// The first iteration sorted by const-array index, which put ZAO Festivals /
+// ZAO-PALOOZA / ZAO-CHELLA into the primary tab slots since they sit at
+// indices 3..5 of CONST_BRANDS. That mismatched the 002 migration seed (which
+// puts WaveWarZ/COC Concertz/ZABAL Games at 40/50/60) and surfaced as Iman's
+// "wrong tab list" bug 2026-05-26. Now we explicitly map each brand to the
+// same sort_order the migration seeds so pre-migration + post-migration
+// rendering matches. New brands not in this map default to 999 (well into
+// the More dropdown range).
+const FALLBACK_SORT_ORDER: Record<string, number> = {
+  "The ZAO": 10,
+  "ZAO Devz": 20,
+  "ZAOstock": 30,
+  "WaveWarZ": 40,
+  "COC Concertz": 50,
+  "ZABAL Games": 60,
+  "ZAO Festivals": 110,
+  "ZAO-PALOOZA": 120,
+  "ZAO-CHELLA": 130,
+  "ZABAL": 140,
+  "BetterCallZaal": 150,
+  "BCZ Strategies": 160,
+  "ZAO Music": 170,
+  "ZOUNZ": 180,
+  "FISHBOWLZ": 190,
+  "POIDH": 200,
+  "ZOE": 210,
+  "Hermes": 220,
+  "Bonfire": 230,
+  "Juke": 240,
+};
+
 export const FALLBACK_BRANDS: BrandRow[] = CONST_BRANDS.map((name, i) => ({
   id: `const-${i}`,
   name,
   slugs: [],
   color: constBrandColor(name),
   active: true,
-  // First 6 are the historical PRIMARY_BRANDS - sort orders 10..60. Anything
-  // beyond goes into the More dropdown bucket (>= 100). Real DB rows get
-  // explicit sort_orders via the 002 migration.
-  sort_order: i < 6 ? (i + 1) * 10 : 100 + i * 10,
+  sort_order: FALLBACK_SORT_ORDER[name] ?? 999,
   created_at: new Date().toISOString(),
   created_by: null,
 }));
