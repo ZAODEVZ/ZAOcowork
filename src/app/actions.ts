@@ -544,3 +544,182 @@ export async function logout(): Promise<void> {
   // opened the homepage to anyone). They can re-enter via /login if they want.
   redirect("/");
 }
+
+// ============================================================================
+// Bulk task ops (Phase C)
+// ============================================================================
+//
+// All bulk actions take an `ids` FormData entries list (the task short-id, not
+// the Supabase UUID - same id space as item.id). Any user with a session can
+// run these; founders + leads are not gated separately because bulk ops only
+// touch tasks the user can already see and edit. Audit log lands in Phase E
+// so for now we just emit a single activity event per touched task with the
+// bulk action label so individual task timelines stay legible.
+
+function idsFromForm(form: FormData): string[] {
+  return form
+    .getAll("ids")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+}
+
+function appendActivity(item: ActionItem, user: string, action: string, detail?: string): void {
+  const ev = makeActivity(user, action, detail);
+  item.activity = [...(item.activity || []), ev];
+  item.updatedAt = ev.createdAt;
+}
+
+export async function bulkSetStatus(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = idsFromForm(form);
+  if (ids.length === 0) return;
+  const status = asStatus(form.get("status"));
+  const doc = await getActions();
+  const now = new Date().toISOString();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.includes(it.id)) continue;
+    if (it.status === status) continue;
+    const from = it.status;
+    it.status = status;
+    if (status === "DONE" && !it.completedAt) {
+      it.completedAt = now;
+      it.completedBy = user;
+    } else if (status !== "DONE") {
+      it.completedAt = "";
+      it.completedBy = "";
+    }
+    appendActivity(it, user, "bulk_status_change", `${from} -> ${status}`);
+    touched++;
+  }
+  if (touched) {
+    await saveActions(doc, user, `bulk set status ${status} on ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+  }
+}
+
+export async function bulkSetOwner(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = idsFromForm(form);
+  if (ids.length === 0) return;
+  const owner = String(form.get("owner") ?? "").trim();
+  if (!owner) return;
+  const doc = await getActions();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.includes(it.id)) continue;
+    if (it.owner === owner) continue;
+    const from = it.owner;
+    it.owner = owner;
+    it.claimable = owner === "Open";
+    appendActivity(it, user, "bulk_owner_change", `${from} -> ${owner}`);
+    touched++;
+  }
+  if (touched) {
+    await saveActions(doc, user, `bulk set owner ${owner} on ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+  }
+}
+
+export async function bulkSetPriority(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = idsFromForm(form);
+  if (ids.length === 0) return;
+  const priority = asPriority(form.get("priority"));
+  const doc = await getActions();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.includes(it.id)) continue;
+    if (it.priority === priority) continue;
+    const from = it.priority;
+    it.priority = priority;
+    appendActivity(it, user, "bulk_priority_change", `${from} -> ${priority}`);
+    touched++;
+  }
+  if (touched) {
+    await saveActions(doc, user, `bulk set priority ${priority} on ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+  }
+}
+
+export async function bulkAddBrand(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = idsFromForm(form);
+  if (ids.length === 0) return;
+  const brand = String(form.get("brand") ?? "").trim();
+  if (!brand) return;
+  const doc = await getActions();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.includes(it.id)) continue;
+    const current = it.brands ?? [];
+    if (current.includes(brand)) continue;
+    it.brands = [...current, brand];
+    appendActivity(it, user, "bulk_brand_add", brand);
+    touched++;
+  }
+  if (touched) {
+    await saveActions(doc, user, `bulk tag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+  }
+}
+
+export async function bulkRemoveBrand(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = idsFromForm(form);
+  if (ids.length === 0) return;
+  const brand = String(form.get("brand") ?? "").trim();
+  if (!brand) return;
+  const doc = await getActions();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.includes(it.id)) continue;
+    const current = it.brands ?? [];
+    if (!current.includes(brand)) continue;
+    it.brands = current.filter((b) => b !== brand);
+    appendActivity(it, user, "bulk_brand_remove", brand);
+    touched++;
+  }
+  if (touched) {
+    await saveActions(doc, user, `bulk untag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+  }
+}
+
+export async function bulkDelete(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = new Set(idsFromForm(form));
+  if (ids.size === 0) return;
+  const doc = await getActions();
+  const before = doc.items.length;
+  doc.items = doc.items.filter((it) => !ids.has(it.id));
+  const removed = before - doc.items.length;
+  if (removed) {
+    await saveActions(doc, user, `bulk delete ${removed} item${removed === 1 ? "" : "s"}`);
+    revalidateAll();
+  }
+}
+
+// Smart-fix shortcut used from /admin: assign every NULL/empty-owner task to
+// the supplied owner in one shot. The admin UI passes `owner=Zaal` by default
+// but any roster name works.
+export async function bulkAssignUnowned(form: FormData): Promise<{ assigned: number }> {
+  const user = await requireSession();
+  const owner = String(form.get("owner") ?? "").trim();
+  if (!owner) return { assigned: 0 };
+  const doc = await getActions();
+  let touched = 0;
+  for (const it of doc.items) {
+    const current = String(it.owner ?? "").trim();
+    if (current && current !== "Open") continue;
+    it.owner = owner;
+    it.claimable = false;
+    appendActivity(it, user, "bulk_assign_unowned", `Open -> ${owner}`);
+    touched++;
+  }
+  if (touched) {
+    await saveActions(doc, user, `bulk assign ${touched} unowned -> ${owner}`);
+    revalidateAll();
+  }
+  return { assigned: touched };
+}

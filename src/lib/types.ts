@@ -58,8 +58,10 @@ export const DEV_CATEGORIES: string[] = [
 export const MUSIC_CATEGORIES: string[] = ["WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding"];
 export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Campaigns"];
 
-export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Open";
-export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Open"];
+// Tyler Stambaugh joined the roster 2026-05-23 (PR #13). Adding to OWNERS
+// here so the bulk reassign + per-task owner dropdowns show him too.
+export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Tyler" | "Open";
+export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Tyler", "Open"];
 
 export interface Comment {
   id: string;

@@ -22,6 +22,7 @@ import { TaskRoom } from "./TaskRoom";
 import { TodoPanel, TodoTrigger } from "./TodoPanel";
 import { NotificationBell } from "./NotificationBell";
 import { QuickAdd } from "./quickadd/QuickAdd";
+import { BulkActionBar } from "./BulkActionBar";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TODO: "TO DO",
@@ -207,6 +208,23 @@ export function Board({
   const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
   const [todoOpen, setTodoOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  // Phase C: bulk-select. Off by default to keep the day-to-day UX unchanged;
+  // user toggles "Select" in the FilterBar to opt in. Selection clears on
+  // every items[] refresh (router.refresh after a bulk action) so the bar
+  // doesn't show stale IDs after rows get deleted/moved.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  useEffect(() => {
+    if (!selectMode && selectedIds.size > 0) setSelectedIds(new Set());
+  }, [selectMode, selectedIds.size]);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
@@ -422,6 +440,8 @@ export function Board({
         isLeadUser={!isWorker}
         onOpenTask={setTaskRoomId}
         urlBrand={urlBrand ?? null}
+        selectMode={selectMode}
+        onToggleSelectMode={() => setSelectMode((v) => !v)}
       />
 
       {filtersActive && (
@@ -462,6 +482,9 @@ export function Board({
             currentUser={currentUser}
             defaultCategory={defaultCategory}
             isWorker={isWorker}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
           />
         </div>
       </div>
@@ -477,6 +500,9 @@ export function Board({
             currentUser={currentUser}
             defaultCategory={defaultCategory}
             isWorker={isWorker}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
           />
         ))}
       </div>
@@ -501,6 +527,14 @@ export function Board({
         onClick={() => setTodoOpen(true)}
         claimableCount={claimableCount}
       />
+
+      <BulkActionBar
+        selectedIds={Array.from(selectedIds)}
+        onClear={() => {
+          setSelectedIds(new Set());
+          setSelectMode(false);
+        }}
+      />
     </div>
   );
 }
@@ -515,6 +549,8 @@ function FilterBar({
   isLeadUser,
   onOpenTask,
   urlBrand,
+  selectMode,
+  onToggleSelectMode,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
@@ -525,6 +561,8 @@ function FilterBar({
   isLeadUser: boolean;
   onOpenTask: (id: string) => void;
   urlBrand: string | null;
+  selectMode: boolean;
+  onToggleSelectMode: () => void;
 }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   const me = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
@@ -538,6 +576,18 @@ function FilterBar({
           className="flex-1 rounded-xl bg-[#0b1220] border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent text-white"
         />
         <NotificationBell items={items} currentUser={currentUser} isLeadUser={isLeadUser} onOpenTask={onOpenTask} />
+        <button
+          onClick={onToggleSelectMode}
+          className={`rounded-xl border px-3 py-2 text-sm transition ${
+            selectMode
+              ? "border-zao-accent/50 bg-zao-accent/15 text-zao-accent"
+              : "border-white/10 text-white/70 hover:bg-white/5"
+          }`}
+          aria-label={selectMode ? "Exit select mode" : "Enter select mode"}
+          title={selectMode ? "Exit multi-select" : "Multi-select for bulk actions"}
+        >
+          {selectMode ? "✓ Select" : "Select"}
+        </button>
         <button
           onClick={onHelp}
           className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70 hover:bg-white/5"
@@ -722,6 +772,9 @@ function Column({
   currentUser,
   defaultCategory,
   isWorker,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
 }: {
   status: ActionStatus;
   items: ActionItem[];
@@ -729,6 +782,9 @@ function Column({
   currentUser: string;
   defaultCategory: string;
   isWorker: boolean;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? items : items.slice(0, 25);
@@ -758,7 +814,15 @@ function Column({
 
       <div className="flex flex-col gap-2">
         {visible.map((it) => (
-          <Card key={it.id} item={it} onOpenRoom={onOpenRoom} isWorker={isWorker} />
+          <Card
+            key={it.id}
+            item={it}
+            onOpenRoom={onOpenRoom}
+            isWorker={isWorker}
+            selectMode={selectMode}
+            selected={selectedIds.has(it.id)}
+            onToggleSelect={onToggleSelect}
+          />
         ))}
         {hiddenCount > 0 && (
           <button
@@ -780,10 +844,16 @@ function Card({
   item,
   onOpenRoom,
   isWorker,
+  selectMode,
+  selected,
+  onToggleSelect,
 }: {
   item: ActionItem;
   onOpenRoom: (id: string) => void;
   isWorker: boolean;
+  selectMode: boolean;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
 }) {
   const [pending, start] = useTransition();
   const age = ageDays(item.createdAt);
@@ -809,11 +879,22 @@ function Card({
 
   return (
     <div
-      className={`group relative rounded-lg bg-zao-ink border border-white/10 hover:border-white/20 p-3 text-sm transition ${
-        pending ? "opacity-60" : ""
-      } ${item.status === "DONE" ? "opacity-60" : ""}`}
+      className={`group relative rounded-lg bg-zao-ink border p-3 text-sm transition ${
+        selected
+          ? "border-zao-accent/60 ring-2 ring-zao-accent/20"
+          : "border-white/10 hover:border-white/20"
+      } ${pending ? "opacity-60" : ""} ${item.status === "DONE" ? "opacity-60" : ""}`}
     >
       <div className="flex items-start gap-2">
+        {selectMode && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(item.id)}
+            aria-label={`Select task #${item.id}`}
+            className="mt-1 h-4 w-4 flex-shrink-0 rounded border-white/30 bg-[#0b1220] accent-zao-accent cursor-pointer"
+          />
+        )}
         <button
           aria-label="Cycle priority"
           title={`Priority ${item.priority} — click to cycle`}
