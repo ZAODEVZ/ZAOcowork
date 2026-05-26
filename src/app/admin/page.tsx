@@ -3,7 +3,9 @@ import { getSession, isAdmin, userLabel } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { UsersPanel } from "@/components/admin/UsersPanel";
+import { BulkOpsPanel } from "@/components/admin/BulkOpsPanel";
 import { listTeamMembers } from "@/lib/team";
+import { getActions } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,15 @@ export default async function AdminPage() {
   } catch (err) {
     membersError = err instanceof Error ? err.message : "team_members read failed";
   }
+
+  // Bulk-ops counts: how many tasks have no real owner (empty, NULL, or
+  // "Open" - the open-to-claim sentinel). Audit doc 761 finding #9 flagged
+  // these as the 32% silent rows that drop out of every owner filter.
+  const doc = await getActions();
+  const unownedCount = doc.items.filter((it) => {
+    const o = String(it.owner ?? "").trim();
+    return !o || o === "Open";
+  }).length;
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#0a0f1f] overflow-hidden">
@@ -69,7 +80,7 @@ export default async function AdminPage() {
         </Section>
 
         <Section title="Bulk task ops" hint="Multi-select rows, bulk reassign / delete / retag">
-          <Placeholder phase="C">Bulk ops ship in Phase C.</Placeholder>
+          <BulkOpsPanel unownedCount={unownedCount} />
         </Section>
 
         <Section title="Audit log" hint="Who changed what, when">
