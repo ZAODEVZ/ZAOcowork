@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdmin } from "@/lib/auth";
 import { getActions, ageDays } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
@@ -43,7 +43,7 @@ export default async function ChatPage() {
               </form>
             </div>
           </div>
-          <NavBar />
+          <NavBar isAdmin={isAdmin(user)} />
         </header>
 
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">

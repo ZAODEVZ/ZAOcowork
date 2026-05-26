@@ -1,15 +1,24 @@
 import Link from "next/link";
-import { getSession } from "@/lib/auth";
+import { getSession, isAdmin } from "@/lib/auth";
 import { getActions, ageDays } from "@/lib/data";
 import { logout } from "./actions";
 import { Board } from "@/components/Board";
 import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { CATEGORIES } from "@/lib/types";
+import { BRANDS } from "@/lib/brands";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ brand?: string }>;
+}) {
+  const { brand: rawBrand } = await searchParams;
+  // Only accept brand values from the controlled vocab so the URL can't smuggle
+  // a free-text filter into the Board's filter state.
+  const urlBrand = rawBrand && (BRANDS as readonly string[]).includes(rawBrand) ? rawBrand : null;
   const user = await getSession();
   // Public homepage: no session = render a small landing with a Login CTA.
   // Anyone can hit the site root without being kicked to /login automatically.
@@ -61,7 +70,7 @@ export default async function Page() {
               </form>
             </div>
           </div>
-          <NavBar />
+          <NavBar isAdmin={isAdmin(user)} />
         </header>
 
         <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -75,14 +84,21 @@ export default async function Page() {
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-blue-400" />
-            <span className="text-sm font-semibold text-white/80">Board</span>
-            <span className="text-xs text-white/40">— every task, filter by owner or category</span>
+            <span className="text-sm font-semibold text-white/80">
+              {urlBrand ? urlBrand : "Board"}
+            </span>
+            <span className="text-xs text-white/40">
+              {urlBrand
+                ? `filtered to ${urlBrand}`
+                : "every task, filter by owner or category"}
+            </span>
           </div>
           <Board
             items={portalItems}
             currentUser={user}
             portalCategories={CATEGORIES}
             defaultCategory="ZAO Devz"
+            urlBrand={urlBrand}
           />
         </div>
 

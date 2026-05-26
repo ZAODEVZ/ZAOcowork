@@ -166,11 +166,17 @@ export function Board({
   currentUser,
   portalCategories,
   defaultCategory,
+  urlBrand,
 }: {
   items: ActionItem[];
   currentUser: string;
   portalCategories: string[];
   defaultCategory: string;
+  // When set, the brand filter is locked to this single brand from the URL
+  // (?brand=X driven by the top-tab nav). The in-board BrandPills row hides
+  // because the nav is the source of truth. null/undefined = General tab,
+  // no brand constraint, BrandPills row stays visible as a fallback.
+  urlBrand?: string | null;
 }) {
   const router = useRouter();
   // Land on "my open work" by default, not the full firehose. Subsequent
@@ -305,7 +311,13 @@ export function Board({
       if (filters.category && it.category !== filters.category) return false;
       if (filters.priority && it.priority !== filters.priority) return false;
       if (filters.phase && it.phase !== filters.phase) return false;
-      if (filters.brands.length && !filters.brands.some((b) => (it.brands ?? []).includes(b))) return false;
+      // URL-driven brand tab takes precedence over localStorage filters.brands.
+      // Single-brand match - a task whose `brands` array contains urlBrand.
+      if (urlBrand) {
+        if (!(it.brands ?? []).includes(urlBrand)) return false;
+      } else if (filters.brands.length && !filters.brands.some((b) => (it.brands ?? []).includes(b))) {
+        return false;
+      }
       if (filters.mineOnly) {
         const mine = currentUser.toLowerCase();
         const o = String(it.owner).toLowerCase();
@@ -319,7 +331,7 @@ export function Board({
       }
       return true;
     });
-  }, [items, filters, currentUser]);
+  }, [items, filters, currentUser, urlBrand]);
 
   const byStatus = useMemo(() => {
     const map: Record<ActionStatus, ActionItem[]> = {
@@ -352,7 +364,8 @@ export function Board({
     filters.phase ||
     filters.brands.length > 0 ||
     filters.mineOnly ||
-    filters.agingOnly;
+    filters.agingOnly ||
+    !!urlBrand;
 
   return (
     <div className="space-y-4">
@@ -401,6 +414,7 @@ export function Board({
         items={items}
         isLeadUser={!isWorker}
         onOpenTask={setTaskRoomId}
+        urlBrand={urlBrand ?? null}
       />
 
       {filtersActive && (
@@ -493,6 +507,7 @@ function FilterBar({
   items,
   isLeadUser,
   onOpenTask,
+  urlBrand,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
@@ -502,6 +517,7 @@ function FilterBar({
   items: ActionItem[];
   isLeadUser: boolean;
   onOpenTask: (id: string) => void;
+  urlBrand: string | null;
 }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
   const me = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
@@ -562,17 +578,19 @@ function FilterBar({
           placeholder="DMAIC phase"
         />
       </div>
-      <BrandPills
-        items={items}
-        active={filters.brands}
-        onToggle={(b) => {
-          const next = filters.brands.includes(b)
-            ? filters.brands.filter((x) => x !== b)
-            : [...filters.brands, b];
-          set({ brands: next });
-        }}
-        onClear={() => set({ brands: [] })}
-      />
+      {!urlBrand && (
+        <BrandPills
+          items={items}
+          active={filters.brands}
+          onToggle={(b) => {
+            const next = filters.brands.includes(b)
+              ? filters.brands.filter((x) => x !== b)
+              : [...filters.brands, b];
+            set({ brands: next });
+          }}
+          onClear={() => set({ brands: [] })}
+        />
+      )}
     </div>
   );
 }
