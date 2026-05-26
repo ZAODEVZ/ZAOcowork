@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, isAdmin, userLabel } from "@/lib/auth";
+import { listActiveBrands } from "@/lib/brands-db";
 import { getActions, ageDays } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
@@ -10,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function ChatPage() {
   const user = await getSession();
   if (!user) redirect("/login");
-  const doc = await getActions();
+  const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
 
   const open = doc.items.filter((x) => x.status !== "DONE").length;
   const blocked = doc.items.filter((x) => x.status === "BLOCKED").length;
@@ -42,7 +43,7 @@ export default async function ChatPage() {
               </form>
             </div>
           </div>
-          <NavBar isAdmin={await isAdmin(user)} />
+          <NavBar isAdmin={await isAdmin(user)} brands={navBrands} />
         </header>
 
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">

@@ -4,7 +4,9 @@ import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { UsersPanel } from "@/components/admin/UsersPanel";
 import { BulkOpsPanel } from "@/components/admin/BulkOpsPanel";
+import { BrandsPanel } from "@/components/admin/BrandsPanel";
 import { listTeamMembers } from "@/lib/team";
+import { listBrands, listActiveBrands } from "@/lib/brands-db";
 import { getActions } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +37,13 @@ export default async function AdminPage() {
     return !o || o === "Open";
   }).length;
 
+  // Brand list. listBrands returns const-fallback rows when the 002 migration
+  // hasn't been applied; the BrandsPanel shows a banner in that case and
+  // renders the list read-only. Once applied, DB rows replace the fallback.
+  const allBrands = await listBrands();
+  const navBrands = await listActiveBrands();
+  const migrationApplied = !allBrands.some((b) => b.id.startsWith("const-"));
+
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#0a0f1f] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(236,72,153,0.10),transparent_60%)]" />
@@ -57,7 +66,7 @@ export default async function AdminPage() {
               </form>
             </div>
           </div>
-          <NavBar isAdmin />
+          <NavBar isAdmin brands={navBrands} />
         </header>
 
         <Section title="Users" hint="Add, deactivate, reset password, promote to admin">
@@ -76,7 +85,7 @@ export default async function AdminPage() {
         </Section>
 
         <Section title="Brands" hint="Add or retire brands without a code change">
-          <Placeholder phase="D">Brand list management ships in Phase D.</Placeholder>
+          <BrandsPanel brands={allBrands} migrationApplied={migrationApplied} />
         </Section>
 
         <Section title="Bulk task ops" hint="Multi-select rows, bulk reassign / delete / retag">

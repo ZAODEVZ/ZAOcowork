@@ -6,7 +6,7 @@ import { Board } from "@/components/Board";
 import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { CATEGORIES } from "@/lib/types";
-import { BRANDS } from "@/lib/brands";
+import { listActiveBrands } from "@/lib/brands-db";
 
 export const dynamic = "force-dynamic";
 
@@ -16,9 +16,11 @@ export default async function Page({
   searchParams: Promise<{ brand?: string }>;
 }) {
   const { brand: rawBrand } = await searchParams;
-  // Only accept brand values from the controlled vocab so the URL can't smuggle
-  // a free-text filter into the Board's filter state.
-  const urlBrand = rawBrand && (BRANDS as readonly string[]).includes(rawBrand) ? rawBrand : null;
+  const navBrands = await listActiveBrands();
+  // Only accept brand values from the active brand list so the URL can't
+  // smuggle a free-text filter into the Board's filter state.
+  const brandNames = navBrands.map((b) => b.name);
+  const urlBrand = rawBrand && brandNames.includes(rawBrand) ? rawBrand : null;
   const user = await getSession();
   // Public homepage: no session = render a small landing with a Login CTA.
   // Anyone can hit the site root without being kicked to /login automatically.
@@ -75,7 +77,7 @@ export default async function Page({
               </form>
             </div>
           </div>
-          <NavBar isAdmin={await isAdmin(user)} />
+          <NavBar isAdmin={await isAdmin(user)} brands={navBrands} />
         </header>
 
         <section className="grid grid-cols-2 md:grid-cols-5 gap-3">

@@ -2,26 +2,44 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { BRANDS, brandColor } from "@/lib/brands";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/brands";
 
-// Brands surfaced as top-row tabs. Order is intentional: most-active first,
-// "General" pseudo-brand (no filter) leads. Anything not in this list lives
-// in the "More" dropdown so the tab strip stays short on desktop and
-// horizontally scrollable on mobile without being a wall.
-const PRIMARY_BRANDS = [
-  "The ZAO",
-  "ZAO Devz",
-  "ZAOstock",
-  "WaveWarZ",
-  "COC Concertz",
-  "ZABAL Games",
-] as const;
+// NavBar's brand tabs. Phase D switched from a hardcoded BRANDS const to a
+// `brands` prop loaded server-side from the brands table. Each brand carries
+// its display name, the Tailwind color-class string, and a sort_order. Brands
+// with sort_order < PRIMARY_CUTOFF render as inline tabs; everything else
+// goes into the "More" dropdown so the desktop tab strip stays scannable
+// (mobile gets a horizontal scroll either way).
+//
+// The fallback projection from the const list is used pre-migration so
+// pages still render before 002 is applied. NavBar itself stays a client
+// component (uses usePathname + useSearchParams); the parent server page
+// is responsible for fetching the brand list and passing it down.
 
-const PRIMARY_SET = new Set<string>(PRIMARY_BRANDS);
-const OVERFLOW_BRANDS = BRANDS.filter((b) => !PRIMARY_SET.has(b));
+const PRIMARY_CUTOFF = 100;
 
-export function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
+export interface NavBrand {
+  name: string;
+  color: string;
+  sort_order: number;
+}
+
+function fallbackBrands(): NavBrand[] {
+  return CONST_BRANDS.map((name, i) => ({
+    name,
+    color: constBrandColor(name),
+    sort_order: i < 6 ? (i + 1) * 10 : 100 + i * 10,
+  }));
+}
+
+export function NavBar({
+  isAdmin = false,
+  brands,
+}: {
+  isAdmin?: boolean;
+  brands?: NavBrand[];
+}) {
   const pathname = usePathname();
   const sp = useSearchParams();
   const activeBrand = sp.get("brand");
@@ -30,21 +48,33 @@ export function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
   const onChat = pathname === "/chat";
   const onAdmin = pathname === "/admin";
 
+  const resolved = useMemo<NavBrand[]>(() => {
+    const list = brands && brands.length > 0 ? brands : fallbackBrands();
+    return [...list].sort((a, b) => a.sort_order - b.sort_order);
+  }, [brands]);
+
+  const primary = resolved.filter((b) => b.sort_order < PRIMARY_CUTOFF);
+  const overflow = resolved.filter((b) => b.sort_order >= PRIMARY_CUTOFF);
+
   return (
     <nav className="flex flex-wrap items-center gap-1.5 rounded-xl bg-black/25 border border-white/10 p-1.5">
       <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0">
-        <BrandTab href="/" label="General" active={onBoard && !activeBrand} tone="ok" />
-        {PRIMARY_BRANDS.map((b) => (
+        <BrandTab href="/" label="General" active={onBoard && !activeBrand} color={null} />
+        {primary.map((b) => (
           <BrandTab
-            key={b}
-            href={`/?brand=${encodeURIComponent(b)}`}
-            label={b}
-            active={onBoard && activeBrand === b}
-            tone={onBoard && activeBrand === b ? "brand" : "ok"}
-            brandName={b}
+            key={b.name}
+            href={`/?brand=${encodeURIComponent(b.name)}`}
+            label={b.name}
+            active={onBoard && activeBrand === b.name}
+            color={b.color}
           />
         ))}
-        <MoreBrandsDropdown activeBrand={onBoard ? activeBrand : null} />
+        {overflow.length > 0 && (
+          <MoreBrandsDropdown
+            brands={overflow}
+            activeBrand={onBoard ? activeBrand : null}
+          />
+        )}
       </div>
       <div className="flex items-center gap-1.5 ml-auto">
         <SimpleTab
@@ -72,19 +102,14 @@ function BrandTab({
   href,
   label,
   active,
-  tone,
-  brandName,
+  color,
 }: {
   href: string;
   label: string;
   active: boolean;
-  tone: "ok" | "brand";
-  brandName?: string;
+  color: string | null;
 }) {
-  const activeClass =
-    tone === "brand" && brandName
-      ? brandColor(brandName)
-      : "bg-blue-500/20 text-blue-200 border-blue-500/40";
+  const activeClass = color ?? "bg-blue-500/20 text-blue-200 border-blue-500/40";
   return (
     <Link
       href={href}
@@ -128,9 +153,21 @@ function SimpleTab({
   );
 }
 
-function MoreBrandsDropdown({ activeBrand }: { activeBrand: string | null }) {
+function MoreBrandsDropdown({
+  brands,
+  activeBrand,
+}: {
+  brands: NavBrand[];
+  activeBrand: string | null;
+}) {
   const [open, setOpen] = useState(false);
-  const overflowActive = activeBrand && !PRIMARY_SET.has(activeBrand) ? activeBrand : null;
+  const overflowMap = useMemo(() => {
+    const m = new Map<string, NavBrand>();
+    for (const b of brands) m.set(b.name, b);
+    return m;
+  }, [brands]);
+  const overflowActive = activeBrand && overflowMap.has(activeBrand) ? activeBrand : null;
+  const overflowActiveColor = overflowActive ? overflowMap.get(overflowActive)?.color ?? null : null;
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,29 +186,29 @@ function MoreBrandsDropdown({ activeBrand }: { activeBrand: string | null }) {
         onClick={() => setOpen((v) => !v)}
         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${
           overflowActive
-            ? brandColor(overflowActive)
+            ? overflowActiveColor ?? "bg-white/10 text-white/70 border-white/20"
             : "border-transparent text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
         }`}
       >
         {overflowActive ?? "More"} <span className="opacity-60">{open ? "▴" : "▾"}</span>
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 z-40 min-w-[180px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5">
-          {OVERFLOW_BRANDS.map((b) => {
-            const isActive = activeBrand === b;
+        <div className="absolute top-full right-0 mt-1 z-40 min-w-[200px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5 max-h-[60vh] overflow-y-auto">
+          {brands.map((b) => {
+            const isActive = activeBrand === b.name;
             return (
               <Link
-                key={b}
-                href={`/?brand=${encodeURIComponent(b)}`}
+                key={b.name}
+                href={`/?brand=${encodeURIComponent(b.name)}`}
                 prefetch={false}
                 onClick={() => setOpen(false)}
                 className={`block px-3 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition ${
                   isActive
-                    ? brandColor(b)
+                    ? b.color
                     : "border-transparent text-white/70 hover:text-white hover:bg-white/[0.06]"
                 }`}
               >
-                {b}
+                {b.name}
               </Link>
             );
           })}
