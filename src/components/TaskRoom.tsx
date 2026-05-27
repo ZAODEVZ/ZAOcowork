@@ -142,13 +142,16 @@ export function TaskRoom({
               {relativeTime(item.createdAt)}
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="flex-shrink-0 text-white/40 hover:text-white text-2xl leading-none mt-0.5 transition"
-            aria-label="Close task room"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <CopyLinkButton id={item.id} />
+            <button
+              onClick={onClose}
+              className="text-white/40 hover:text-white text-2xl leading-none mt-0.5 transition"
+              aria-label="Close task room"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
         {/* Mobile tab bar */}
@@ -850,6 +853,43 @@ function FormField({ label, children }: { label: string; children: React.ReactNo
       <label className="block text-[11px] text-white/45 mb-1 uppercase tracking-wider">{label}</label>
       {children}
     </div>
+  );
+}
+
+// CopyLinkButton (Phase H): builds the /todo/<id> permalink against the
+// current origin and copies to clipboard. Toast confirmation via local
+// state, decays after 2 seconds. Falls back to selecting the URL in a
+// prompt() if clipboard API is unavailable (rare, but possible in
+// older browsers or http-only contexts).
+function CopyLinkButton({ id }: { id: string }) {
+  const [copied, setCopied] = useState(false);
+  function onCopy() {
+    if (typeof window === "undefined") return;
+    const url = `${window.location.origin}/todo/${encodeURIComponent(id)}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        window.prompt("Copy this URL", url);
+      });
+    } else {
+      window.prompt("Copy this URL", url);
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      className={`text-[11px] rounded-md border px-2.5 py-1.5 transition whitespace-nowrap ${
+        copied
+          ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-200"
+          : "border-white/15 text-white/65 hover:text-white hover:bg-white/5"
+      }`}
+      title={`Copy /todo/${id} link to clipboard`}
+    >
+      {copied ? "Copied!" : "Copy link"}
+    </button>
   );
 }
 
