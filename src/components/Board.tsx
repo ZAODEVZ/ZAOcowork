@@ -13,6 +13,8 @@ import {
   SERVICE_CLASSES,
   SERVICE_CLASS_COLORS,
   SERVICE_CLASS_LABELS,
+  TASK_SOURCE_COLORS,
+  TASK_SOURCE_LABELS,
   COLUMN_DOD,
   ageDays,
   cycleDays,
@@ -178,6 +180,10 @@ export function Board({
   portalCategories,
   defaultCategory,
   urlBrand,
+  urlProjectId,
+  urlProjectSlug,
+  urlProjectName,
+  projects,
 }: {
   items: ActionItem[];
   currentUser: string;
@@ -188,6 +194,13 @@ export function Board({
   // because the nav is the source of truth. null/undefined = General tab,
   // no brand constraint, BrandPills row stays visible as a fallback.
   urlBrand?: string | null;
+  // Doc 765 Phase I: project scope from ?project=slug. urlProjectId is
+  // the resolved UUID used for the actual filter; the slug + name are
+  // rendered in the header chip. Null = no project scope ("All projects").
+  urlProjectId?: string | null;
+  urlProjectSlug?: string | null;
+  urlProjectName?: string | null;
+  projects?: Array<{ id: string; slug: string; name: string; color: string }>;
 }) {
   const router = useRouter();
   // Land on "my open work" by default, not the full firehose. Subsequent
@@ -377,6 +390,11 @@ export function Board({
       } else if (filters.brands.length && !filters.brands.some((b) => (it.brands ?? []).includes(b))) {
         return false;
       }
+      // Doc 765 Phase I: project scope from ?project=slug. If set, only
+      // tasks with that project_id pass. Null = no project filter.
+      if (urlProjectId) {
+        if (it.projectId !== urlProjectId) return false;
+      }
       if (filters.mineOnly) {
         const mine = currentUser.toLowerCase();
         const o = String(it.owner).toLowerCase();
@@ -390,7 +408,7 @@ export function Board({
       }
       return true;
     });
-  }, [items, filters, currentUser, urlBrand]);
+  }, [items, filters, currentUser, urlBrand, urlProjectId]);
 
   const byStatus = useMemo(() => {
     const map: Record<BoardStatus, ActionItem[]> = {
@@ -492,6 +510,15 @@ export function Board({
         onOpenTask={setTaskRoomId}
       />
 
+      {projects && projects.length > 0 && (
+        <ProjectPickerBar
+          projects={projects}
+          activeId={urlProjectId ?? null}
+          activeSlug={urlProjectSlug ?? null}
+          activeName={urlProjectName ?? null}
+        />
+      )}
+
       <FilterBar
         filters={filters}
         onChange={setFilters}
@@ -586,6 +613,7 @@ export function Board({
           item={taskRoomItem}
           currentUser={currentUser}
           onClose={() => setTaskRoomId(null)}
+          projects={projects}
         />
       )}
 
@@ -1150,6 +1178,14 @@ function Card({
         >
           {item.category}
         </span>
+        {item.source && item.source !== "human-web" && (
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] border ${TASK_SOURCE_COLORS[item.source]}`}
+            title={`Created via ${TASK_SOURCE_LABELS[item.source]}`}
+          >
+            {TASK_SOURCE_LABELS[item.source]}
+          </span>
+        )}
         {(item.brands ?? []).map((b) => (
           <span
             key={b}
@@ -1574,6 +1610,66 @@ function Toast({
             ×
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ProjectPickerBar (doc 765 Phase I): horizontal scrollable chip row
+// listing active projects. "All projects" chip clears the filter.
+// Mounted above the FilterBar so the picker is the first decision the
+// user makes ("which project am I looking at?") before refining by
+// owner/priority/status.
+function ProjectPickerBar({
+  projects,
+  activeId,
+  activeSlug,
+  activeName,
+}: {
+  projects: Array<{ id: string; slug: string; name: string; color: string }>;
+  activeId: string | null;
+  activeSlug: string | null;
+  activeName: string | null;
+}) {
+  return (
+    <div className="rounded-xl bg-white/[0.03] border border-white/10 p-2 overflow-x-auto">
+      <div className="flex items-center gap-1.5 min-w-min">
+        <span className="text-[10px] uppercase tracking-wider text-white/45 px-2 flex-shrink-0">
+          Project
+        </span>
+        <a
+          href="/"
+          className={`text-xs rounded-md px-2 py-1 border whitespace-nowrap transition flex-shrink-0 ${
+            !activeId
+              ? "bg-indigo-500/20 text-indigo-100 border-indigo-500/40"
+              : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/5"
+          }`}
+        >
+          All projects
+        </a>
+        {projects.map((p) => {
+          const active = activeId === p.id;
+          return (
+            <a
+              key={p.id}
+              href={`/?project=${encodeURIComponent(p.slug)}`}
+              className={`text-xs rounded-md border px-2 py-1 whitespace-nowrap transition flex-shrink-0 ${
+                active
+                  ? p.color
+                  : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/5"
+              }`}
+              title={p.name}
+            >
+              {p.name}
+            </a>
+          );
+        })}
+        {activeSlug && activeName && (
+          <span className="text-[10px] text-white/45 ml-auto pl-2 flex-shrink-0">
+            scope: {activeName}
+          </span>
+        )}
       </div>
     </div>
   );

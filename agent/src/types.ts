@@ -40,6 +40,12 @@ export interface ActionItem {
   // Ecosystem brand tags - empty array = no brand assigned. Canonical names
   // defined in agent/src/brands.ts (kept in sync with src/lib/brands.ts).
   brands: string[];
+  // Doc 765 decision 2: source taxonomy. Bot writes default 'human-bot'.
+  // Optional in the bot type since older rows pre-migration won't carry it.
+  source?: string;
+  // Doc 765 Phase I: project layer. Nullable. Bot doesn't set it today
+  // (future: parse #project-slug like brand hashtags).
+  projectId?: string | null;
 }
 
 export interface ActionsFile {

@@ -13,6 +13,7 @@ import type {
   Phase,
   Priority,
   ServiceClass,
+  TaskSource,
   TaskType,
   TaskUpdate,
 } from "./types";
@@ -45,6 +46,10 @@ export {
   SERVICE_CLASS_LABELS,
   SERVICE_CLASS_COLORS,
   COLUMN_DOD,
+  TASK_SOURCES,
+  TASK_SOURCE_LABELS,
+  TASK_SOURCE_COLORS,
+  PROJECT_STATUSES,
   ageDays,
   cycleDays,
   isAging,
@@ -52,7 +57,7 @@ export {
   relativeTime,
 } from "./types";
 
-export type { ServiceClass } from "./types";
+export type { ServiceClass, TaskSource, Project, ProjectStatus } from "./types";
 
 // Cowork-sourced rows are this tracker's view of the unified table.
 const LEGACY_SOURCE = "cowork-actions.json";
@@ -75,7 +80,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   "id, legacy_id, title, status, owner_id, created_by, completed_by, category, " +
   "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-  "updated_at, metadata, brands, service_class, archived_at";
+  "updated_at, metadata, brands, service_class, archived_at, project_id, source";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -117,6 +122,8 @@ interface TaskRow {
   brands: string[] | null;
   service_class: string | null;
   archived_at: string | null;
+  project_id: string | null;
+  source: string | null;
 }
 
 interface TeamMaps {
@@ -180,6 +187,9 @@ export function normalizeItem(
   if (raw.prState !== undefined) base.prState = raw.prState;
   // Doc 764 F5
   if (raw.videoUrl !== undefined) base.videoUrl = raw.videoUrl;
+  // Doc 765 Phase I
+  if (raw.projectId !== undefined) base.projectId = raw.projectId;
+  if (raw.source !== undefined) base.source = raw.source as TaskSource;
   return base;
 }
 
@@ -220,6 +230,9 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   // Doc 763 dedicated columns (preferred over metadata for queryability)
   if (row.service_class) item.serviceClass = row.service_class as ServiceClass;
   if (row.archived_at) item.archivedAt = row.archived_at;
+  // Doc 765 Phase I columns
+  if (row.project_id) item.projectId = row.project_id;
+  if (row.source) item.source = row.source as TaskSource;
   // PR linkage still lives in metadata for now (no dedicated column yet)
   if (typeof meta.prUrl === "string") item.prUrl = meta.prUrl;
   if (typeof meta.prNumber === "number") item.prNumber = meta.prNumber;
@@ -279,6 +292,9 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     brands: Array.isArray(item.brands) ? item.brands : [],
     service_class: item.serviceClass ?? "Standard",
     archived_at: item.archivedAt ?? null,
+    // Doc 765 Phase I
+    project_id: item.projectId ?? null,
+    source: item.source ?? "human-web",
   };
 }
 

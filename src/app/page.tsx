@@ -7,6 +7,7 @@ import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { CATEGORIES } from "@/lib/types";
 import { listActiveBrands } from "@/lib/brands-db";
+import { listActiveProjects } from "@/lib/projects";
 import { computeForecast } from "@/lib/forecast";
 import { ForecastWidget } from "@/components/ForecastWidget";
 import { SlaGridChip } from "@/components/SlaGridChip";
@@ -16,14 +17,26 @@ export const dynamic = "force-dynamic";
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ brand?: string }>;
+  searchParams: Promise<{ brand?: string; project?: string }>;
 }) {
-  const { brand: rawBrand } = await searchParams;
-  const navBrands = await listActiveBrands();
+  const { brand: rawBrand, project: rawProject } = await searchParams;
+  const [navBrands, activeProjects] = await Promise.all([
+    listActiveBrands(),
+    listActiveProjects().catch(() => []),
+  ]);
   // Only accept brand values from the active brand list so the URL can't
   // smuggle a free-text filter into the Board's filter state.
   const brandNames = navBrands.map((b) => b.name);
   const urlBrand = rawBrand && brandNames.includes(rawBrand) ? rawBrand : null;
+  // Doc 765 Phase I: project filter from ?project=slug. Same whitelist
+  // pattern - reject unknown slugs so the URL can't carry arbitrary
+  // strings into the filter state.
+  const urlProjectSlug = rawProject
+    ? activeProjects.find((p) => p.slug === rawProject)?.slug ?? null
+    : null;
+  const urlProject = urlProjectSlug
+    ? activeProjects.find((p) => p.slug === urlProjectSlug) ?? null
+    : null;
   const user = await getSession();
   // Public homepage: no session = render a small landing with a Login CTA.
   // Anyone can hit the site root without being kicked to /login automatically.
@@ -134,6 +147,10 @@ export default async function Page({
             portalCategories={CATEGORIES}
             defaultCategory="ZAO Devz"
             urlBrand={urlBrand}
+            urlProjectId={urlProject?.id ?? null}
+            urlProjectSlug={urlProjectSlug}
+            urlProjectName={urlProject?.name ?? null}
+            projects={activeProjects}
           />
         </div>
 

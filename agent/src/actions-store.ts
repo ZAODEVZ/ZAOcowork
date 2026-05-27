@@ -34,7 +34,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   'id, legacy_id, title, status, owner_id, created_by, completed_by, category, ' +
   'priority, phase, important, urgent, due, notes, completed_at, created_at, ' +
-  'updated_at, metadata, brands';
+  'updated_at, metadata, brands, source, project_id';
 
 let cachedClient: SupabaseClient | null = null;
 function db(): SupabaseClient {
@@ -68,6 +68,11 @@ interface TaskRow {
   updated_at: string;
   metadata: Record<string, unknown> | null;
   brands: string[] | null;
+  // Doc 765 Phase I + decision 2 columns. Nullable for backward-compat
+  // with pre-006-migration rows; the bot defaults to 'human-bot' on
+  // future writes.
+  source?: string | null;
+  project_id?: string | null;
 }
 
 interface TeamMaps {
@@ -116,6 +121,8 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     brands: Array.isArray(row.brands) ? row.brands : [],
+    source: row.source ?? undefined,
+    projectId: row.project_id ?? null,
   };
 }
 
@@ -151,6 +158,11 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     updated_at: new Date().toISOString(),
     metadata: item.due ? { due: item.due } : {},
     brands: Array.isArray(item.brands) ? item.brands : [],
+    // Doc 765 columns. source defaults to 'human-bot' since the only
+    // writer using this path today is the Telegram bot. project_id
+    // nullable - bot doesn't auto-assign projects yet.
+    source: item.source ?? 'human-bot',
+    project_id: item.projectId ?? null,
   };
 }
 
@@ -300,6 +312,10 @@ export interface NewActionInput {
   // Doc 764 F4: optional override for the default TRIAGE status. The NL
   // extractor sets this when a user clearly says "start it" / "wip foo".
   status?: ActionStatus;
+  // Doc 765 decision 2: source taxonomy override. Default 'human-bot'
+  // for the Telegram bot maker, but the meeting-capture path or
+  // research-dispatch CLI can pass a different value.
+  source?: string;
 }
 
 export function makeActionItem(input: NewActionInput, items: ActionItem[]): ActionItem {
@@ -325,5 +341,10 @@ export function makeActionItem(input: NewActionInput, items: ActionItem[]): Acti
     createdAt: now,
     updatedAt: now,
     brands: Array.isArray(input.brands) ? input.brands : [],
+    // Doc 765 decision 2: every bot-created task carries source=human-bot
+    // so the activity feed + dashboards can filter cleanly. The web side
+    // uses input.source unset -> default to 'human-bot' for this code
+    // path since the bot is the only writer using this maker.
+    source: (input.source ?? 'human-bot') as ActionItem['source'],
   };
 }

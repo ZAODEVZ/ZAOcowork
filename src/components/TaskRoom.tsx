@@ -75,10 +75,14 @@ export function TaskRoom({
   item,
   currentUser,
   onClose,
+  projects,
 }: {
   item: ActionItem;
   currentUser: string;
   onClose: () => void;
+  // Doc 765 Phase I: optional project list passed down from Board. If
+  // missing or empty, the picker hides so old call sites keep working.
+  projects?: Array<{ id: string; slug: string; name: string }>;
 }) {
   const [panel, setPanel] = useState<"details" | "log">("details");
   const pendingUpdates = (item.updates || []).filter((u) => u.reviewStatus === "pending");
@@ -181,7 +185,7 @@ export function TaskRoom({
           <div
             className={`${panel === "details" ? "flex" : "hidden"} lg:flex flex-col w-full lg:w-[42%] xl:w-[40%] border-r border-white/10 overflow-y-auto`}
           >
-            <DetailsPanel item={item} currentUser={currentUser} onClose={onClose} />
+            <DetailsPanel item={item} currentUser={currentUser} onClose={onClose} projects={projects} />
           </div>
 
           {/* Right: Operational log */}
@@ -200,10 +204,12 @@ function DetailsPanel({
   item,
   currentUser,
   onClose,
+  projects,
 }: {
   item: ActionItem;
   currentUser: string;
   onClose: () => void;
+  projects?: Array<{ id: string; slug: string; name: string }>;
 }) {
   const [pending, start] = useTransition();
   const [flash, setFlash] = useState<"saved" | null>(null);
@@ -263,6 +269,19 @@ function DetailsPanel({
               ))}
             </select>
           </FormField>
+
+          {projects && projects.length > 0 && (
+            <FormField label="Project">
+              <select name="projectId" defaultValue={item.projectId ?? ""} className={selectCls}>
+                <option value="">(none)</option>
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+          )}
 
           <FormField label="Owner">
             <select name="owner" defaultValue={String(item.owner)} className={selectCls}>
