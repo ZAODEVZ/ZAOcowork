@@ -876,6 +876,172 @@ export async function bulkDelete(form: FormData): Promise<void> {
   }
 }
 
+// ============================================================================
+// Cleanup actions (doc 763 follow-up - "what happened" UX)
+// ============================================================================
+//
+// Each cleanup action takes ids[] plus a `note` field. The note becomes a
+// comment AND activity log entry on every touched task so the historical
+// record explains WHY it was closed/archived/reassigned in bulk.
+
+export async function bulkMarkDone(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = new Set(idsFromForm(form));
+  if (ids.size === 0) return;
+  // Workers can mark DONE via the cleanup UI - same approval rules as
+  // patchField: their DONE goes to pending review.
+  const note = String(form.get("note") ?? "").trim();
+  const doc = await getActions();
+  const now = new Date().toISOString();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.has(it.id)) continue;
+    if (it.status === "DONE") continue;
+    if (!isLead(user)) {
+      // Worker bulk-done -> add an update entry awaiting review instead of
+      // changing status directly. Note becomes the update content.
+      it.updates = [
+        ...(it.updates || []),
+        {
+          id: `u-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          submittedBy: user,
+          displayName: userLabel(user),
+          content: note || "Closing via cleanup",
+          fromStatus: it.status,
+          toStatus: "DONE",
+          reviewStatus: "pending",
+          createdAt: now,
+        },
+      ];
+    } else {
+      const from = it.status;
+      it.status = "DONE";
+      it.completedAt = now;
+      it.completedBy = user;
+      const noteText = note || "Closed via cleanup";
+      it.comments = [
+        ...(it.comments || []),
+        {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          userId: user,
+          displayName: userLabel(user),
+          content: noteText,
+          createdAt: now,
+        },
+      ];
+      it.activity = [
+        ...(it.activity || []),
+        makeActivity(user, "bulk_marked_done", `${from} -> DONE: ${noteText.slice(0, 60)}`, now),
+      ];
+    }
+    it.updatedAt = now;
+    touched++;
+  }
+  if (touched > 0) {
+    await saveActions(doc, user, `bulk mark done ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_mark_done",
+      detail: `${touched} task${touched === 1 ? "" : "s"} -> DONE${note ? `: ${note.slice(0, 80)}` : ""}`,
+      metadata: { ids: Array.from(ids), touched, note, worker: !isLead(user) },
+    });
+  }
+}
+
+export async function bulkArchive(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const ids = new Set(idsFromForm(form));
+  if (ids.size === 0) return;
+  const note = String(form.get("note") ?? "").trim();
+  const doc = await getActions();
+  const now = new Date().toISOString();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.has(it.id)) continue;
+    if (it.archivedAt) continue;
+    it.archivedAt = now;
+    it.updatedAt = now;
+    if (note) {
+      it.comments = [
+        ...(it.comments || []),
+        {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          userId: user,
+          displayName: userLabel(user),
+          content: note,
+          createdAt: now,
+        },
+      ];
+    }
+    it.activity = [
+      ...(it.activity || []),
+      makeActivity(user, "bulk_archived", note ? note.slice(0, 80) : undefined, now),
+    ];
+    touched++;
+  }
+  if (touched > 0) {
+    await saveActions(doc, user, `bulk archive ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_archive",
+      detail: `${touched} archived${note ? `: ${note.slice(0, 80)}` : ""}`,
+      metadata: { ids: Array.from(ids), touched, note },
+    });
+  }
+}
+
+export async function bulkMoveToTriage(form: FormData): Promise<void> {
+  // Move "I don't know what to do with this" tasks back to TRIAGE so a lead
+  // can re-route them with fresh context. Anybody can do this; it's a
+  // reversible "punt" rather than a destructive op.
+  const user = await requireSession();
+  const ids = new Set(idsFromForm(form));
+  if (ids.size === 0) return;
+  const note = String(form.get("note") ?? "").trim();
+  const doc = await getActions();
+  const now = new Date().toISOString();
+  let touched = 0;
+  for (const it of doc.items) {
+    if (!ids.has(it.id)) continue;
+    if (it.status === "TRIAGE") continue;
+    const from = it.status;
+    it.status = "TRIAGE";
+    it.updatedAt = now;
+    if (note) {
+      it.comments = [
+        ...(it.comments || []),
+        {
+          id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          userId: user,
+          displayName: userLabel(user),
+          content: note,
+          createdAt: now,
+        },
+      ];
+    }
+    it.activity = [
+      ...(it.activity || []),
+      makeActivity(user, "bulk_to_triage", `${from} -> TRIAGE${note ? `: ${note.slice(0, 60)}` : ""}`, now),
+    ];
+    touched++;
+  }
+  if (touched > 0) {
+    await saveActions(doc, user, `bulk move to triage ${touched} item${touched === 1 ? "" : "s"}`);
+    revalidateAll();
+    await logAudit({
+      actor: userLabel(user),
+      entity_type: "task",
+      action: "bulk_to_triage",
+      detail: `${touched} -> TRIAGE${note ? `: ${note.slice(0, 80)}` : ""}`,
+      metadata: { ids: Array.from(ids), touched, note },
+    });
+  }
+}
+
 // Smart-fix shortcut used from /admin: assign every NULL/empty-owner task to
 // the supplied owner in one shot. The admin UI passes `owner=Zaal` by default
 // but any roster name works.
