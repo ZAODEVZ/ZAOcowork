@@ -178,6 +178,8 @@ export function normalizeItem(
   if (raw.prUrl !== undefined) base.prUrl = raw.prUrl;
   if (raw.prNumber !== undefined) base.prNumber = raw.prNumber;
   if (raw.prState !== undefined) base.prState = raw.prState;
+  // Doc 764 F5
+  if (raw.videoUrl !== undefined) base.videoUrl = raw.videoUrl;
   return base;
 }
 
@@ -222,6 +224,8 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (typeof meta.prUrl === "string") item.prUrl = meta.prUrl;
   if (typeof meta.prNumber === "number") item.prNumber = meta.prNumber;
   if (typeof meta.prState === "string") item.prState = meta.prState as "open" | "merged" | "closed";
+  // Doc 764 F5: videoUrl stored in metadata jsonb (no dedicated column)
+  if (typeof meta.videoUrl === "string") item.videoUrl = meta.videoUrl;
   return item;
 }
 
@@ -238,6 +242,7 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   if (item.prUrl !== undefined && item.prUrl !== null) meta.prUrl = item.prUrl;
   if (item.prNumber !== undefined && item.prNumber !== null) meta.prNumber = item.prNumber;
   if (item.prState !== undefined && item.prState !== null) meta.prState = item.prState;
+  if (item.videoUrl !== undefined && item.videoUrl !== null) meta.videoUrl = item.videoUrl;
   return meta;
 }
 

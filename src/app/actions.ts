@@ -123,6 +123,10 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     prUrl: prev?.prUrl ?? null,
     prNumber: prev?.prNumber ?? null,
     prState: prev?.prState ?? null,
+    // Doc 764 F5: video walkthrough URL (Loom / YouTube / Vimeo)
+    videoUrl: (form.get("videoUrl") != null
+      ? String(form.get("videoUrl") ?? "").trim() || null
+      : prev?.videoUrl ?? null),
   });
   if (prev) {
     if (prev.status !== "DONE" && next.status === "DONE") {
@@ -266,6 +270,14 @@ export async function patchField(form: FormData): Promise<void> {
       next.activity = [
         ...(cur.activity || []),
         makeActivity(user, value === "1" ? "archived" : "unarchived", undefined, next.updatedAt),
+      ];
+      break;
+    }
+    case "videoUrl": {
+      next.videoUrl = value.trim() || null;
+      next.activity = [
+        ...(cur.activity || []),
+        makeActivity(user, "video_url_set", next.videoUrl ?? "(cleared)", next.updatedAt),
       ];
       break;
     }
@@ -574,6 +586,132 @@ export async function claimTask(form: FormData): Promise<void> {
   };
   await saveActions(doc, user, `claim #${id} by ${user}`);
   revalidateAll();
+}
+
+// ============================================================================
+// AI proposals (doc 764 F7)
+// ============================================================================
+//
+// approveProposal applies the underlying mutation + stamps the row.
+// rejectProposal just stamps the row. Only leads + admins.
+
+import {
+  decideProposal as decideProposalRow,
+  getProposal,
+} from "@/lib/proposals";
+
+async function requireLeadOrAdmin(): Promise<string> {
+  const user = await requireSession();
+  if (isLead(user)) return user;
+  const { isAdmin } = await import("@/lib/auth");
+  if (await isAdmin(user)) return user;
+  throw new Error("Forbidden");
+}
+
+export async function approveProposal(form: FormData): Promise<void> {
+  const user = await requireLeadOrAdmin();
+  const id = String(form.get("id") ?? "");
+  if (!id) return;
+  const prop = await getProposal(id);
+  if (!prop || prop.status !== "pending") return;
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === prop.task_id);
+  if (idx < 0) {
+    await decideProposalRow(id, "rejected", userLabel(user));
+    return;
+  }
+  const cur = doc.items[idx];
+  const now = new Date().toISOString();
+  const next: ActionItem = { ...cur, updatedAt: now };
+  let detail = "";
+  switch (prop.action_type) {
+    case "set_brands": {
+      const brands = Array.isArray(prop.payload.brands) ? (prop.payload.brands as string[]) : [];
+      next.brands = brands;
+      detail = `brands -> ${brands.join(", ") || "(none)"}`;
+      break;
+    }
+    case "set_owner": {
+      next.owner = String(prop.payload.owner ?? "Open");
+      detail = `owner -> ${next.owner}`;
+      break;
+    }
+    case "set_service_class": {
+      next.serviceClass = asServiceClass(prop.payload.serviceClass);
+      detail = `service class -> ${next.serviceClass}`;
+      break;
+    }
+    case "set_priority": {
+      next.priority = asPriority(prop.payload.priority);
+      detail = `priority -> ${next.priority}`;
+      break;
+    }
+    case "move_status": {
+      const target = asStatus(prop.payload.status);
+      next.status = target;
+      detail = `status -> ${target}`;
+      break;
+    }
+    case "add_comment": {
+      const text = String(prop.payload.text ?? "").trim();
+      if (text) {
+        next.comments = [
+          ...(next.comments ?? []),
+          {
+            id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            userId: user,
+            displayName: userLabel(user),
+            content: text,
+            createdAt: now,
+          },
+        ];
+        detail = `comment added (${text.slice(0, 40)}...)`;
+      }
+      break;
+    }
+    case "flag_duplicate": {
+      const dupId = String(prop.payload.duplicateOf ?? "");
+      next.notes = `${next.notes ? next.notes + "\n\n" : ""}DUPLICATE of #${dupId} (flagged via proposal)`;
+      detail = `flagged as duplicate of #${dupId}`;
+      break;
+    }
+  }
+  next.activity = [
+    ...(cur.activity ?? []),
+    makeActivity(user, `proposal_${prop.action_type}_approved`, `[${prop.source}] ${detail}`, now),
+  ];
+  doc.items[idx] = next;
+  await saveActions(doc, user, `approve proposal ${id} -> #${prop.task_id}`);
+  await decideProposalRow(id, "approved", userLabel(user));
+  await logAudit({
+    actor: userLabel(user),
+    entity_type: "task",
+    entity_id: prop.task_id,
+    entity_label: cur.title,
+    action: `proposal_approved_${prop.action_type}`,
+    detail: `${detail} (source: ${prop.source})`,
+    metadata: { proposalId: id, source: prop.source, confidence: prop.confidence },
+  });
+  revalidateAll();
+  revalidatePath("/admin/proposals");
+}
+
+export async function rejectProposal(form: FormData): Promise<void> {
+  const user = await requireLeadOrAdmin();
+  const id = String(form.get("id") ?? "");
+  if (!id) return;
+  const prop = await getProposal(id);
+  if (!prop || prop.status !== "pending") return;
+  await decideProposalRow(id, "rejected", userLabel(user));
+  await logAudit({
+    actor: userLabel(user),
+    entity_type: "task",
+    entity_id: prop.task_id,
+    action: `proposal_rejected_${prop.action_type}`,
+    detail: `source: ${prop.source}`,
+    metadata: { proposalId: id, source: prop.source, confidence: prop.confidence },
+  });
+  revalidatePath("/admin/proposals");
 }
 
 export async function logout(): Promise<void> {

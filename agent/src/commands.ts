@@ -317,7 +317,13 @@ export async function cmdAdd(
     const brandStr = brands.length ? ` [${brands.join(', ')}]` : '';
     const dueStr = result.due ? ` (due ${result.due})` : '';
     const prioStr = extras?.priority && extras.priority !== 'P2' ? ` ${extras.priority}` : '';
-    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}${prioStr}${dueStr}: ${result.title}`);
+    // Doc 764 F4: makeActionItem now defaults new items to TRIAGE so a
+    // lead can route them. Surface that in the reply so the user knows
+    // the item is in the inbox rather than the active board.
+    const triageNote = result.status === 'TRIAGE'
+      ? ` - in triage, lead will route`
+      : '';
+    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}${prioStr}${dueStr}: ${result.title}${triageNote}`);
     fireBonfire('add', result, ctx);
   }
 }

@@ -17,12 +17,14 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const LEGACY_SOURCE = 'cowork-actions.json';
 
 const STATUS_TO_DB: Record<ActionStatus, string> = {
+  TRIAGE: 'triage',
   TODO: 'todo',
   WIP: 'in_progress',
   BLOCKED: 'blocked',
   DONE: 'done',
 };
 const STATUS_FROM_DB: Record<string, ActionStatus> = {
+  triage: 'TRIAGE',
   todo: 'TODO',
   in_progress: 'WIP',
   blocked: 'BLOCKED',
@@ -295,6 +297,9 @@ export interface NewActionInput {
   // due in YYYY-MM-DD form. Lets NL extractor put the date on the add op
   // itself instead of fanning out to a separate setdue on a phantom id.
   due?: string;
+  // Doc 764 F4: optional override for the default TRIAGE status. The NL
+  // extractor sets this when a user clearly says "start it" / "wip foo".
+  status?: ActionStatus;
 }
 
 export function makeActionItem(input: NewActionInput, items: ActionItem[]): ActionItem {
@@ -304,7 +309,10 @@ export function makeActionItem(input: NewActionInput, items: ActionItem[]): Acti
     title: input.title.trim(),
     createdBy: input.createdBy,
     owner: input.owner,
-    status: 'TODO',
+    // Doc 764 F4: Telegram bot adds default to TRIAGE so a lead routes
+    // them with fresh context before they hit the main board. Override
+    // via input.status if the NL extractor confidently inferred one.
+    status: input.status ?? 'TRIAGE',
     category: input.category ?? 'Other',
     priority: input.priority ?? 'P2',
     important: false,

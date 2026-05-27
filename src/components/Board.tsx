@@ -1019,7 +1019,7 @@ function Card({
           : "border-white/10 hover:border-white/20"
       } ${pending ? "opacity-60" : ""} ${item.status === "DONE" ? "opacity-60" : ""}`}
     >
-      {(stale || serviceClass === "Expedite" || item.prUrl) && (
+      {(stale || serviceClass === "Expedite" || item.prUrl || item.videoUrl) && (
         <div className="absolute -top-1.5 -right-1.5 flex gap-1">
           {serviceClass === "Expedite" && (
             <span
@@ -1036,6 +1036,18 @@ function Card({
             >
               STALE
             </span>
+          )}
+          {item.videoUrl && (
+            <a
+              href={item.videoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full bg-violet-500/80 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md shadow-violet-500/30 hover:bg-violet-500"
+              title={`Video walkthrough: ${item.videoUrl}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              ▶ VIDEO
+            </a>
           )}
           {item.prUrl && (
             <a

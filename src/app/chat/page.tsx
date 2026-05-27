@@ -5,6 +5,7 @@ import { getActions, ageDays } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { Chat } from "@/components/Chat";
+import { SlaGridChip } from "@/components/SlaGridChip";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,7 @@ export default async function ChatPage() {
           <span>answers reflect the live board · MiniMax can be wrong</span>
         </footer>
       </div>
+      <SlaGridChip />
     </main>
   );
 }

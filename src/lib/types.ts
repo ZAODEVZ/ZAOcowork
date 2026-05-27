@@ -166,6 +166,9 @@ export type ActionItem = {
   prUrl?: string | null;
   prNumber?: number | null;
   prState?: "open" | "merged" | "closed" | null;
+  // Video walkthrough URL (doc 764 F5). Pasted by user, supports Loom /
+  // YouTube / Vimeo. UI renders a small purple play icon + embed in TaskRoom.
+  videoUrl?: string | null;
 };
 
 export type ActionDoc = {

@@ -187,7 +187,11 @@ export function parseText(
             type: "create",
             title: title.length > 90 ? title.slice(0, 90) + "…" : title,
             owner,
-            status: detectedStatus || "TODO",
+            // Doc 764 F4: NL-created items default to TRIAGE so a lead
+            // routes them with fresh context before they hit TODO. The
+            // explicit-status path (user wrote "wip..." or "blocked...")
+            // still honors that intent.
+            status: detectedStatus || "TRIAGE",
             priority,
             notes: "",
             claimable: !owner,
