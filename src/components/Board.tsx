@@ -241,14 +241,21 @@ export function Board({
   const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
   const prevById = useRef<Map<string, ActionItem>>(new Map());
 
-  const userLabel =
-    currentUser.trim().toLowerCase() === "zaal"
-      ? "Zaal"
-      : currentUser.trim().toLowerCase() === "iman"
-      ? "Iman"
-      : currentUser.trim().toLowerCase() === "thyrev"
-      ? "ThyRev"
-      : "Samantha";
+  // Hardcoded ternary used to default any unknown session user (Shawn,
+  // Tyler, future admin-added users) to "Samantha", which made the
+  // welcome modal greet a freshly-added Shawn as "Hi Samantha". Use the
+  // same KNOWN_LABELS + capitalize fallback as the server-side
+  // userLabel() in @/lib/auth.
+  const KNOWN_LABELS: Record<string, string> = {
+    zaal: "Zaal",
+    iman: "Iman",
+    thyrev: "ThyRev",
+    samantha: "Samantha",
+    tyler: "Tyler",
+    shawn: "Shawn",
+  };
+  const lowered = currentUser.trim().toLowerCase();
+  const userLabel = KNOWN_LABELS[lowered] ?? (lowered ? lowered.charAt(0).toUpperCase() + lowered.slice(1) : "User");
   const storageUserKey = userLabel.trim().toLowerCase() || "user";
   const todayKey = new Date().toISOString().slice(0, 10);
 

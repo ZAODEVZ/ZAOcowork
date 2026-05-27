@@ -22,7 +22,7 @@ import { BRAND_SLUGS, type BrandName } from "./brands";
 
 export type ParsedPriority = "P1" | "P2" | "P3";
 
-const KNOWN_OWNERS = ["Zaal", "Iman", "ThyRev", "Samantha", "Tyler", "Both", "Open"] as const;
+const KNOWN_OWNERS = ["Zaal", "Iman", "ThyRev", "Samantha", "Tyler", "Shawn", "Both", "Open"] as const;
 type OwnerName = (typeof KNOWN_OWNERS)[number];
 
 export interface ParsedTask {
