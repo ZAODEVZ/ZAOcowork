@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BOARD_STATUSES,
   type BoardStatus,
@@ -214,7 +214,31 @@ export function Board({
     }
   }, [filters, filterStorageKey]);
   const [activeMobileStatus, setActiveMobileStatus] = useState<BoardStatus>("TODO");
-  const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
+  // Phase H: TaskRoom can be opened via the ?task=<id> URL param so a
+  // /todo/N permalink lands the user directly on the task. We sync both
+  // ways - state -> URL (history.replaceState so back button works) and
+  // URL -> state (initial load + back/forward navigation).
+  const searchParams = useSearchParams();
+  const urlTaskParam = searchParams.get("task");
+  const [taskRoomId, setTaskRoomId] = useState<string | null>(urlTaskParam);
+  useEffect(() => {
+    // When URL param changes (back/forward, link click) -> open that task.
+    if (urlTaskParam !== taskRoomId) setTaskRoomId(urlTaskParam ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTaskParam]);
+  useEffect(() => {
+    // When state changes -> rewrite URL without a full nav.
+    const url = new URL(window.location.href);
+    if (taskRoomId) {
+      if (url.searchParams.get("task") !== taskRoomId) {
+        url.searchParams.set("task", taskRoomId);
+        window.history.replaceState(null, "", url.toString());
+      }
+    } else if (url.searchParams.has("task")) {
+      url.searchParams.delete("task");
+      window.history.replaceState(null, "", url.toString());
+    }
+  }, [taskRoomId]);
   const [todoOpen, setTodoOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   // Phase C: bulk-select. Off by default to keep the day-to-day UX unchanged;

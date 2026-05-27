@@ -323,9 +323,21 @@ export async function cmdAdd(
     const triageNote = result.status === 'TRIAGE'
       ? ` - in triage, lead will route`
       : '';
-    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}${prioStr}${dueStr}: ${result.title}${triageNote}`);
+    // Phase H: include permalink so the recipient can tap straight to
+    // the task in the web UI. PUBLIC_BASE_URL env override allows for
+    // staging / local-dev usage.
+    const url = taskUrl(result.id);
+    await ctx.reply(`added #${result.id} (${result.owner})${brandStr}${prioStr}${dueStr}: ${result.title}${triageNote}\n${url}`);
     fireBonfire('add', result, ctx);
   }
+}
+
+// Phase H: build the public /todo/<id> permalink for bot replies so
+// recipients can tap straight to the task. PUBLIC_BASE_URL env
+// overrides the default for staging / local-dev usage.
+function taskUrl(id: string): string {
+  const base = (process.env.PUBLIC_BASE_URL || 'https://www.thezao.xyz').replace(/\/+$/, '');
+  return `${base}/todo/${encodeURIComponent(id)}`;
 }
 
 // v2.16 - batch add. When a user pastes multiple todos in one message the LLM
@@ -365,7 +377,10 @@ export async function cmdAddBatch(
     };
   });
   if (created && created.length > 0) {
-    const lines = created.map((i) => `#${i.id} (${i.owner}): ${i.title}`);
+    // Phase H: include /todo/<id> permalinks so each row in the batch
+    // reply is tappable. Kept tight so a 10-item batch doesn't explode
+    // the message - one URL per line, no extra blanks.
+    const lines = created.map((i) => `#${i.id} (${i.owner}): ${i.title} ${taskUrl(i.id)}`);
     await ctx.reply(
       `added ${created.length} item${created.length === 1 ? '' : 's'}:\n${lines.join('\n')}`,
     );
@@ -397,7 +412,8 @@ async function applyStatusCommand(ctx: Context, args: string, status: ActionStat
     };
   });
   if (result) {
-    await ctx.reply(`${label} #${result.id}: ${result.title}`);
+    // Phase H: append permalink so status-change DMs are tappable.
+    await ctx.reply(`${label} #${result.id}: ${result.title}\n${taskUrl(result.id)}`);
     // v2.8 - notify the owner if someone else updated their item.
     // v2.14 - pass tg_id (not display name) so self-skip actually works.
     if (status === 'DONE' || status === 'BLOCKED' || status === 'WIP') {
