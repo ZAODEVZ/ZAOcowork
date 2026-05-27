@@ -127,6 +127,15 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     videoUrl: (form.get("videoUrl") != null
       ? String(form.get("videoUrl") ?? "").trim() || null
       : prev?.videoUrl ?? null),
+    // Doc 765 Phase I: project layer
+    projectId: (form.get("projectId") != null
+      ? String(form.get("projectId") ?? "").trim() || null
+      : prev?.projectId ?? null),
+    // Doc 765 decision 2: source taxonomy. New rows from web are
+    // human-web; if a writer (bot / meeting / research) set it explicitly
+    // they pass via form, else inherit prev. Default "human-web" since
+    // readForm is called from server actions invoked by the web UI.
+    source: ((form.get("source") as string) ?? prev?.source ?? "human-web") as ActionItem["source"],
   });
   if (prev) {
     if (prev.status !== "DONE" && next.status === "DONE") {
@@ -278,6 +287,16 @@ export async function patchField(form: FormData): Promise<void> {
       next.activity = [
         ...(cur.activity || []),
         makeActivity(user, "video_url_set", next.videoUrl ?? "(cleared)", next.updatedAt),
+      ];
+      break;
+    }
+    case "projectId": {
+      // Doc 765 Phase I: inline project reassignment.
+      // Empty string -> unparent.
+      next.projectId = value.trim() || null;
+      next.activity = [
+        ...(cur.activity || []),
+        makeActivity(user, "project_changed", next.projectId ?? "(none)", next.updatedAt),
       ];
       break;
     }

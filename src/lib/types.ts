@@ -172,7 +172,85 @@ export type ActionItem = {
   // Video walkthrough URL (doc 764 F5). Pasted by user, supports Loom /
   // YouTube / Vimeo. UI renders a small purple play icon + embed in TaskRoom.
   videoUrl?: string | null;
+  // Doc 765 Phase I: project layer. Nullable - tasks without a project
+  // appear under the "General" bucket on the board. Set via TaskRoom
+  // picker, NL parser (`^slug` prefix), or bot `/add #project-slug ...`.
+  projectId?: string | null;
+  // Doc 765 decision 2: source taxonomy. Who wrote this row? Set at
+  // creation time by the writer, never re-set after. Defaults to
+  // 'human-web' for the existing web QuickAdd path.
+  source?: TaskSource;
 };
+
+// Provenance taxonomy (doc 765 decision 2). Every task carries exactly
+// one. Used by the activity feed filter + audit log + future analytics
+// ("how many tasks per week come from the Telegram bot?").
+export type TaskSource =
+  | "human-web"
+  | "human-bot"
+  | "meeting-capture"
+  | "research-dispatch"
+  | "pr-test-task"
+  | "ai-proposal"
+  | "system-cleanup"
+  | "external-api";
+
+export const TASK_SOURCES: TaskSource[] = [
+  "human-web",
+  "human-bot",
+  "meeting-capture",
+  "research-dispatch",
+  "pr-test-task",
+  "ai-proposal",
+  "system-cleanup",
+  "external-api",
+];
+
+export const TASK_SOURCE_LABELS: Record<TaskSource, string> = {
+  "human-web": "Web",
+  "human-bot": "Telegram",
+  "meeting-capture": "Meeting",
+  "research-dispatch": "Research",
+  "pr-test-task": "PR test",
+  "ai-proposal": "AI proposal",
+  "system-cleanup": "Cleanup",
+  "external-api": "External",
+};
+
+// Tailwind chip colors per source. Picked so writer types are visually
+// distinct on the cards + feed.
+export const TASK_SOURCE_COLORS: Record<TaskSource, string> = {
+  "human-web": "bg-blue-500/15 text-blue-200 border-blue-500/30",
+  "human-bot": "bg-cyan-500/15 text-cyan-200 border-cyan-500/30",
+  "meeting-capture": "bg-amber-500/15 text-amber-200 border-amber-500/30",
+  "research-dispatch": "bg-violet-500/15 text-violet-200 border-violet-500/30",
+  "pr-test-task": "bg-emerald-500/15 text-emerald-200 border-emerald-500/30",
+  "ai-proposal": "bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-500/30",
+  "system-cleanup": "bg-slate-500/15 text-slate-200 border-slate-500/30",
+  "external-api": "bg-pink-500/15 text-pink-200 border-pink-500/30",
+};
+
+// Project type (doc 765 Phase I). Cross-task grouping for time-bounded
+// initiatives. Sits between brand and task in the conceptual hierarchy.
+export type ProjectStatus = "active" | "paused" | "completed" | "cancelled";
+export const PROJECT_STATUSES: ProjectStatus[] = ["active", "paused", "completed", "cancelled"];
+
+export interface Project {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  brandDefault: string | null;
+  startedAt: string | null;
+  targetDate: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+  color: string;
+  sortOrder: number;
+  createdAt: string;
+  createdBy: string | null;
+}
 
 export type ActionDoc = {
   updatedAt: string;

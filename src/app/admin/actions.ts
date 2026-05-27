@@ -15,6 +15,13 @@ import {
   deleteBrand,
   updateBrand,
 } from "@/lib/brands-db";
+import {
+  createProject,
+  deleteProject,
+  updateProject,
+  type NewProject,
+} from "@/lib/projects";
+import type { ProjectStatus } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 
 function asRole(v: FormDataEntryValue | null): TeamRole {
@@ -263,4 +270,133 @@ export async function deleteBrandAction(form: FormData): Promise<void> {
     detail: "hard delete",
   });
   revalidateAllSurfaces();
+}
+
+// ============================================================================
+// Projects (doc 765 Phase I)
+// ============================================================================
+
+const PROJECT_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,40}$/;
+
+function asProjectStatus(v: FormDataEntryValue | null): ProjectStatus {
+  const s = String(v ?? "").toLowerCase();
+  if (s === "active" || s === "paused" || s === "completed" || s === "cancelled") return s;
+  return "active";
+}
+
+export async function addProjectAction(form: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const slug = String(form.get("slug") ?? "").trim().toLowerCase();
+  const name = String(form.get("name") ?? "").trim();
+  const description = String(form.get("description") ?? "").trim() || null;
+  const brand_default = String(form.get("brand_default") ?? "").trim() || null;
+  const target_date = String(form.get("target_date") ?? "").trim() || null;
+  const color = String(form.get("color") ?? "").trim() || undefined;
+  const sortRaw = String(form.get("sort_order") ?? "100").trim();
+
+  if (!PROJECT_SLUG_RE.test(slug)) bouncedErr("invalid project slug (lowercase, alphanumeric + dashes, 2-40 chars)");
+  if (!name || name.length > 80) bouncedErr("project name required, max 80 chars");
+  const sort_order = Number(sortRaw);
+  if (!Number.isFinite(sort_order)) bouncedErr("sort_order must be numeric");
+  if (target_date && !/^\d{4}-\d{2}-\d{2}$/.test(target_date)) bouncedErr("target_date must be YYYY-MM-DD");
+
+  const newProject: NewProject = {
+    slug,
+    name,
+    description,
+    brand_default,
+    target_date,
+    color,
+    sort_order,
+    created_by: userLabel(actor),
+  };
+  const created = await createProject(newProject);
+
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "system",
+    entity_id: created.id,
+    entity_label: name,
+    action: "add_project",
+    detail: `slug=${slug}${brand_default ? `, brand=${brand_default}` : ""}${target_date ? `, target=${target_date}` : ""}`,
+    metadata: { slug, brand_default, target_date },
+  });
+  revalidateAllSurfaces();
+  revalidatePath("/admin/projects");
+}
+
+export async function updateProjectAction(form: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const id = String(form.get("id") ?? "").trim();
+  if (!id) bouncedErr("missing id");
+
+  const patch: {
+    name?: string;
+    description?: string | null;
+    status?: ProjectStatus;
+    brand_default?: string | null;
+    target_date?: string | null;
+    color?: string;
+    sort_order?: number;
+  } = {};
+
+  const nameRaw = form.get("name");
+  if (nameRaw !== null) {
+    const name = String(nameRaw).trim();
+    if (!name || name.length > 80) bouncedErr("project name required, max 80 chars");
+    patch.name = name;
+  }
+  const descRaw = form.get("description");
+  if (descRaw !== null) patch.description = String(descRaw).trim() || null;
+  const statusRaw = form.get("status");
+  if (statusRaw !== null) patch.status = asProjectStatus(statusRaw);
+  const brandRaw = form.get("brand_default");
+  if (brandRaw !== null) patch.brand_default = String(brandRaw).trim() || null;
+  const targetRaw = form.get("target_date");
+  if (targetRaw !== null) {
+    const td = String(targetRaw).trim();
+    if (td && !/^\d{4}-\d{2}-\d{2}$/.test(td)) bouncedErr("target_date must be YYYY-MM-DD");
+    patch.target_date = td || null;
+  }
+  const colorRaw = form.get("color");
+  if (colorRaw !== null) patch.color = String(colorRaw).trim() || "bg-white/10 text-white/70 border-white/20";
+  const sortRaw = form.get("sort_order");
+  if (sortRaw !== null) {
+    const sort_order = Number(String(sortRaw).trim());
+    if (!Number.isFinite(sort_order)) bouncedErr("sort_order must be numeric");
+    patch.sort_order = sort_order;
+  }
+
+  if (Object.keys(patch).length === 0) return;
+  await updateProject(id, patch, userLabel(actor));
+
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "system",
+    entity_id: id,
+    entity_label: patch.name ?? null,
+    action: "update_project",
+    detail: Object.entries(patch)
+      .map(([k, v]) => `${k}=${v === null ? "null" : v}`)
+      .join("; "),
+    metadata: patch as Record<string, unknown>,
+  });
+  revalidateAllSurfaces();
+  revalidatePath("/admin/projects");
+}
+
+export async function deleteProjectAction(form: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const id = String(form.get("id") ?? "").trim();
+  if (!id) bouncedErr("missing id");
+  await deleteProject(id);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "system",
+    entity_id: id,
+    action: "delete_project",
+    detail: "hard delete - tasks unparented via ON DELETE SET NULL",
+  });
+  revalidateAllSurfaces();
+  revalidatePath("/admin/projects");
 }

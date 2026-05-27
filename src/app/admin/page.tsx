@@ -8,6 +8,7 @@ import { BrandsPanel } from "@/components/admin/BrandsPanel";
 import { AuditPanel } from "@/components/admin/AuditPanel";
 import { SlaGridChip } from "@/components/SlaGridChip";
 import { listProposals } from "@/lib/proposals";
+import { listProjects } from "@/lib/projects";
 import { listTeamMembers } from "@/lib/team";
 import { listBrands, listActiveBrands } from "@/lib/brands-db";
 import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
@@ -70,6 +71,11 @@ export default async function AdminPage({
   // Pending proposals count for the FeedCallout sibling. Best-effort -
   // if the migration isn't applied yet we silently show 0.
   const proposalsCount = await listProposals("pending").then((p) => p.rows.length).catch(() => 0);
+  // Active project count for the new callout. Best-effort; 0 if migration
+  // 006 not applied yet.
+  const projectsActiveCount = await listProjects()
+    .then((p) => p.rows.filter((r) => r.status === "active").length)
+    .catch(() => 0);
   const navBrands = await listActiveBrands();
   const migrationApplied = !allBrands.some((b) => b.id.startsWith("const-"));
 
@@ -109,9 +115,10 @@ export default async function AdminPage({
           <NavBar isAdmin brands={navBrands} />
         </header>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-3">
           <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
           <FeedCallout />
+          <ProjectsCallout count={projectsActiveCount} />
           <ProposalsCallout count={proposalsCount} />
           <CleanupCallout
             staleCount={doc.items.filter((it) => {
@@ -164,6 +171,41 @@ export default async function AdminPage({
       </div>
       <SlaGridChip />
     </main>
+  );
+}
+
+function ProjectsCallout({ count }: { count: number }) {
+  if (count === 0) {
+    return (
+      <a
+        href="/admin/projects"
+        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-white/85">Projects</div>
+            <div className="text-xs text-white/45">No active projects yet</div>
+          </div>
+          <span className="text-xs text-white/40">/admin/projects -&gt;</span>
+        </div>
+      </a>
+    );
+  }
+  return (
+    <a
+      href="/admin/projects"
+      className="block rounded-2xl border border-indigo-500/30 bg-indigo-500/8 px-5 py-3 hover:bg-indigo-500/15 transition"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-indigo-100">
+            Projects: {count} active
+          </div>
+          <div className="text-xs text-indigo-200/70">Group tasks by time-bounded initiative</div>
+        </div>
+        <span className="text-xs text-indigo-200">Manage -&gt;</span>
+      </div>
+    </a>
   );
 }
 
