@@ -310,6 +310,30 @@ function DetailsPanel({
             />
           </FormField>
 
+          <div className="col-span-2">
+            <FormField label="Video walkthrough URL (Loom / YouTube / Vimeo)">
+              <input
+                name="videoUrl"
+                defaultValue={item.videoUrl ?? ""}
+                placeholder="https://loom.com/share/..."
+                className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition"
+              />
+            </FormField>
+            {item.videoUrl && (
+              <div className="mt-2 rounded-lg border border-violet-500/30 bg-violet-500/5 p-3">
+                <div className="text-[10px] uppercase tracking-wider text-violet-300 mb-1">Current video</div>
+                <a
+                  href={item.videoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-violet-200 hover:text-white underline break-all"
+                >
+                  {item.videoUrl}
+                </a>
+              </div>
+            )}
+          </div>
+
           <div className="flex flex-col gap-2.5 pt-3">
             <label className="flex items-center gap-2 cursor-pointer">
               <input

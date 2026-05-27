@@ -2,13 +2,19 @@
 // ActionItem + ActionsFile are VERBATIM from live data/actions.json.
 // CoworkMessage is the transcript log shape.
 
+// Tyler joined the roster 2026-05-23 (web PR #13); the bot still keeps
+// the old 6-owner set as canonical for the Telegram command surface so
+// the existing /list and /owner pickers don't break. Web side has Tyler.
 export type Owner = 'Zaal' | 'Iman' | 'Both' | 'ThyRev' | 'Samantha' | 'Open';
-export type ActionStatus = 'TODO' | 'WIP' | 'BLOCKED' | 'DONE';
+// Doc 764 F4: TRIAGE is the inbox for external writers (this bot, /meeting
+// capture, NL parser). Leads route TRIAGE -> TODO via /admin/triage before
+// work begins. Added 2026-05-27.
+export type ActionStatus = 'TRIAGE' | 'TODO' | 'WIP' | 'BLOCKED' | 'DONE';
 export type Priority = 'P1' | 'P2' | 'P3';
 export type Phase = 'Define' | 'Measure' | 'Analyze' | 'Improve' | 'Control';
 
 export const OWNERS: readonly Owner[] = ['Zaal', 'Iman', 'Both', 'ThyRev', 'Samantha', 'Open'];
-export const STATUSES: readonly ActionStatus[] = ['TODO', 'WIP', 'BLOCKED', 'DONE'];
+export const STATUSES: readonly ActionStatus[] = ['TRIAGE', 'TODO', 'WIP', 'BLOCKED', 'DONE'];
 export const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3'];
 
 export interface ActionItem {

@@ -6,6 +6,8 @@ import { UsersPanel } from "@/components/admin/UsersPanel";
 import { BulkOpsPanel } from "@/components/admin/BulkOpsPanel";
 import { BrandsPanel } from "@/components/admin/BrandsPanel";
 import { AuditPanel } from "@/components/admin/AuditPanel";
+import { SlaGridChip } from "@/components/SlaGridChip";
+import { listProposals } from "@/lib/proposals";
 import { listTeamMembers } from "@/lib/team";
 import { listBrands, listActiveBrands } from "@/lib/brands-db";
 import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
@@ -65,6 +67,9 @@ export default async function AdminPage({
   // hasn't been applied; the BrandsPanel shows a banner in that case and
   // renders the list read-only. Once applied, DB rows replace the fallback.
   const allBrands = await listBrands();
+  // Pending proposals count for the FeedCallout sibling. Best-effort -
+  // if the migration isn't applied yet we silently show 0.
+  const proposalsCount = await listProposals("pending").then((p) => p.rows.length).catch(() => 0);
   const navBrands = await listActiveBrands();
   const migrationApplied = !allBrands.some((b) => b.id.startsWith("const-"));
 
@@ -104,8 +109,10 @@ export default async function AdminPage({
           <NavBar isAdmin brands={navBrands} />
         </header>
 
-        <div className="grid md:grid-cols-2 gap-3">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
           <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
+          <FeedCallout />
+          <ProposalsCallout count={proposalsCount} />
           <CleanupCallout
             staleCount={doc.items.filter((it) => {
               if (it.archivedAt || it.status === "DONE" || it.status === "TRIAGE") return false;
@@ -155,7 +162,60 @@ export default async function AdminPage({
         </Section>
 
       </div>
+      <SlaGridChip />
     </main>
+  );
+}
+
+function ProposalsCallout({ count }: { count: number }) {
+  if (count === 0) {
+    return (
+      <a
+        href="/admin/proposals"
+        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-white/85">AI proposals</div>
+            <div className="text-xs text-white/45">No pending suggestions</div>
+          </div>
+          <span className="text-xs text-white/40">/admin/proposals -&gt;</span>
+        </div>
+      </a>
+    );
+  }
+  return (
+    <a
+      href="/admin/proposals"
+      className="block rounded-2xl border border-violet-500/40 bg-violet-500/10 px-5 py-3 hover:bg-violet-500/20 transition"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-violet-100">
+            AI proposals: {count} pending
+          </div>
+          <div className="text-xs text-violet-200/75">Approve or reject - nothing applies without your click</div>
+        </div>
+        <span className="text-xs text-violet-200">Review -&gt;</span>
+      </div>
+    </a>
+  );
+}
+
+function FeedCallout() {
+  return (
+    <a
+      href="/admin/feed"
+      className="block rounded-2xl border border-blue-500/30 bg-blue-500/8 px-5 py-3 hover:bg-blue-500/15 transition"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-blue-100">Activity feed</div>
+          <div className="text-xs text-blue-200/70">Workspace-wide stream. Read once a day instead of chasing pings.</div>
+        </div>
+        <span className="text-xs text-blue-200">Open feed -&gt;</span>
+      </div>
+    </a>
   );
 }
 

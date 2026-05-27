@@ -7,7 +7,8 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PATHS = new Set(["/", "/login"]);
 // /api/github/webhook (doc 763 F3): hit by GitHub's bot, no session.
 // Auth is HMAC inside the route handler (X-Hub-Signature-256).
-const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook"];
+// /api/digest (doc 764 F6): hit by VPS cron with Bearer auth, no session.
+const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;

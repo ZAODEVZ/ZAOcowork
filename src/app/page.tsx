@@ -7,6 +7,9 @@ import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 import { CATEGORIES } from "@/lib/types";
 import { listActiveBrands } from "@/lib/brands-db";
+import { computeForecast } from "@/lib/forecast";
+import { ForecastWidget } from "@/components/ForecastWidget";
+import { SlaGridChip } from "@/components/SlaGridChip";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +29,10 @@ export default async function Page({
   // Anyone can hit the site root without being kicked to /login automatically.
   // The middleware allows `/` through; /login is where the password lives.
   if (!user) return <PublicLanding />;
-  const doc = await getActions();
+  // Forecast runs in parallel with getActions() since they touch the same
+  // table - both reads happen via the supabase client in the same request,
+  // and the forecast does its own getActions internally.
+  const [doc, forecast] = await Promise.all([getActions(), computeForecast(urlBrand)]);
 
   // Unified board: every category in one place. Brand is a filter via the URL
   // (?brand=X from the top nav), category remains an in-board dropdown. Stat
@@ -108,6 +114,8 @@ export default async function Page({
           <Stat label="Done 7d" value={done7d} tone="ok" />
         </section>
 
+        <ForecastWidget forecast={forecast} brand={urlBrand} />
+
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-blue-400" />
@@ -136,6 +144,7 @@ export default async function Page({
           <span>SIX-SIGMA.md + BACKLOG.md in repo</span>
         </footer>
       </div>
+      <SlaGridChip />
     </main>
   );
 }
