@@ -38,15 +38,27 @@ export default async function Page({
     ? portalItems.filter((x) => (x.brands ?? []).includes(urlBrand))
     : portalItems;
 
-  const open = scoped.filter((x) => x.status !== "DONE");
-  const wipMine = scoped.filter(
+  // Exclude archived rows (doc 763 F4) + TRIAGE inbox (doc 763 F6) from
+  // every counter on the homepage so the numbers reflect the active board,
+  // not the historical or pre-routing data.
+  const active = scoped.filter((x) => !x.archivedAt && x.status !== "TRIAGE");
+
+  const open = active.filter((x) => x.status !== "DONE");
+  const openMine = open.filter(
+    (x) => String(x.owner).toLowerCase() === user || String(x.owner) === "Both",
+  ).length;
+  const openUnowned = open.filter((x) => {
+    const o = String(x.owner ?? "").trim();
+    return !o || o === "Open";
+  }).length;
+  const wipMine = active.filter(
     (x) => x.status === "WIP" && (String(x.owner).toLowerCase() === user || String(x.owner) === "Both"),
   ).length;
-  const blocked = scoped.filter((x) => x.status === "BLOCKED").length;
-  const aging = scoped.filter(
+  const blocked = active.filter((x) => x.status === "BLOCKED").length;
+  const aging = active.filter(
     (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,
   ).length;
-  const done7d = scoped.filter((x) => {
+  const done7d = active.filter((x) => {
     if (x.status !== "DONE") return false;
     const d = new Date(x.updatedAt).getTime();
     return Date.now() - d < 7 * 24 * 60 * 60 * 1000;
@@ -84,9 +96,13 @@ export default async function Page({
           <Stat
             label={urlBrand ? `${urlBrand} open` : "Open"}
             value={open.length}
-            hint={urlBrand ? `of ${totalAll} all-brand total` : undefined}
+            hint={
+              urlBrand
+                ? `of ${totalAll} all-brand total`
+                : `${openMine} mine, ${openUnowned} unowned`
+            }
           />
-          <Stat label="My WIP" value={wipMine} tone={wipMine > 5 ? "warn" : "ok"} hint="target ≤ 5" />
+          <Stat label="My WIP" value={wipMine} tone={wipMine > 5 ? "warn" : "ok"} hint="target <= 5" />
           <Stat label="Blocked" value={blocked} tone={blocked > 0 ? "red" : "ok"} />
           <Stat label="Aging > 14d" value={aging} tone={aging > 0 ? "red" : "ok"} />
           <Stat label="Done 7d" value={done7d} tone="ok" />

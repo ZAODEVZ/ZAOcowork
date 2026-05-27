@@ -104,7 +104,20 @@ export default async function AdminPage({
           <NavBar isAdmin brands={navBrands} />
         </header>
 
-        <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
+        <div className="grid md:grid-cols-2 gap-3">
+          <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
+          <CleanupCallout
+            staleCount={doc.items.filter((it) => {
+              if (it.archivedAt || it.status === "DONE" || it.status === "TRIAGE") return false;
+              const acts = it.activity ?? [];
+              const latest = Math.max(
+                acts.length ? new Date(acts[acts.length - 1].createdAt).getTime() : 0,
+                new Date(it.updatedAt).getTime(),
+              );
+              return (Date.now() - latest) / (1000 * 60 * 60 * 24) > 5;
+            }).length}
+          />
+        </div>
 
         <Section title="Users" hint="Add, deactivate, reset password, promote to admin">
           {membersError ? (
@@ -143,6 +156,41 @@ export default async function AdminPage({
 
       </div>
     </main>
+  );
+}
+
+function CleanupCallout({ staleCount }: { staleCount: number }) {
+  if (staleCount === 0) {
+    return (
+      <a
+        href="/admin/cleanup"
+        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-white/85">Cleanup</div>
+            <div className="text-xs text-white/45">No stale tasks - good shape</div>
+          </div>
+          <span className="text-xs text-white/40">/admin/cleanup -&gt;</span>
+        </div>
+      </a>
+    );
+  }
+  return (
+    <a
+      href="/admin/cleanup"
+      className="block rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-3 hover:bg-amber-500/20 transition"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-amber-100">
+            Cleanup: {staleCount} stale task{staleCount === 1 ? "" : "s"}
+          </div>
+          <div className="text-xs text-amber-200/75">No activity 5+ days. Mark done, archive, or move to triage with a note.</div>
+        </div>
+        <span className="text-xs text-amber-200">Clean up -&gt;</span>
+      </div>
+    </a>
   );
 }
 

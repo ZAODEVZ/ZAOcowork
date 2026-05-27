@@ -1385,10 +1385,18 @@ function DailyReminderModal({
   onClose: () => void;
 }) {
   const mine = storageUserKey;
-  const openMine = items.filter((it) => {
+  // Doc 763 F4 + F6: exclude archived + TRIAGE from daily counts.
+  const active = items.filter((it) => !it.archivedAt && it.status !== "TRIAGE");
+  const openMine = active.filter((it) => {
     if (it.status === "DONE") return false;
     const o = String(it.owner).toLowerCase();
     return o === mine || o === "both";
+  });
+  const openAll = active.filter((it) => it.status !== "DONE");
+  const openUnowned = active.filter((it) => {
+    if (it.status === "DONE") return false;
+    const o = String(it.owner ?? "").trim();
+    return !o || o === "Open";
   });
   const overdueMine = openMine.filter((it) => {
     const due = parseDueDate(it.due);
@@ -1433,6 +1441,9 @@ function DailyReminderModal({
           <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
             <div className="text-[10px] uppercase tracking-wider text-white/45">My open</div>
             <div className="mt-0.5 text-xl font-bold leading-none">{openMine.length}</div>
+            <div className="text-[9px] text-white/35 mt-0.5">
+              of {openAll.length} team · {openUnowned.length} unowned
+            </div>
           </div>
           <div className="rounded-xl bg-black/30 border border-red-500/25 px-3 py-2">
             <div className="text-[10px] uppercase tracking-wider text-white/45">Overdue</div>
