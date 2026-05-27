@@ -521,31 +521,14 @@ export function Board({
       </div>
 
       {expediteActive.length > 0 && (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <span className="rounded-md bg-red-500 text-white text-[10px] font-bold tracking-wider px-2 py-0.5">EXPEDITE</span>
-              <span className="text-xs text-red-200/90">
-                {expediteActive.length === 1
-                  ? "Production-critical work in flight - everything else pauses until this clears."
-                  : `${expediteActive.length} expedite items in flight - workspace cap is 1. Resolve or downgrade.`}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
-            {expediteActive.map((it) => (
-              <Card
-                key={`expedite-${it.id}`}
-                item={it}
-                onOpenRoom={setTaskRoomId}
-                isWorker={isWorker}
-                selectMode={selectMode}
-                selected={selectedIds.has(it.id)}
-                onToggleSelect={toggleSelect}
-              />
-            ))}
-          </div>
-        </div>
+        <ExpediteSwimlane
+          items={expediteActive}
+          onOpenRoom={setTaskRoomId}
+          isWorker={isWorker}
+          selectMode={selectMode}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+        />
       )}
 
       {/* Desktop: 4 columns */}
@@ -821,6 +804,86 @@ function SelectPill({
           </option>
         ))}
     </select>
+  );
+}
+
+// ExpediteSwimlane caps visible cards (default 6) with an expander so a
+// post-migration backlog of 41 P1-tagged tasks doesn't push the kanban
+// columns off the page. Once the backlog is burned down to 1-3 real
+// expedites, the cap is invisible (collapse threshold = 6).
+const EXPEDITE_VISIBLE_DEFAULT = 6;
+
+function ExpediteSwimlane({
+  items,
+  onOpenRoom,
+  isWorker,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+}: {
+  items: ActionItem[];
+  onOpenRoom: (id: string) => void;
+  isWorker: boolean;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const overCap = items.length > EXPEDITE_VISIBLE_DEFAULT;
+  const visible = expanded || !overCap ? items : items.slice(0, EXPEDITE_VISIBLE_DEFAULT);
+  const hiddenCount = items.length - visible.length;
+
+  let message: string;
+  if (items.length === 1) {
+    message = "Production-critical work in flight - everything else pauses until this clears.";
+  } else if (items.length <= 3) {
+    message = `${items.length} expedite items in flight - workspace cap is 1. Resolve or downgrade.`;
+  } else {
+    // 4+ expedites = the post-migration backlog. Different tone since it's
+    // a working queue, not an incident.
+    message = `${items.length} P1 items tagged Expedite (post-migration backlog). Work through, or downgrade to Standard via the task editor.`;
+  }
+
+  return (
+    <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="rounded-md bg-red-500 text-white text-[10px] font-bold tracking-wider px-2 py-0.5 flex-shrink-0">EXPEDITE</span>
+          <span className="text-xs text-red-200/90 truncate">{message}</span>
+        </div>
+        {overCap && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="text-[11px] text-red-200 hover:text-white border border-red-500/40 hover:border-red-400 rounded-md px-2 py-0.5 flex-shrink-0 transition"
+          >
+            {expanded ? `Collapse to ${EXPEDITE_VISIBLE_DEFAULT}` : `Show all ${items.length}`}
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+        {visible.map((it) => (
+          <Card
+            key={`expedite-${it.id}`}
+            item={it}
+            onOpenRoom={onOpenRoom}
+            isWorker={isWorker}
+            selectMode={selectMode}
+            selected={selectedIds.has(it.id)}
+            onToggleSelect={onToggleSelect}
+          />
+        ))}
+      </div>
+      {hiddenCount > 0 && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-2 w-full rounded-lg border border-red-500/30 hover:bg-red-500/10 text-[11px] font-medium text-red-200/90 py-1.5 transition"
+        >
+          + {hiddenCount} more expedite item{hiddenCount === 1 ? "" : "s"}
+        </button>
+      )}
+    </div>
   );
 }
 
