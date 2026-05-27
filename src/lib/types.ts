@@ -83,10 +83,13 @@ export const DEV_CATEGORIES: string[] = [
 export const MUSIC_CATEGORIES: string[] = ["WaveWarZ Zambia", "Recording", "Distribution", "Release", "Artist Onboarding"];
 export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Campaigns"];
 
-// Tyler Stambaugh joined the roster 2026-05-23 (PR #13). Adding to OWNERS
-// here so the bulk reassign + per-task owner dropdowns show him too.
-export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Tyler" | "Open";
-export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Tyler", "Open"];
+// Tyler joined 2026-05-23 (PR #13). Shawn joined 2026-05-27 as ZAOstock
+// lead (via /admin Users panel). Real long-term fix: populate OWNERS
+// at runtime from team_members so adding via /admin reflects without a
+// code change. For now we manually mirror new users here so they appear
+// in dropdowns + parse-task + bulk reassign.
+export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Tyler" | "Shawn" | "Open";
+export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Tyler", "Shawn", "Open"];
 
 export interface Comment {
   id: string;

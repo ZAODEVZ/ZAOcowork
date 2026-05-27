@@ -24,6 +24,7 @@ const KNOWN_USER_LABELS: Record<string, string> = {
   thyrev: "ThyRev",
   samantha: "Samantha",
   tyler: "Tyler",
+  shawn: "Shawn",
 };
 
 function capitalize(s: string): string {
@@ -37,9 +38,12 @@ export function userLabel(user: SessionUser): string {
 
 // Lead = can mark tasks DONE without going through the review queue.
 // Tyler is an external collaborator (Magnetic founder, doc 473), not a lead.
-// Leads are still hardcoded - this is a workflow concept, not the admin role.
+// Shawn is a ZAOstock lead (added via /admin 2026-05-27).
+// Leads are still hardcoded here as a workflow concept; the admin role
+// (db-driven via team_members.role) is separate. Long-term: replace this
+// hardcoded list by reading team_members.role IN ('lead','admin').
 export function isLead(user: SessionUser): boolean {
-  return user === "zaal" || user === "iman";
+  return user === "zaal" || user === "iman" || user === "shawn";
 }
 
 // Admin gate. Phase B reads team_members.role via the DB; if the column or
