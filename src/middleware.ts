@@ -5,7 +5,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // see src/app/page.tsx). /login + /api/login obviously have to stay public
 // since that's where you go to get a session in the first place.
 const PUBLIC_PATHS = new Set(["/", "/login"]);
-const PUBLIC_PREFIXES = ["/login", "/api/login"];
+// /api/github/webhook (doc 763 F3): hit by GitHub's bot, no session.
+// Auth is HMAC inside the route handler (X-Hub-Signature-256).
+const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;

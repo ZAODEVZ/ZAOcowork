@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { destroySession, requireSession, isLead, userLabel } from "@/lib/auth";
+import { destroySession, requireSession, requireAdmin, isLead, userLabel } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import {
   getActions,
@@ -23,6 +23,8 @@ import {
   PHASES,
   CATEGORIES,
   TASK_TYPES,
+  SERVICE_CLASSES,
+  type ServiceClass,
 } from "@/lib/data";
 
 function asStatus(v: unknown): ActionStatus {
@@ -45,6 +47,9 @@ function asBool(v: unknown): boolean {
 }
 function asTaskType(v: unknown): TaskType | undefined {
   return TASK_TYPES.includes(v as TaskType) ? (v as TaskType) : undefined;
+}
+function asServiceClass(v: unknown): ServiceClass {
+  return SERVICE_CLASSES.includes(v as ServiceClass) ? (v as ServiceClass) : "Standard";
 }
 
 function displayName(user: string): string {
@@ -107,6 +112,17 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     activity: prev?.activity,
     // Auto-claimable: Open owner means anyone can claim it
     claimable: ownerVal === "Open",
+    // Doc 763 F2: service class (Standard/FixedDate/Expedite/Intangible)
+    serviceClass:
+      form.get("serviceClass") != null
+        ? asServiceClass(form.get("serviceClass"))
+        : prev?.serviceClass ?? "Standard",
+    // Doc 763 F4: archive flag survives edits
+    archivedAt: prev?.archivedAt ?? null,
+    // Doc 763 F3: PR linkage carried through
+    prUrl: prev?.prUrl ?? null,
+    prNumber: prev?.prNumber ?? null,
+    prState: prev?.prState ?? null,
   });
   if (prev) {
     if (prev.status !== "DONE" && next.status === "DONE") {
@@ -232,6 +248,27 @@ export async function patchField(form: FormData): Promise<void> {
     case "notes":
       next.notes = value.trim();
       break;
+    case "serviceClass": {
+      const newSc = asServiceClass(value);
+      const prev = cur.serviceClass ?? "Standard";
+      next.serviceClass = newSc;
+      if (prev !== newSc) {
+        next.activity = [
+          ...(cur.activity || []),
+          makeActivity(user, "service_class_changed", `${prev} → ${newSc}`, next.updatedAt),
+        ];
+      }
+      break;
+    }
+    case "archive": {
+      // value "1" -> archive now, "0" -> unarchive
+      next.archivedAt = value === "1" ? next.updatedAt : null;
+      next.activity = [
+        ...(cur.activity || []),
+        makeActivity(user, value === "1" ? "archived" : "unarchived", undefined, next.updatedAt),
+      ];
+      break;
+    }
     default:
       return;
   }
@@ -547,6 +584,99 @@ export async function logout(): Promise<void> {
 }
 
 // ============================================================================
+// Triage actions (doc 763 F6)
+// ============================================================================
+//
+// Triage routing: lead picks owner + priority + service class + brand, then
+// pushes the row from status=TRIAGE to TODO. The row appears on the main
+// board afterwards. Only leads + admins can triage.
+
+export async function triageRoute(form: FormData): Promise<void> {
+  const user = await requireSession();
+  if (!isLead(user)) {
+    // Not a lead -> check admin role explicitly. Admin promotion lives in DB
+    // via Phase B, so this is the same gate /admin pages use.
+    const { isAdmin } = await import("@/lib/auth");
+    if (!(await isAdmin(user))) return;
+  }
+  const id = String(form.get("id") ?? "");
+  if (!id) return;
+  const owner = String(form.get("owner") ?? "Open").trim();
+  const priority = asPriority(form.get("priority"));
+  const serviceClass = asServiceClass(form.get("serviceClass"));
+  const brand = String(form.get("brand") ?? "").trim();
+
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const cur = doc.items[idx];
+  if (cur.status !== "TRIAGE") return; // Already routed, no-op.
+
+  const now = new Date().toISOString();
+  const next: ActionItem = {
+    ...cur,
+    owner,
+    priority,
+    serviceClass,
+    status: "TODO",
+    claimable: owner === "Open",
+    updatedAt: now,
+    brands: brand && !cur.brands.includes(brand) ? [...cur.brands, brand] : cur.brands,
+    activity: [
+      ...(cur.activity || []),
+      makeActivity(user, "triage_routed", `to ${owner} / ${priority} / ${serviceClass}${brand ? ` / ${brand}` : ""}`, now),
+    ],
+  };
+  doc.items[idx] = next;
+  await saveActions(doc, user, `triage route #${id}`);
+  await logAudit({
+    actor: userLabel(user),
+    entity_type: "task",
+    entity_id: id,
+    entity_label: cur.title,
+    action: "triage_route",
+    detail: `${owner} / ${priority} / ${serviceClass}${brand ? ` / ${brand}` : ""}`,
+    metadata: { owner, priority, serviceClass, brand },
+  });
+  revalidateAll();
+}
+
+export async function triageReject(form: FormData): Promise<void> {
+  const user = await requireSession();
+  if (!isLead(user)) {
+    const { isAdmin } = await import("@/lib/auth");
+    if (!(await isAdmin(user))) return;
+  }
+  const id = String(form.get("id") ?? "");
+  if (!id) return;
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const cur = doc.items[idx];
+  if (cur.status !== "TRIAGE") return;
+
+  const now = new Date().toISOString();
+  doc.items[idx] = {
+    ...cur,
+    archivedAt: now,
+    updatedAt: now,
+    activity: [
+      ...(cur.activity || []),
+      makeActivity(user, "triage_rejected", undefined, now),
+    ],
+  };
+  await saveActions(doc, user, `triage reject #${id}`);
+  await logAudit({
+    actor: userLabel(user),
+    entity_type: "task",
+    entity_id: id,
+    entity_label: cur.title,
+    action: "triage_reject",
+  });
+  revalidateAll();
+}
+
+// ============================================================================
 // Bulk task ops (Phase C)
 // ============================================================================
 //
@@ -723,7 +853,10 @@ export async function bulkRemoveBrand(form: FormData): Promise<void> {
 }
 
 export async function bulkDelete(form: FormData): Promise<void> {
-  const user = await requireSession();
+  // Doc 762 NEW-B: bulkDelete is uniquely destructive (50 rows wiped in one
+  // click). Other bulk ops use requireSession because they're reversible.
+  // This one requires admin so only Zaal/Iman can wipe tasks.
+  const user = await requireAdmin();
   const ids = new Set(idsFromForm(form));
   if (ids.size === 0) return;
   const doc = await getActions();

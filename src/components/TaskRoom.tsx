@@ -11,18 +11,21 @@ import type {
   TaskType,
 } from "@/lib/types";
 import {
-  STATUSES,
+  BOARD_STATUSES,
   PRIORITIES,
   PHASES,
   OWNERS,
   CATEGORIES,
   TASK_TYPES,
   TASK_TYPE_LABELS,
+  SERVICE_CLASSES,
+  SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
 import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem } from "@/app/actions";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
+  TRIAGE: "TRIAGE",
   TODO: "TO DO",
   WIP: "IN PROGRESS",
   BLOCKED: "BLOCKED",
@@ -30,6 +33,7 @@ const STATUS_LABEL: Record<ActionStatus, string> = {
 };
 
 const STATUS_BADGE: Record<ActionStatus, string> = {
+  TRIAGE: "bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40",
   TODO: "bg-slate-500/20 text-slate-200 border-slate-500/40",
   WIP: "bg-amber-500/20 text-amber-200 border-amber-500/40",
   BLOCKED: "bg-red-500/20 text-red-200 border-red-500/40",
@@ -229,7 +233,7 @@ function DetailsPanel({
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Status">
             <select name="status" defaultValue={item.status} className={selectCls}>
-              {STATUSES.map((s) => (
+              {BOARD_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {STATUS_LABEL[s]}
                 </option>
@@ -242,6 +246,16 @@ function DetailsPanel({
               {PRIORITIES.map((p) => (
                 <option key={p} value={p}>
                   {p}
+                </option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label="Service class">
+            <select name="serviceClass" defaultValue={item.serviceClass ?? "Standard"} className={selectCls}>
+              {SERVICE_CLASSES.map((sc) => (
+                <option key={sc} value={sc}>
+                  {SERVICE_CLASS_LABELS[sc]}
                 </option>
               ))}
             </select>
@@ -543,7 +557,7 @@ function SubmitUpdateBox({ item, currentUser }: { item: ActionItem; currentUser:
             className="flex-1 rounded-lg bg-[#0b1220] border border-white/10 px-2.5 py-1.5 text-xs text-white/80 focus:outline-none"
           >
             <option value="">Move to status (optional)</option>
-            {STATUSES.filter((s) => s !== item.status).map((s) => (
+            {BOARD_STATUSES.filter((s) => s !== item.status).map((s) => (
               <option key={s} value={s}>
                 → {STATUS_LABEL[s]}
               </option>
