@@ -67,9 +67,12 @@ export async function requireAdmin(): Promise<SessionUser> {
 }
 
 function getSecret(): string {
+  // Doc 762 NEW-C: docs say "32+ hex chars" but old check accepted 16+
+  // (much weaker). Bumped to 32+; doesn't enforce hex shape because some
+  // operators use base64 strings of equivalent entropy.
   const s = process.env.AUTH_SECRET;
-  if (!s || s.length < 16) {
-    throw new Error("AUTH_SECRET missing or too short (need 16+ chars)");
+  if (!s || s.length < 32) {
+    throw new Error("AUTH_SECRET missing or too short (need 32+ chars)");
   }
   return s;
 }

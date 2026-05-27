@@ -104,6 +104,8 @@ export default async function AdminPage({
           <NavBar isAdmin brands={navBrands} />
         </header>
 
+        <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
+
         <Section title="Users" hint="Add, deactivate, reset password, promote to admin">
           {membersError ? (
             <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -141,6 +143,41 @@ export default async function AdminPage({
 
       </div>
     </main>
+  );
+}
+
+function TriageCallout({ itemsCount }: { itemsCount: number }) {
+  if (itemsCount === 0) {
+    return (
+      <a
+        href="/admin/triage"
+        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-white/85">Triage inbox</div>
+            <div className="text-xs text-white/45">Empty - external writers will land items here</div>
+          </div>
+          <span className="text-xs text-white/40">/admin/triage -&gt;</span>
+        </div>
+      </a>
+    );
+  }
+  return (
+    <a
+      href="/admin/triage"
+      className="block rounded-2xl border border-fuchsia-500/40 bg-fuchsia-500/10 px-5 py-3 hover:bg-fuchsia-500/20 transition"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-fuchsia-100">
+            Triage inbox: {itemsCount} item{itemsCount === 1 ? "" : "s"} waiting
+          </div>
+          <div className="text-xs text-fuchsia-200/75">Route to owner / priority / service class before it hits the board</div>
+        </div>
+        <span className="text-xs text-fuchsia-200">Go to triage -&gt;</span>
+      </div>
+    </a>
   );
 }
 

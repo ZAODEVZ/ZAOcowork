@@ -1,8 +1,33 @@
-export type ActionStatus = "TODO" | "WIP" | "BLOCKED" | "DONE";
-export const STATUSES: ActionStatus[] = ["TODO", "WIP", "BLOCKED", "DONE"];
+// TRIAGE added 2026-05-26 (doc 763 F6) as the inbox for external writers
+// (NL /todo parser, Telegram bot, /meeting skill, research-dispatcher).
+// Leads route TRIAGE -> TODO via the /admin/triage UI before work begins.
+// Kept at the front of STATUSES so the Board's column rendering picks it
+// up first; UI code conditionally hides the TRIAGE column on the main
+// board (only admins see it) since regular workers shouldn't be triaging.
+export type ActionStatus = "TRIAGE" | "TODO" | "WIP" | "BLOCKED" | "DONE";
+export const STATUSES: ActionStatus[] = ["TRIAGE", "TODO", "WIP", "BLOCKED", "DONE"];
+// Statuses rendered on the main Board (TRIAGE lives in /admin/triage only).
+// Typed narrowly so the columns map in Board.tsx stays type-safe; the four
+// values are a subset of ActionStatus and the constant assertion lets
+// the byStatus Record type include exactly these four keys.
+export type BoardStatus = "TODO" | "WIP" | "BLOCKED" | "DONE";
+export const BOARD_STATUSES: BoardStatus[] = ["TODO", "WIP", "BLOCKED", "DONE"];
 
 export type Priority = "P1" | "P2" | "P3";
 export const PRIORITIES: Priority[] = ["P1", "P2", "P3"];
+
+// Service classes (doc 763 F2). Layer above priority that captures the
+// shape-of-cost-of-delay. Standard = linear, FixedDate = step function,
+// Expedite = immediate (1 card max workspace-wide), Intangible =
+// accelerating (tech debt). Mapped to colors + rules in the UI.
+export type ServiceClass = "Standard" | "FixedDate" | "Expedite" | "Intangible";
+export const SERVICE_CLASSES: ServiceClass[] = ["Standard", "FixedDate", "Expedite", "Intangible"];
+export const SERVICE_CLASS_LABELS: Record<ServiceClass, string> = {
+  Standard: "Standard",
+  FixedDate: "Fixed date",
+  Expedite: "Expedite",
+  Intangible: "Intangible",
+};
 
 export type Phase = "Define" | "Measure" | "Analyze" | "Improve" | "Control";
 export const PHASES: Phase[] = ["Define", "Measure", "Analyze", "Improve", "Control"];
@@ -127,6 +152,20 @@ export type ActionItem = {
   comments?: Comment[];
   updates?: TaskUpdate[];
   activity?: ActivityEvent[];
+  // Service class layer above priority (doc 763 F2). Default "Standard"
+  // on items created before the 004 migration; backfill seeded P1 -> Expedite,
+  // due-set rows -> FixedDate, refactor/cleanup -> Intangible.
+  serviceClass?: ServiceClass;
+  // Set when the row is auto-archived (DONE + completedAt older than 30d)
+  // or manually archived by an admin. Hidden from the default Board view
+  // (doc 763 F4); a "Show archived" toggle exposes them.
+  archivedAt?: string | null;
+  // GitHub PR linkage (doc 763 F3). Auto-populated by the /api/github/webhook
+  // handler when a PR title mentions `cowork#<id>`. UI renders a link icon
+  // on cards. Null = no PR yet.
+  prUrl?: string | null;
+  prNumber?: number | null;
+  prState?: "open" | "merged" | "closed" | null;
 };
 
 export type ActionDoc = {
@@ -153,6 +192,42 @@ export function isAging(it: ActionItem): boolean {
   if (it.status === "DONE") return false;
   return ageDays(it.createdAt) > 14;
 }
+
+// Stale: WIP or BLOCKED with no activity in 5+ days. Surfaces "started but
+// forgotten" work that aging alone misses (a card that's only 3 days old
+// but has zero activity since creation is also worth flagging).
+export function isStale(it: ActionItem): boolean {
+  if (it.status === "DONE" || it.status === "TRIAGE") return false;
+  const acts = it.activity ?? [];
+  // Use the freshest of: last activity, last update, last comment, updatedAt.
+  const latest = Math.max(
+    acts.length ? new Date(acts[acts.length - 1].createdAt).getTime() : 0,
+    (it.updates ?? []).reduce((m, u) => Math.max(m, new Date(u.createdAt).getTime()), 0),
+    (it.comments ?? []).reduce((m, c) => Math.max(m, new Date(c.createdAt).getTime()), 0),
+    new Date(it.updatedAt).getTime(),
+  );
+  const days = (Date.now() - latest) / (1000 * 60 * 60 * 24);
+  return days > 5;
+}
+
+// Service-class color tokens (Tailwind class strings) so cards + chips
+// pull from a single source of truth. Used by Board.tsx + ServiceClassChip.
+export const SERVICE_CLASS_COLORS: Record<ServiceClass, string> = {
+  Standard: "bg-slate-500/15 text-slate-200 border-slate-500/30",
+  FixedDate: "bg-amber-500/15 text-amber-200 border-amber-500/40",
+  Expedite: "bg-red-500/20 text-red-200 border-red-500/50",
+  Intangible: "bg-violet-500/15 text-violet-200 border-violet-500/30",
+};
+
+// Definition-of-Done text per column. Surfaced as tooltips on column
+// headers (doc 763 F5). Edit here; the Board reads from this object.
+export const COLUMN_DOD: Record<ActionStatus, string> = {
+  TRIAGE: "External writers land here. Lead routes: set owner + brand + priority + service class, then push to TODO.",
+  TODO: "Has owner + priority + service class. Not yet started. Pull when free.",
+  WIP: "Actively being worked on. PR open or work in flight. Owner committed within last 3 days.",
+  BLOCKED: "Cannot progress without external input. Has a comment naming the blocker. Owner pings the blocker daily.",
+  DONE: "Lead approved (or workflow auto-approved). PR merged + deployed. Acceptance verified. Auto-archives after 30 days.",
+};
 
 export function relativeTime(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();

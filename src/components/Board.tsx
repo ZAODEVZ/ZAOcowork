@@ -4,17 +4,24 @@ import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } f
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
-  STATUSES,
+  BOARD_STATUSES,
+  type BoardStatus,
   PRIORITIES,
   PHASES,
   CATEGORIES,
   OWNERS,
+  SERVICE_CLASSES,
+  SERVICE_CLASS_COLORS,
+  SERVICE_CLASS_LABELS,
+  COLUMN_DOD,
   ageDays,
   cycleDays,
+  isStale,
   type ActionItem,
   type ActionStatus,
   type Owner,
   type Priority,
+  type ServiceClass,
 } from "@/lib/types";
 import { BRANDS, brandColor } from "@/lib/brands";
 import { patchField, claimTask } from "@/app/actions";
@@ -25,6 +32,7 @@ import { QuickAdd } from "./quickadd/QuickAdd";
 import { BulkActionBar } from "./BulkActionBar";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
+  TRIAGE: "TRIAGE",
   TODO: "TO DO",
   WIP: "IN PROGRESS",
   BLOCKED: "BLOCKED",
@@ -32,6 +40,7 @@ const STATUS_LABEL: Record<ActionStatus, string> = {
 };
 
 const STATUS_HEAD: Record<ActionStatus, string> = {
+  TRIAGE: "border-fuchsia-500/40 text-fuchsia-300",
   TODO: "border-slate-500/40 text-slate-300",
   WIP: "border-amber-500/50 text-amber-300",
   BLOCKED: "border-red-500/50 text-red-300",
@@ -204,7 +213,7 @@ export function Board({
       // localStorage full / disabled - silently ignore, view just will not persist.
     }
   }, [filters, filterStorageKey]);
-  const [activeMobileStatus, setActiveMobileStatus] = useState<ActionStatus>("TODO");
+  const [activeMobileStatus, setActiveMobileStatus] = useState<BoardStatus>("TODO");
   const [taskRoomId, setTaskRoomId] = useState<string | null>(null);
   const [todoOpen, setTodoOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -353,15 +362,26 @@ export function Board({
   }, [items, filters, currentUser, urlBrand]);
 
   const byStatus = useMemo(() => {
-    const map: Record<ActionStatus, ActionItem[]> = {
+    const map: Record<BoardStatus, ActionItem[]> = {
       TODO: [],
       WIP: [],
       BLOCKED: [],
       DONE: [],
     };
-    for (const it of filtered) map[it.status].push(it);
-    for (const s of STATUSES) {
+    // TRIAGE items don't render on the main board - they live on /admin/triage
+    // until a lead routes them. Same for archived (auto-archived >30d DONE).
+    for (const it of filtered) {
+      if (it.status === "TRIAGE") continue;
+      if (it.archivedAt) continue;
+      if (it.status in map) map[it.status as BoardStatus].push(it);
+    }
+    for (const s of BOARD_STATUSES) {
       map[s].sort((a, b) => {
+        // Doc 763 F1: stale items (no activity 5+ days) bubble up.
+        // Then Eisenhower matrix bucket, then priority, then age desc.
+        const sa = isStale(a) ? 0 : 1;
+        const sb = isStale(b) ? 0 : 1;
+        if (sa !== sb) return sa - sb;
         const tb = tagBucket(a) - tagBucket(b);
         if (tb !== 0) return tb;
         const pr = PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
@@ -374,6 +394,15 @@ export function Board({
 
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const claimableCount = items.filter((it) => it.claimable).length;
+  // Doc 763 F2: Expedite swimlane. Only active (non-DONE, non-archived) items
+  // count. 1-card cap is workspace-wide; UI warns when >1 but doesn't block.
+  const expediteActive = items.filter(
+    (it) =>
+      it.serviceClass === "Expedite" &&
+      it.status !== "DONE" &&
+      it.status !== "TRIAGE" &&
+      !it.archivedAt,
+  );
   const isWorker = ["thyrev", "samantha"].includes(currentUser.trim().toLowerCase());
   const filtersActive =
     filters.search ||
@@ -428,6 +457,8 @@ export function Board({
         currentUser={currentUser}
         defaultCategory={defaultCategory}
         tabBrand={urlBrand ?? null}
+        items={items}
+        onOpenTask={setTaskRoomId}
       />
 
       <FilterBar
@@ -459,7 +490,7 @@ export function Board({
       {/* Mobile: status tabs + single column */}
       <div className="md:hidden">
         <div className="grid grid-cols-4 gap-1 rounded-lg bg-zao-ink p-1 border border-white/10">
-          {STATUSES.map((s) => (
+          {BOARD_STATUSES.map((s) => (
             <button
               key={s}
               onClick={() => setActiveMobileStatus(s)}
@@ -489,9 +520,37 @@ export function Board({
         </div>
       </div>
 
+      {expediteActive.length > 0 && (
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <span className="rounded-md bg-red-500 text-white text-[10px] font-bold tracking-wider px-2 py-0.5">EXPEDITE</span>
+              <span className="text-xs text-red-200/90">
+                {expediteActive.length === 1
+                  ? "Production-critical work in flight - everything else pauses until this clears."
+                  : `${expediteActive.length} expedite items in flight - workspace cap is 1. Resolve or downgrade.`}
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            {expediteActive.map((it) => (
+              <Card
+                key={`expedite-${it.id}`}
+                item={it}
+                onOpenRoom={setTaskRoomId}
+                isWorker={isWorker}
+                selectMode={selectMode}
+                selected={selectedIds.has(it.id)}
+                onToggleSelect={toggleSelect}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Desktop: 4 columns */}
       <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATUSES.map((s) => (
+        {BOARD_STATUSES.map((s) => (
           <Column
             key={s}
             status={s}
@@ -776,7 +835,7 @@ function Column({
   selectedIds,
   onToggleSelect,
 }: {
-  status: ActionStatus;
+  status: BoardStatus;
   items: ActionItem[];
   onOpenRoom: (id: string) => void;
   currentUser: string;
@@ -796,8 +855,12 @@ function Column({
   return (
     <div className="flex flex-col gap-2 min-w-0">
       <div className={`flex items-baseline justify-between border-b pb-1 ${STATUS_HEAD[status]}`}>
-        <h3 className="text-xs font-bold uppercase tracking-wider">
+        <h3
+          className="text-xs font-bold uppercase tracking-wider cursor-help"
+          title={COLUMN_DOD[status]}
+        >
           {STATUS_LABEL[status]}
+          <span className="ml-1 text-[9px] opacity-50">ⓘ</span>
         </h3>
         <div className="flex items-center gap-2">
           {pendingCount > 0 && (
@@ -859,6 +922,10 @@ function Card({
   const age = ageDays(item.createdAt);
   const cyc = cycleDays(item.createdAt, item.updatedAt, item.status);
   const aging = item.status !== "DONE" && age > 14;
+  // Doc 763 F1: stale = WIP/BLOCKED with no activity 5+ days. Distinct from
+  // aging (raw age >14) so a fresh-but-stuck task still gets flagged.
+  const stale = isStale(item);
+  const serviceClass = item.serviceClass ?? "Standard";
   const ownerStr = String(item.owner);
   const commentCount = (item.comments || []).length;
   const pendingReviews = (item.updates || []).filter((u) => u.reviewStatus === "pending").length;
@@ -882,9 +949,45 @@ function Card({
       className={`group relative rounded-lg bg-zao-ink border p-3 text-sm transition ${
         selected
           ? "border-zao-accent/60 ring-2 ring-zao-accent/20"
+          : stale
+          ? "border-red-500/40 ring-1 ring-red-500/20"
+          : serviceClass === "Expedite"
+          ? "border-red-500/50"
           : "border-white/10 hover:border-white/20"
       } ${pending ? "opacity-60" : ""} ${item.status === "DONE" ? "opacity-60" : ""}`}
     >
+      {(stale || serviceClass === "Expedite" || item.prUrl) && (
+        <div className="absolute -top-1.5 -right-1.5 flex gap-1">
+          {serviceClass === "Expedite" && (
+            <span
+              className="rounded-full bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md shadow-red-500/40"
+              title="Expedite class — workspace-wide 1-card cap"
+            >
+              EXPEDITE
+            </span>
+          )}
+          {stale && serviceClass !== "Expedite" && (
+            <span
+              className="rounded-full bg-red-500/80 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md shadow-red-500/30"
+              title="No activity 5+ days — investigate the blocker"
+            >
+              STALE
+            </span>
+          )}
+          {item.prUrl && (
+            <a
+              href={item.prUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full bg-emerald-500/80 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md shadow-emerald-500/30 hover:bg-emerald-500"
+              title={`PR ${item.prState ?? "open"}: ${item.prUrl}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              PR{item.prNumber ? `#${item.prNumber}` : ""}
+            </a>
+          )}
+        </div>
+      )}
       <div className="flex items-start gap-2">
         {selectMode && (
           <input
@@ -984,7 +1087,7 @@ function Card({
           className="flex-1 text-[11px] rounded bg-[#0b1220] border border-white/10 px-1.5 py-1 text-white/80"
           disabled={pending}
         >
-          {STATUSES.filter((s) => !(isWorker && s === "DONE")).map((s) => (
+          {BOARD_STATUSES.filter((s) => !(isWorker && s === "DONE")).map((s) => (
             <option key={s} value={s}>
               {STATUS_LABEL[s]}
             </option>

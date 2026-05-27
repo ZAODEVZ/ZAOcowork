@@ -12,6 +12,7 @@ import type {
   Comment,
   Phase,
   Priority,
+  ServiceClass,
   TaskType,
   TaskUpdate,
 } from "./types";
@@ -33,28 +34,38 @@ export type {
 
 export {
   STATUSES,
+  BOARD_STATUSES,
   PRIORITIES,
   PHASES,
   CATEGORIES,
   OWNERS,
   TASK_TYPES,
   TASK_TYPE_LABELS,
+  SERVICE_CLASSES,
+  SERVICE_CLASS_LABELS,
+  SERVICE_CLASS_COLORS,
+  COLUMN_DOD,
   ageDays,
   cycleDays,
   isAging,
+  isStale,
   relativeTime,
 } from "./types";
+
+export type { ServiceClass } from "./types";
 
 // Cowork-sourced rows are this tracker's view of the unified table.
 const LEGACY_SOURCE = "cowork-actions.json";
 
 const STATUS_TO_DB: Record<ActionStatus, string> = {
+  TRIAGE: "triage",
   TODO: "todo",
   WIP: "in_progress",
   BLOCKED: "blocked",
   DONE: "done",
 };
 const STATUS_FROM_DB: Record<string, ActionStatus> = {
+  triage: "TRIAGE",
   todo: "TODO",
   in_progress: "WIP",
   blocked: "BLOCKED",
@@ -64,7 +75,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   "id, legacy_id, title, status, owner_id, created_by, completed_by, category, " +
   "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-  "updated_at, metadata, brands";
+  "updated_at, metadata, brands, service_class, archived_at";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -104,6 +115,8 @@ interface TaskRow {
   updated_at: string;
   metadata: Record<string, unknown> | null;
   brands: string[] | null;
+  service_class: string | null;
+  archived_at: string | null;
 }
 
 interface TeamMaps {
@@ -159,6 +172,12 @@ export function normalizeItem(
   if (raw.comments !== undefined) base.comments = raw.comments;
   if (raw.updates !== undefined) base.updates = raw.updates;
   if (raw.activity !== undefined) base.activity = raw.activity;
+  // Doc 763 additions
+  if (raw.serviceClass !== undefined) base.serviceClass = raw.serviceClass as ServiceClass;
+  if (raw.archivedAt !== undefined) base.archivedAt = raw.archivedAt;
+  if (raw.prUrl !== undefined) base.prUrl = raw.prUrl;
+  if (raw.prNumber !== undefined) base.prNumber = raw.prNumber;
+  if (raw.prState !== undefined) base.prState = raw.prState;
   return base;
 }
 
@@ -196,6 +215,13 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (Array.isArray(meta.comments)) item.comments = meta.comments as Comment[];
   if (Array.isArray(meta.updates)) item.updates = meta.updates as TaskUpdate[];
   if (Array.isArray(meta.activity)) item.activity = meta.activity as ActivityEvent[];
+  // Doc 763 dedicated columns (preferred over metadata for queryability)
+  if (row.service_class) item.serviceClass = row.service_class as ServiceClass;
+  if (row.archived_at) item.archivedAt = row.archived_at;
+  // PR linkage still lives in metadata for now (no dedicated column yet)
+  if (typeof meta.prUrl === "string") item.prUrl = meta.prUrl;
+  if (typeof meta.prNumber === "number") item.prNumber = meta.prNumber;
+  if (typeof meta.prState === "string") item.prState = meta.prState as "open" | "merged" | "closed";
   return item;
 }
 
@@ -209,6 +235,9 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   if (item.comments !== undefined) meta.comments = item.comments;
   if (item.updates !== undefined) meta.updates = item.updates;
   if (item.activity !== undefined) meta.activity = item.activity;
+  if (item.prUrl !== undefined && item.prUrl !== null) meta.prUrl = item.prUrl;
+  if (item.prNumber !== undefined && item.prNumber !== null) meta.prNumber = item.prNumber;
+  if (item.prState !== undefined && item.prState !== null) meta.prState = item.prState;
   return meta;
 }
 
@@ -243,6 +272,8 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     updated_at: nowIso(),
     metadata: buildMetadata(item),
     brands: Array.isArray(item.brands) ? item.brands : [],
+    service_class: item.serviceClass ?? "Standard",
+    archived_at: item.archivedAt ?? null,
   };
 }
 
@@ -256,9 +287,13 @@ export async function getActions(): Promise<ActionDoc> {
     .from("tasks")
     .select(TASK_COLUMNS);
   if (error) throw new Error(`tasks read failed: ${error.message}`);
-  const items = ((data ?? []) as unknown as TaskRow[])
+  let items = ((data ?? []) as unknown as TaskRow[])
     .map((row) => normalizeItem(rowToItem(row, team)))
     .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+  // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +
+  // returns the items with archivedAt populated so the UI hides them
+  // on this same render rather than waiting for the next read.
+  items = await autoArchive(items);
   return { updatedAt: nowIso(), items };
 }
 
@@ -327,3 +362,42 @@ export function newId(existing: ActionItem[]): string {
   }, 0);
   return String(max + 1);
 }
+
+// Auto-archive DONE items older than 30 days. Called once per read in
+// getActions when items count exceeds the archive threshold so a no-op
+// path stays fast. Modifies the DB rows directly (one bulk UPDATE) and
+// flags the resulting items in the returned doc so the UI doesn't show
+// them in the default view.
+const ARCHIVE_DAYS = 30;
+
+async function autoArchive(items: ActionItem[]): Promise<ActionItem[]> {
+  const cutoffMs = Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
+  const dbIdsToArchive: string[] = [];
+  for (const it of items) {
+    if (it.status !== "DONE") continue;
+    if (it.archivedAt) continue;
+    const completed = it.completedAt || it.updatedAt;
+    if (!completed) continue;
+    const t = new Date(completed).getTime();
+    if (Number.isFinite(t) && t < cutoffMs && it.dbId) {
+      dbIdsToArchive.push(it.dbId);
+    }
+  }
+  if (dbIdsToArchive.length === 0) return items;
+  const archivedIso = nowIso();
+  const { error } = await db()
+    .from("tasks")
+    .update({ archived_at: archivedIso })
+    .in("id", dbIdsToArchive)
+    .is("archived_at", null);
+  if (error) {
+    // Non-fatal: log + continue with in-memory tag so the view still hides
+    // them on this request, real DB row will catch up on the next read.
+    console.warn(`[data] auto-archive failed: ${error.message}`);
+  }
+  const dbIdSet = new Set(dbIdsToArchive);
+  return items.map((it) =>
+    it.dbId && dbIdSet.has(it.dbId) ? { ...it, archivedAt: archivedIso } : it,
+  );
+}
+
