@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession, isAdmin, userLabel } from "@/lib/auth";
+import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
 import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
 import { logout } from "@/app/actions";
@@ -33,9 +33,11 @@ export default async function FeedPage({
 }) {
   const user = await getSession();
   if (!user) redirect("/login");
-  // Leads + admins. Workers don't get the feed (yet) - they have plenty
-  // of context from per-task views.
+  // Audit doc 766 finding #2: previously this route had only session
+  // gate, so workers could view all audit_logs incl. admin actions.
+  // Restrict to lead + admin per the original doc 765 design.
   const userIsAdmin = await isAdmin(user);
+  if (!isLead(user) && !userIsAdmin) redirect("/?not-allowed=feed");
 
   const sp = await searchParams;
   const entity = parseEntity(sp.entity);

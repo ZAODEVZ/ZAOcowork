@@ -44,50 +44,50 @@ export default async function AdminPage({
   if (!(await isAdmin(user))) redirect("/?not-allowed=admin");
 
   const userLabelStr = userLabel(user);
-  // Best-effort fetch - if the role/password_hash columns don't exist yet
-  // (pre-migration deploy), surface a friendly message in the Users section
-  // instead of crashing the whole admin page.
-  let members: Awaited<ReturnType<typeof listTeamMembers>> = [];
-  let membersError: string | null = null;
-  try {
-    members = await listTeamMembers();
-  } catch (err) {
-    membersError = err instanceof Error ? err.message : "team_members read failed";
-  }
 
-  // Bulk-ops counts: how many tasks have no real owner (empty, NULL, or
-  // "Open" - the open-to-claim sentinel). Audit doc 761 finding #9 flagged
-  // these as the 32% silent rows that drop out of every owner filter.
-  const doc = await getActions();
+  // Audit doc 766 finding #1: previously 11 sequential awaits in this
+  // handler made /admin slow (1.5-2s render). Most reads are independent
+  // -> batch via Promise.all. listTeamMembers + listAuditLogs may throw
+  // when their migrations aren't applied so each wrapped to never reject.
+  const [
+    membersRes,
+    doc,
+    allBrands,
+    proposalsRes,
+    projectsRes,
+    navBrands,
+    auditPageData,
+  ] = await Promise.all([
+    listTeamMembers()
+      .then((rows) => ({ rows, error: null as string | null }))
+      .catch((err) => ({
+        rows: [] as Awaited<ReturnType<typeof listTeamMembers>>,
+        error: err instanceof Error ? err.message : "team_members read failed",
+      })),
+    getActions(),
+    listBrands(),
+    listProposals("pending").catch(() => ({ rows: [], available: false } as Awaited<ReturnType<typeof listProposals>>)),
+    listProjects().catch(() => ({ rows: [], available: false } as Awaited<ReturnType<typeof listProjects>>)),
+    listActiveBrands(),
+    listAuditLogs({
+      limit: AUDIT_PAGE_SIZE,
+      offset: (auditPage - 1) * AUDIT_PAGE_SIZE,
+      entity_type: auditEntity,
+      actor: auditActor ?? undefined,
+    }),
+  ]);
+
+  const members = membersRes.rows;
+  const membersError = membersRes.error;
   const unownedCount = doc.items.filter((it) => {
     const o = String(it.owner ?? "").trim();
     return !o || o === "Open";
   }).length;
-
-  // Brand list. listBrands returns const-fallback rows when the 002 migration
-  // hasn't been applied; the BrandsPanel shows a banner in that case and
-  // renders the list read-only. Once applied, DB rows replace the fallback.
-  const allBrands = await listBrands();
-  // Pending proposals count for the FeedCallout sibling. Best-effort -
-  // if the migration isn't applied yet we silently show 0.
-  const proposalsCount = await listProposals("pending").then((p) => p.rows.length).catch(() => 0);
-  // Active project count for the new callout. Best-effort; 0 if migration
-  // 006 not applied yet.
-  const projectsActiveCount = await listProjects()
-    .then((p) => p.rows.filter((r) => r.status === "active").length)
-    .catch(() => 0);
-  const navBrands = await listActiveBrands();
+  const proposalsCount = proposalsRes.rows.length;
+  const projectsActiveCount = projectsRes.rows.filter((r) => r.status === "active").length;
   const migrationApplied = !allBrands.some((b) => b.id.startsWith("const-"));
-
-  // Audit feed. listAuditLogs returns available=false when the 003 migration
-  // hasn't been applied (rather than throwing), so the AuditPanel can render
-  // a friendly banner without breaking the rest of /admin.
-  const auditPageData = await listAuditLogs({
-    limit: AUDIT_PAGE_SIZE,
-    offset: (auditPage - 1) * AUDIT_PAGE_SIZE,
-    entity_type: auditEntity,
-    actor: auditActor ?? undefined,
-  });
+  // listAuditActors is the only conditional fetch (depends on audit
+  // availability) so it stays after the batch.
   const auditActors = auditPageData.available ? await listAuditActors() : [];
 
   return (
