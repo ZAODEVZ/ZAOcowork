@@ -36,12 +36,38 @@ export function userLabel(user: SessionUser): string {
   return KNOWN_USER_LABELS[user] ?? capitalize(user);
 }
 
-// Lead = can mark tasks DONE without going through the review queue.
-// Tyler is an external collaborator (Magnetic founder, doc 473), not a lead.
-// Shawn is a ZAOstock lead (added via /admin 2026-05-27).
-// Leads are still hardcoded here as a workflow concept; the admin role
-// (db-driven via team_members.role) is separate. Long-term: replace this
-// hardcoded list by reading team_members.role IN ('lead','admin').
+// =============================================================
+// Permission tier model (doc 766 finding #4 - canonical reference)
+// =============================================================
+//
+// 4 tiers, escalating capability. The model is enforced server-side in
+// every action handler. UI surfaces (NavBar tabs, callout visibility)
+// mirror but do not enforce.
+//
+// | Tier   | Gate fn               | Routes / actions                                |
+// |--------|-----------------------|-------------------------------------------------|
+// | Auto   | requireSession        | board read, search, /chat assistant, own task   |
+// |        |                       | edit (status/notes/comments), claim, quickAdd   |
+// | Notify | requireSession + log  | bulk-set-status/owner/priority/brand, bulk add  |
+// |        |                       | brand, bulk move to triage, comment, update     |
+// | Ask    | requireSession +      | /admin/triage routing, /admin/cleanup mark      |
+// |        | isLead OR isAdmin     | done/archive, /admin/proposals approve/reject,  |
+// |        |                       | /admin/feed read, reviewUpdate, /admin shell    |
+// | Block  | requireAdmin          | /admin Users/Brands/BulkOps/Audit panels,       |
+// |        |                       | /admin/projects, bulkDelete, deleteItem         |
+//
+// "isLead" is hardcoded here (Zaal + Iman + Shawn). "isAdmin" is the
+// DB-driven role from team_members.role with hardcoded fallback to
+// Zaal/Iman so the admin lever is never accidentally lost.
+//
+// Workers (ThyRev, Samantha, Tyler, future admin-added users) sit at
+// tier Auto + Notify. Their DONE submissions go through the review
+// queue (requiresApproval=true is automatically set in actions.ts).
+//
+// When adding a new admin surface: gate the page (Ask or Block) AND
+// gate every server action it triggers. Don't rely on the page gate
+// alone - server actions can be invoked from any client.
+
 export function isLead(user: SessionUser): boolean {
   return user === "zaal" || user === "iman" || user === "shawn";
 }

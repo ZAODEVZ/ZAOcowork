@@ -4,6 +4,7 @@ import { getActions, ageDays, isStale } from "@/lib/data";
 import { listActiveBrands } from "@/lib/brands-db";
 import { NavBar } from "@/components/NavBar";
 import { CleanupPanel } from "@/components/admin/CleanupPanel";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 
 export const dynamic = "force-dynamic";
 
@@ -51,13 +52,14 @@ export default async function CleanupPage() {
       <div className="relative max-w-6xl mx-auto py-8 space-y-6">
         <header className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="mb-4">
-            <h1 className="text-2xl font-bold">Cleanup</h1>
+            <AdminBackLink />
+            <h1 className="text-2xl font-bold mt-1">Cleanup</h1>
             <p className="text-sm text-white/55 mt-1">
               Bulk close out aging or stale tasks. Every action takes a one-line note
               that gets logged as a comment on each touched task.
             </p>
           </div>
-          <NavBar isAdmin={await isAdmin(user)} brands={navBrands} />
+          <NavBar isAdmin={await isAdmin(user)} isLead={isLead(user)} brands={navBrands} />
         </header>
 
         <CleanupPanel buckets={buckets} />

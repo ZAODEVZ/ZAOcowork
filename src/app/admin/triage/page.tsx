@@ -4,6 +4,7 @@ import { getActions } from "@/lib/data";
 import { listActiveBrands } from "@/lib/brands-db";
 import { NavBar } from "@/components/NavBar";
 import { TriagePanel } from "@/components/admin/TriagePanel";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,8 @@ export default async function TriagePage() {
         <header className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Triage</h1>
+              <AdminBackLink />
+              <h1 className="text-2xl font-bold mt-1">Triage</h1>
               <p className="text-sm text-white/55 mt-1">
                 {triageItems.length === 0
                   ? "Inbox is empty. External writers will land their items here."
@@ -39,7 +41,7 @@ export default async function TriagePage() {
               </p>
             </div>
           </div>
-          <NavBar isAdmin={await isAdmin(user)} brands={navBrands} />
+          <NavBar isAdmin={await isAdmin(user)} isLead={isLead(user)} brands={navBrands} />
         </header>
 
         <TriagePanel items={triageItems} brands={navBrands.map((b) => b.name)} />

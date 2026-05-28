@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getSession, isAdmin, userLabel } from "@/lib/auth";
+import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { getActions, ageDays } from "@/lib/data";
 import { logout } from "./actions";
 import { Board } from "@/components/Board";
@@ -108,7 +108,7 @@ export default async function Page({
               </form>
             </div>
           </div>
-          <NavBar isAdmin={await isAdmin(user)} brands={navBrands} />
+          <NavBar isAdmin={await isAdmin(user)} isLead={isLead(user)} brands={navBrands} />
         </header>
 
         <section className="grid grid-cols-2 md:grid-cols-5 gap-3">

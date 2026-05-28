@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
-import { getSession, isAdmin, userLabel } from "@/lib/auth";
+import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listProjects } from "@/lib/projects";
 import { listActiveBrands } from "@/lib/brands-db";
 import { getActions } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { ProjectsPanel } from "@/components/admin/ProjectsPanel";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
+import { migrationPath } from "@/lib/migrations";
 import { SlaGridChip } from "@/components/SlaGridChip";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +55,8 @@ export default async function ProjectsAdminPage() {
         <header className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Projects</h1>
+              <AdminBackLink />
+              <h1 className="text-2xl font-bold mt-1">Projects</h1>
               <p className="text-sm text-white/55 mt-1">
                 Time-bounded containers above tasks. Brand tags stay cross-cutting; projects group
                 5-50 tasks toward a specific outcome.
@@ -70,14 +73,14 @@ export default async function ProjectsAdminPage() {
               </form>
             </div>
           </div>
-          <NavBar isAdmin={userIsAdmin} brands={navBrands} />
+          <NavBar isAdmin={userIsAdmin} isLead={isLead(user)} brands={navBrands} />
         </header>
 
         {!projects.available ? (
           <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
             <div className="font-semibold mb-1">projects table not ready</div>
             <div className="text-xs text-amber-100/85">
-              Apply <code className="text-amber-300">supabase/migrations/006_projects_and_source.sql</code> in the Supabase SQL editor, then refresh.
+              Apply <code className="text-amber-300">{migrationPath("projects_and_source")}</code> in the Supabase SQL editor, then refresh.
             </div>
           </div>
         ) : (

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { AuditEntityType, AuditLogRow } from "@/lib/audit";
+import { migrationPath } from "@/lib/migrations";
 
 // ActivityFeed renders a workspace-wide stream of audit_log events grouped
 // by day (Today / Yesterday / specific dates). Distinct from the /admin
@@ -109,7 +110,7 @@ export function ActivityFeed({
       <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
         <div className="font-semibold mb-1">audit_logs not ready</div>
         <div className="text-xs text-amber-100/85">
-          Apply <code className="text-amber-300">supabase/migrations/003_audit_logs.sql</code> in the Supabase SQL editor, then refresh.
+          Apply <code className="text-amber-300">{migrationPath("audit_logs")}</code> in the Supabase SQL editor, then refresh.
         </div>
       </div>
     );

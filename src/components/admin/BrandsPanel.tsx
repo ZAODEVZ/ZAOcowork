@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { BrandRow } from "@/lib/brands-db";
+import { migrationPath } from "@/lib/migrations";
 import {
   addBrandAction,
   deleteBrandAction,
@@ -43,7 +44,7 @@ export function BrandsPanel({
         <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
           <div className="font-semibold mb-1">brands table not ready</div>
           <div className="text-xs text-amber-100/85">
-            Apply <code className="text-amber-300">supabase/migrations/002_brands_table.sql</code> in the
+            Apply <code className="text-amber-300">{migrationPath("brands_table")}</code> in the
             Supabase SQL editor to enable add/edit/delete. The list below is the const fallback for read-only display.
           </div>
         </div>
