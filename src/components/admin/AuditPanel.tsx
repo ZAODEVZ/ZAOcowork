@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { AuditEntityType, AuditLogRow } from "@/lib/audit";
+import { migrationPath } from "@/lib/migrations";
 
 // AuditPanel: paginated view of audit_logs. Server component fetches the
 // page; this client wrapper renders the table + entity_type filter + the
@@ -47,7 +48,7 @@ export function AuditPanel({
       <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
         <div className="font-semibold mb-1">audit_logs not ready</div>
         <div className="text-xs text-amber-100/85">
-          Apply <code className="text-amber-300">supabase/migrations/003_audit_logs.sql</code> in the Supabase SQL editor
+          Apply <code className="text-amber-300">{migrationPath("audit_logs")}</code> in the Supabase SQL editor
           to start collecting + viewing events. Until then admin and bulk actions still run normally - the audit calls
           fail silently so they don't block real work.
         </div>

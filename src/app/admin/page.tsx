@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession, isAdmin, userLabel } from "@/lib/auth";
+import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { UsersPanel } from "@/components/admin/UsersPanel";
@@ -9,6 +9,7 @@ import { AuditPanel } from "@/components/admin/AuditPanel";
 import { SlaGridChip } from "@/components/SlaGridChip";
 import { listProposals } from "@/lib/proposals";
 import { listProjects } from "@/lib/projects";
+import { migrationPath } from "@/lib/migrations";
 import { listTeamMembers } from "@/lib/team";
 import { listBrands, listActiveBrands } from "@/lib/brands-db";
 import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
@@ -41,7 +42,12 @@ export default async function AdminPage({
 
   const user = await getSession();
   if (!user) redirect("/login");
-  if (!(await isAdmin(user))) redirect("/?not-allowed=admin");
+  // Doc 766 finding #3: /admin opens to leads as well so they can reach
+  // the Triage / Cleanup / Proposals / Feed callouts from one dashboard.
+  // Admin-only sections (Users, Brands, Bulk ops, Audit log) gate inside.
+  const userIsAdmin = await isAdmin(user);
+  const userIsLead = isLead(user);
+  if (!userIsAdmin && !userIsLead) redirect("/?not-allowed=admin");
 
   const userLabelStr = userLabel(user);
 
@@ -112,12 +118,21 @@ export default async function AdminPage({
               </form>
             </div>
           </div>
-          <NavBar isAdmin brands={navBrands} />
+          <NavBar isAdmin={userIsAdmin} isLead={userIsLead} brands={navBrands} />
         </header>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
-          <FeedCallout />
+          <FeedCallout
+            recentEvents={
+              auditPageData.available
+                ? auditPageData.rows.filter((r) => {
+                    const t = new Date(r.created_at).getTime();
+                    return Date.now() - t < 24 * 60 * 60 * 1000;
+                  }).length
+                : null
+            }
+          />
           <ProjectsCallout count={projectsActiveCount} />
           <ProposalsCallout count={proposalsCount} />
           <CleanupCallout
@@ -133,40 +148,54 @@ export default async function AdminPage({
           />
         </div>
 
-        <Section title="Users" hint="Add, deactivate, reset password, promote to admin">
-          {membersError ? (
-            <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-              <div className="font-semibold mb-1">team_members not ready</div>
-              <div className="text-xs text-amber-100/85">
-                Apply <code className="text-amber-300">supabase/migrations/001_team_member_roles_and_passwords.sql</code> in
-                the Supabase SQL editor, then refresh. The migration adds the role + password_hash columns this panel needs.
-              </div>
-              <div className="mt-2 text-[11px] text-amber-200/60">err: {membersError}</div>
-            </div>
-          ) : (
-            <UsersPanel members={members} actorLabel={userLabelStr} />
-          )}
-        </Section>
+        {userIsAdmin ? (
+          <>
+            <Section title="Users" hint="Add, deactivate, reset password, promote to admin">
+              {membersError ? (
+                <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                  <div className="font-semibold mb-1">team_members not ready</div>
+                  <div className="text-xs text-amber-100/85">
+                    Apply <code className="text-amber-300">{migrationPath("team_member_roles")}</code> in
+                    the Supabase SQL editor, then refresh. The migration adds the role + password_hash columns this panel needs.
+                  </div>
+                  <div className="mt-2 text-[11px] text-amber-200/60">err: {membersError}</div>
+                </div>
+              ) : (
+                <UsersPanel members={members} actorLabel={userLabelStr} />
+              )}
+            </Section>
 
-        <Section title="Brands" hint="Add or retire brands without a code change">
-          <BrandsPanel brands={allBrands} migrationApplied={migrationApplied} />
-        </Section>
+            <Section title="Brands" hint="Add or retire brands without a code change">
+              <BrandsPanel brands={allBrands} migrationApplied={migrationApplied} />
+            </Section>
 
-        <Section title="Bulk task ops" hint="Multi-select rows, bulk reassign / delete / retag">
-          <BulkOpsPanel unownedCount={unownedCount} />
-        </Section>
+            <Section title="Bulk task ops" hint="Multi-select rows, bulk reassign / delete / retag">
+              <BulkOpsPanel unownedCount={unownedCount} />
+            </Section>
 
-        <Section title="Audit log" hint="Who changed what, when">
-          <AuditPanel
-            rows={auditPageData.rows}
-            total={auditPageData.total}
-            available={auditPageData.available}
-            page={auditPage}
-            entity={auditEntity}
-            actor={auditActor}
-            actors={auditActors}
-          />
-        </Section>
+            {/* Doc 766 finding #7: /admin/feed is the calm browse surface.
+                Keep AuditPanel here for the filter-heavy advanced view but
+                make the relationship clear in the hint. */}
+            <Section title="Audit log (advanced filters)" hint="Drill into events by entity + actor. For chronological browsing use /admin/feed.">
+              <AuditPanel
+                rows={auditPageData.rows}
+                total={auditPageData.total}
+                available={auditPageData.available}
+                page={auditPage}
+                entity={auditEntity}
+                actor={auditActor}
+                actors={auditActors}
+              />
+            </Section>
+          </>
+        ) : (
+          // Lead viewing /admin: callouts above are the actionable surface.
+          // No section below since Users / Brands / Bulk / Audit are admin-only.
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] px-5 py-4 text-sm text-white/55">
+            You see the lead-actionable callouts above (Triage, Cleanup, Proposals, Feed, Projects).
+            Users / Brands / Bulk ops / Audit log management is admin-only.
+          </div>
+        )}
 
       </div>
       <SlaGridChip />
@@ -244,7 +273,42 @@ function ProposalsCallout({ count }: { count: number }) {
   );
 }
 
-function FeedCallout() {
+function FeedCallout({ recentEvents }: { recentEvents: number | null }) {
+  // Doc 766 finding #6: empty / has-events states match the other
+  // callout cards. Null = audit_logs migration not applied (banner
+  // shows inside /admin/feed itself; the callout stays muted).
+  if (recentEvents === null) {
+    return (
+      <a
+        href="/admin/feed"
+        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-white/85">Activity feed</div>
+            <div className="text-xs text-white/45">audit_logs not ready yet</div>
+          </div>
+          <span className="text-xs text-white/40">/admin/feed -&gt;</span>
+        </div>
+      </a>
+    );
+  }
+  if (recentEvents === 0) {
+    return (
+      <a
+        href="/admin/feed"
+        className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-white/85">Activity feed</div>
+            <div className="text-xs text-white/45">No events in last 24h - quiet day</div>
+          </div>
+          <span className="text-xs text-white/40">Browse history -&gt;</span>
+        </div>
+      </a>
+    );
+  }
   return (
     <a
       href="/admin/feed"
@@ -252,7 +316,9 @@ function FeedCallout() {
     >
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-sm font-semibold text-blue-100">Activity feed</div>
+          <div className="text-sm font-semibold text-blue-100">
+            Activity feed: {recentEvents} event{recentEvents === 1 ? "" : "s"} today
+          </div>
           <div className="text-xs text-blue-200/70">Workspace-wide stream. Read once a day instead of chasing pings.</div>
         </div>
         <span className="text-xs text-blue-200">Open feed -&gt;</span>

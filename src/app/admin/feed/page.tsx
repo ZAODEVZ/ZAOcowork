@@ -5,6 +5,7 @@ import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audi
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { ActivityFeed } from "@/components/admin/ActivityFeed";
+import { AdminBackLink } from "@/components/admin/AdminBackLink";
 import { SlaGridChip } from "@/components/SlaGridChip";
 
 export const dynamic = "force-dynamic";
@@ -65,7 +66,8 @@ export default async function FeedPage({
         <header className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold">Activity feed</h1>
+              <AdminBackLink />
+              <h1 className="text-2xl font-bold mt-1">Activity feed</h1>
               <p className="text-sm text-white/55 mt-1">
                 Everything that happened across the workspace, newest first. Read this once a day instead of chasing pings.
               </p>
@@ -81,7 +83,7 @@ export default async function FeedPage({
               </form>
             </div>
           </div>
-          <NavBar isAdmin={userIsAdmin} brands={navBrands} />
+          <NavBar isAdmin={userIsAdmin} isLead={isLead(user)} brands={navBrands} />
         </header>
 
         <ActivityFeed

@@ -35,9 +35,14 @@ function fallbackBrands(): NavBrand[] {
 
 export function NavBar({
   isAdmin = false,
+  isLead = false,
   brands,
 }: {
   isAdmin?: boolean;
+  // Doc 766 finding #3: leads need the Admin tab too so they can reach
+  // /admin/triage, /admin/cleanup, /admin/proposals, /admin/feed.
+  // /admin itself opens to leads now and gates admin-only sections.
+  isLead?: boolean;
   brands?: NavBrand[];
 }) {
   const pathname = usePathname();
@@ -46,7 +51,8 @@ export function NavBar({
 
   const onBoard = pathname === "/";
   const onChat = pathname === "/chat";
-  const onAdmin = pathname === "/admin";
+  const onAdmin = pathname.startsWith("/admin");
+  const showAdminTab = isAdmin || isLead;
 
   const resolved = useMemo<NavBrand[]>(() => {
     const list = brands && brands.length > 0 ? brands : fallbackBrands();
@@ -89,7 +95,7 @@ export function NavBar({
           dot="bg-teal-400"
           activeClass="bg-teal-500/20 text-teal-200 border-teal-500/40"
         />
-        {isAdmin && (
+        {showAdminTab && (
           <SimpleTab
             href="/admin"
             label="Admin"
