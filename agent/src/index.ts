@@ -22,6 +22,7 @@ import {
   cmdDaily,
   cmdDone,
   cmdList,
+  cmdNow,
   cmdMine,
   cmdPing,
   cmdSetDue,
@@ -204,6 +205,8 @@ function withArgs(handler: (ctx: Context, args: string) => Promise<void>): (ctx:
 
 bot.command('mine', withArgs((ctx) => cmdMine(ctx)));
 bot.command('list', withArgs(cmdList));
+// Phase J (doc 768) - /now returns top 5 "do these now" for the caller
+bot.command('now', withArgs(cmdNow));
 bot.command('add', withArgs(cmdAdd));
 bot.command('wip', withArgs(cmdWip));
 bot.command('blocked', withArgs(cmdBlocked));
@@ -328,6 +331,7 @@ bot.on('message:text', async (ctx) => {
 const TG_COMMANDS = [
   { command: 'start', description: 'help / list every command' },
   { command: 'mine', description: 'my open items' },
+  { command: 'now', description: 'top 5 do these now (expedite / stale / overdue / P1)' },
   { command: 'list', description: 'all open items by owner' },
   { command: 'add', description: 'create new item assigned to me' },
   { command: 'wip', description: 'move item to in-progress' },
