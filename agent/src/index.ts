@@ -23,6 +23,7 @@ import {
   cmdDone,
   cmdList,
   cmdNow,
+  cmdQuiet,
   cmdMine,
   cmdPing,
   cmdSetDue,
@@ -207,6 +208,8 @@ bot.command('mine', withArgs((ctx) => cmdMine(ctx)));
 bot.command('list', withArgs(cmdList));
 // Phase J (doc 768) - /now returns top 5 "do these now" for the caller
 bot.command('now', withArgs(cmdNow));
+// Phase J followup - /quiet until 20:00 mutes the 4h nudge for the caller
+bot.command('quiet', withArgs(cmdQuiet));
 bot.command('add', withArgs(cmdAdd));
 bot.command('wip', withArgs(cmdWip));
 bot.command('blocked', withArgs(cmdBlocked));
@@ -332,6 +335,7 @@ const TG_COMMANDS = [
   { command: 'start', description: 'help / list every command' },
   { command: 'mine', description: 'my open items' },
   { command: 'now', description: 'top 5 do these now (expedite / stale / overdue / P1)' },
+  { command: 'quiet', description: 'mute 4h nudges (e.g. /quiet until 20:00)' },
   { command: 'list', description: 'all open items by owner' },
   { command: 'add', description: 'create new item assigned to me' },
   { command: 'wip', description: 'move item to in-progress' },

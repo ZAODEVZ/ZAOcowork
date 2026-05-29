@@ -13,6 +13,7 @@ import { bonfireHook } from './teams';
 import type { TeamEventOp } from './teams';
 import type { ActionItem, ActionStatus, Owner, Priority } from './types';
 import { OWNERS } from './types';
+import { getQuietUntil, setQuietUntil } from './users';
 
 const PRIORITIES: readonly Priority[] = ['P1', 'P2', 'P3'];
 
@@ -794,4 +795,96 @@ export async function cmdDaily(ctx: Context): Promise<void> {
   }
   const { data } = await fetchActions();
   await ctx.reply(`Daily digest:\n${listGrouped(data.items)}`);
+}
+
+// Phase J followup - /quiet until HH:MM mutes the 4h nudge for this user
+// until the named time. Formats:
+//   /quiet until 20:00            -> today 20:00 ET (or tomorrow if past)
+//   /quiet until tomorrow 09:00   -> tomorrow 09:00 ET
+//   /quiet off                    -> clear the override (resume nudges)
+//   /quiet                        -> show current state
+//
+// Per-user; the scheduler reads isQuietActive(tgId) before sending.
+// Times always ET to match the existing scheduler tz.
+function parseQuietArg(raw: string): { iso: string | null; label: string } | null {
+  const s = raw.trim().toLowerCase();
+  if (!s || s === 'off' || s === 'clear') {
+    return { iso: null, label: 'cleared' };
+  }
+  // Accept "until HH:MM" or "HH:MM" (until implied). "tomorrow HH:MM" jumps a day.
+  const m = s.match(/^(?:until\s+)?(?:(tomorrow|today)\s+)?(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const tomorrow = m[1] === 'tomorrow';
+  const hour = Number(m[2]);
+  const minute = Number(m[3]);
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+  // Compute ET wall-clock target. Trick: build a Date in ET-formatted YYYY-MM-DD,
+  // then construct a real Date via Intl-derived ET offset.
+  const now = new Date();
+  const etTodayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const [y, mo, d] = etTodayStr.split('-').map(Number);
+  // Build a candidate as if local-tz date matched ET date, then correct offset.
+  const candidate = new Date(Date.UTC(y, mo - 1, d, hour, minute));
+  // ET offset shift: compute the difference between same instant in ET vs UTC.
+  const etOffsetMs = (() => {
+    const utcStr = new Date(Date.UTC(y, mo - 1, d, 12)).toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
+      hour12: false,
+    });
+    // Re-parse the ET string back into a Date in UTC to find the offset.
+    const m2 = utcStr.match(/(\d{2})\/(\d{2})\/(\d{4}),?\s+(\d{2}):(\d{2})/);
+    if (!m2) return 0;
+    const [, mo2, d2, y2, h2, mi2] = m2;
+    const etAsIfUtc = Date.UTC(Number(y2), Number(mo2) - 1, Number(d2), Number(h2), Number(mi2));
+    const realUtc = Date.UTC(y, mo - 1, d, 12);
+    return realUtc - etAsIfUtc; // positive ms = ET is behind UTC
+  })();
+  let targetMs = candidate.getTime() + etOffsetMs;
+  if (tomorrow) {
+    targetMs += 86400000;
+  } else if (targetMs <= Date.now() + 60000) {
+    // If "until 14:00" but it's already 15:00 ET, bump to tomorrow.
+    targetMs += 86400000;
+  }
+  const iso = new Date(targetMs).toISOString();
+  const label = new Date(targetMs).toLocaleString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false,
+  });
+  return { iso, label: `until ${label} ET` };
+}
+
+export async function cmdQuiet(ctx: Context, args: string): Promise<void> {
+  const tgId = ctx.from?.id;
+  if (!tgId) {
+    await ctx.reply('cannot read your telegram id');
+    return;
+  }
+  if (!args.trim()) {
+    const cur = await getQuietUntil(tgId);
+    if (!cur) {
+      await ctx.reply('no quiet override - nudges fire on the normal schedule\n\nusage: /quiet until 20:00 | /quiet until tomorrow 09:00 | /quiet off');
+      return;
+    }
+    const t = new Date(cur).getTime();
+    if (t < Date.now()) {
+      await ctx.reply(`quiet expired ${new Date(cur).toLocaleString('en-US', { timeZone: 'America/New_York' })} ET - nudges firing normally`);
+      return;
+    }
+    await ctx.reply(`quiet until ${new Date(cur).toLocaleString('en-US', { timeZone: 'America/New_York' })} ET\n\n/quiet off to resume`);
+    return;
+  }
+  const parsed = parseQuietArg(args);
+  if (!parsed) {
+    await ctx.reply('usage: /quiet until 20:00 | /quiet until tomorrow 09:00 | /quiet off');
+    return;
+  }
+  await setQuietUntil(tgId, parsed.iso);
+  if (parsed.iso === null) {
+    await ctx.reply('quiet override cleared - nudges resume on the normal schedule');
+  } else {
+    await ctx.reply(`muted ${parsed.label} - 4h nudges paused`);
+  }
 }

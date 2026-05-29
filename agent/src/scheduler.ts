@@ -19,6 +19,7 @@ import { sendDM } from './notifications';
 import { COWORK_PATHS } from './paths';
 import { rosterView } from './roster';
 import type { ActionItem, Owner } from './types';
+import { isQuietActive } from './users';
 
 const TZ = 'America/New_York';
 const STALE_DAYS = 14;
@@ -199,6 +200,13 @@ async function runFourHourNudge(bot: Bot): Promise<void> {
   for (const [tgId, ownerValue] of view.ownerByTgId.entries()) {
     const lower = String(ownerValue).toLowerCase();
     if (!NUDGE_LEADS.has(lower)) continue;
+    // Phase J followup: per-user quiet override. If the user set
+    // /quiet until X via DM and X is in the future, skip this cycle.
+    if (await isQuietActive(tgId)) {
+      console.log(`[scheduler] 4h-nudge: ${ownerValue} quiet, skipping`);
+      skipped++;
+      continue;
+    }
     const top = topOneForOwner(data.items, ownerValue as Owner, true /* isLead */);
     if (!top) {
       skipped++;
