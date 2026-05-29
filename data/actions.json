@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-29T12:22:00.000Z",
+  "updatedAt": "2026-05-29T12:40:00.000Z",
   "items": [
     {
       "id": "1",
@@ -1384,6 +1384,37 @@
           "displayName": "Zaal",
           "action": "created",
           "createdAt": "2026-05-29T12:21:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "49",
+      "title": "Wire 'paperclip agents' as a standard ZAOOS issue-resolution path",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "ZAO Devz",
+      "priority": "P2",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "Make 'use a paperclip agent' one of the standard ways to resolve a github.com/bettercallzaal/ZAOOS issue, then run it across the open Empire-Builder backlog.\nOpen issues as of 2026-05-29 (12, all EB-x): #433 EB-18 booster one-pager, #432 EB-17 voting miniapp, #431 EB-16 slot dashboard, #424 EB-14 stake forecast, #423 EB-13 auto-cast distributions, #422 EB-12 empire-gated chat, #421 EB-10 leaderboard embeds, #420 EB-6 My Empires page, #419 EB-5 boosters dashboard. Phase-3 BLOCKED: #427 EB-9 webhook receiver, #426 EB-8 BANKER auto-distribute, #425 EB-7 respect amplifier (blocked on Adrian write API).\n[ ] Define what a 'paperclip agent' is + how it attaches to / resolves an issue (mechanism TBD - confirm with Zaal)\n[ ] Add it as an explicit resolution option on each open EB issue\n[ ] Dispatch against the unblocked Phase-2/Iter-2 issues first\nOPEN QUESTION: 'paperclip agents' is not yet defined in the cowork/ZAO-OS docs - needs a one-line definition before this can be scoped.",
+      "createdAt": "2026-05-29T12:40:00.000Z",
+      "updatedAt": "2026-05-29T12:40:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-pc-1",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:40:00.000Z"
         }
       ]
     }
