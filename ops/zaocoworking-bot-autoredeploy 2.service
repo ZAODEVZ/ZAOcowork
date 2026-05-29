@@ -1,0 +1,10 @@
+[Unit]
+Description=ZAOcoworkingBot auto-redeploy check (doc 766 finding #9)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /root/cowork-zaodevz/ops/bot-autoredeploy.sh
+
+[Install]
+WantedBy=default.target

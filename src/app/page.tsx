@@ -55,9 +55,17 @@ export default async function Page({
   // that brand's open/wip/blocked numbers without a page reload feel.
   const portalItems = doc.items;
   const totalAll = portalItems.length;
-  const scoped = urlBrand
-    ? portalItems.filter((x) => (x.brands ?? []).includes(urlBrand))
-    : portalItems;
+  // Scope respects both the brand tab AND the project picker so the
+  // stat cards, Forecast, and DO NOW widget all re-rank to whatever
+  // surface the user is currently looking at. Plain `doc.items` was
+  // wrong for the FocusWidget on a brand tab (Iman bug 2026-05-29:
+  // "general has all things but the same 5 things at the top as all
+  // the brands - we should have different ones for each brand").
+  const scoped = portalItems.filter((x) => {
+    if (urlBrand && !(x.brands ?? []).includes(urlBrand)) return false;
+    if (urlProject && x.projectId !== urlProject.id) return false;
+    return true;
+  });
 
   // Exclude archived rows (doc 763 F4) + TRIAGE inbox (doc 763 F6) from
   // every counter on the homepage so the numbers reflect the active board,
@@ -130,7 +138,7 @@ export default async function Page({
         </section>
 
         <FocusWidget
-          entries={computeTopFive(doc.items, user, { isLead: isLead(user) })}
+          entries={computeTopFive(scoped, user, { isLead: isLead(user) })}
           user={user}
         />
 
@@ -263,7 +271,7 @@ function Stat({
     <div className={`rounded-2xl bg-white/[0.06] backdrop-blur-xl border ${toneCls} px-4 py-3`}>
       <div className="text-[10px] uppercase tracking-wider text-white/50">{label}</div>
       <div className="mt-1 text-2xl font-bold leading-none">{value}</div>
-      {hint && <div className="text-[10px] text-white/35 mt-1">{hint}</div>}
+      {hint && <div className="text-[11px] text-white/55 mt-1">{hint}</div>}
     </div>
   );
 }
