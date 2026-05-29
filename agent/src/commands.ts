@@ -240,6 +240,101 @@ export async function cmdList(ctx: Context, args: string): Promise<void> {
   await ctx.reply(`open in "${cat}":\n${listGrouped(items)}`);
 }
 
+// /now - top 5 "do these now" for the caller (Phase J, doc 768).
+//
+// Composite ranking matches the web FocusWidget so the same task is
+// surfaced regardless of which entry point the user picks. Expedite
+// always first, then stale (no activity 5+ days), overdue, P1 in WIP,
+// pending reviews (lead-only).
+//
+// Each row carries the /todo/<id> permalink (Phase H) so the user can
+// tap straight from Telegram into the web TaskRoom slide-in.
+export async function cmdNow(ctx: Context, _args: string): Promise<void> {
+  const me = await ownerForCtx(ctx);
+  const meLower = String(me).toLowerCase();
+  const isLead = meLower === 'zaal' || meLower === 'iman' || meLower === 'shawn';
+
+  const { data } = await fetchActions();
+  type FocusRow = { id: string; title: string; status: string; reasons: string[]; score: number; owner: string };
+  const todayMs = Date.now();
+
+  function staleDays(it: ActionItem): number {
+    const updated = new Date(it.updatedAt).getTime();
+    return Math.floor((todayMs - updated) / 86400000);
+  }
+
+  function ageDays(it: ActionItem): number {
+    const created = new Date(it.createdAt).getTime();
+    return Math.floor((todayMs - created) / 86400000);
+  }
+
+  function parseDue(raw: string): number | null {
+    const m = String(raw ?? '').trim().match(/^(\d{4}-\d{2}-\d{2})/);
+    if (!m) return null;
+    const d = new Date(`${m[1]}T00:00:00Z`).getTime();
+    return Number.isFinite(d) ? d : null;
+  }
+
+  const scored: FocusRow[] = [];
+  for (const it of data.items) {
+    if (it.status === 'DONE') continue;
+    const o = String(it.owner ?? '').toLowerCase();
+    const mine = o === meLower || o === 'both' || (!o || o === 'open');
+
+    const reasons: string[] = [];
+    let score = 0;
+
+    if ((it as ActionItem & { serviceClass?: string }).serviceClass === 'Expedite') {
+      reasons.push('Expedite');
+      score += 1000;
+    }
+
+    if (mine && staleDays(it) > 5) {
+      reasons.push('Stale');
+      score += 500 + ageDays(it);
+    }
+
+    if (mine) {
+      const due = parseDue(it.due);
+      if (due && due < todayMs) {
+        reasons.push('Overdue');
+        const daysLate = Math.floor((todayMs - due) / 86400000);
+        score += 400 + Math.min(daysLate, 100);
+      }
+    }
+
+    if (mine && it.priority === 'P1' && (it.status === 'WIP' || it.status === 'BLOCKED')) {
+      reasons.push('P1 WIP');
+      score += 200;
+    }
+
+    if (isLead) {
+      const pending = (it.updates ?? []).filter((u) => u.reviewStatus === 'pending').length;
+      if (pending > 0) {
+        reasons.push(`${pending} review`);
+        score += 300 + pending * 10;
+      }
+    }
+
+    if (reasons.length === 0) continue;
+    scored.push({ id: it.id, title: it.title, status: it.status, reasons, score, owner: String(it.owner) });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, 5);
+
+  if (top.length === 0) {
+    await ctx.reply(`nothing urgent for ${me} - clean board`);
+    return;
+  }
+
+  const lines = top.map((r, i) => {
+    const tags = r.reasons.join(', ');
+    return `${i + 1}. #${r.id} (${r.owner}) [${tags}] ${r.title}\n   ${taskUrl(r.id)}`;
+  });
+  await ctx.reply(`Top ${top.length} for ${me}:\n\n${lines.join('\n\n')}`);
+}
+
 // v2.19 - inline-keyboard taps from the /list summary. Returns true if handled.
 export async function handleListCallback(ctx: Context): Promise<boolean> {
   const data = ctx.callbackQuery?.data;

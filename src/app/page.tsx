@@ -10,6 +10,8 @@ import { listActiveBrands } from "@/lib/brands-db";
 import { listActiveProjects } from "@/lib/projects";
 import { computeForecast } from "@/lib/forecast";
 import { ForecastWidget } from "@/components/ForecastWidget";
+import { FocusWidget } from "@/components/FocusWidget";
+import { computeTopFive } from "@/lib/focus";
 import { SlaGridChip } from "@/components/SlaGridChip";
 
 export const dynamic = "force-dynamic";
@@ -126,6 +128,11 @@ export default async function Page({
           <Stat label="Aging > 14d" value={aging} tone={aging > 0 ? "red" : "ok"} />
           <Stat label="Done 7d" value={done7d} tone="ok" />
         </section>
+
+        <FocusWidget
+          entries={computeTopFive(doc.items, user, { isLead: isLead(user) })}
+          user={user}
+        />
 
         <ForecastWidget forecast={forecast} brand={urlBrand} />
 
