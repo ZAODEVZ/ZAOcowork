@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-29T11:00:00.000Z",
+  "updatedAt": "2026-05-29T12:22:00.000Z",
   "items": [
     {
       "id": "1",
@@ -699,6 +699,691 @@
           "displayName": "Zaal",
           "action": "created",
           "createdAt": "2026-05-29T10:54:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "28",
+      "title": "ZAOscribe: deploy bot to VPS + first live test",
+      "createdBy": "zaal",
+      "owner": "Both",
+      "status": "TODO",
+      "category": "Infrastructure",
+      "priority": "P1",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-03",
+      "notes": "EPIC - github.com/ZAODEVZ/ZAOsribeBOT. Path to first live /scribe call.\n[ ] 1 Create Discord Developer Portal app + bot user\n[ ] 2 Capture App ID, Bot Token, Guild ID, Zaal User ID, Iman User ID\n[ ] 3 Enable Server Members Intent in dev portal\n[ ] 4 Decide tunnel: cloudflared vs tailscale, get webhook URL\n[ ] 5 (Iman) create zaoscribe user + /opt/zaoscribe + /var/lib/zaoscribe on VPS\n[ ] 6 (Iman) git clone + npm ci --omit=dev on VPS\n[ ] 7 Fill VPS .env with prod secrets + chmod 600\n[ ] 8 npm run register-commands on VPS (one-time per guild)\n[ ] 9 Install systemd unit + enable --now zaoscribe\n[ ] 10 Install bot in ZAO server via OAuth URL\n[ ] 11 Two-person /scribe start -> /scribe stop smoke test\n[ ] 12 /vps status service:zaocoworking-bot.service smoke test\n[2026-05-29] Proposed due (confirm).",
+      "createdAt": "2026-05-29T12:01:00.000Z",
+      "updatedAt": "2026-05-29T12:01:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-28",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:01:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "29",
+      "title": "ZAOscribe receiver: tunnel + first live POST->SCP test",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Infrastructure",
+      "priority": "P1",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-03",
+      "notes": "EPIC - mac-local at ~/Documents/ZAODEVZ/zaoscribe-receiver/. Pairs with the VPS bot.\n[ ] 21 Decide if receiver gets its own GitHub repo (currently local-only)\n[ ] 22 Fill local .env (secret must match VPS bot)\n[ ] 23 Run cloudflared/tailscale tunnel to expose port 8731\n[ ] 24 First live test: VPS bot POSTs -> receiver verifies + SCPs mix.wav\n[ ] 25 Wire /meeting skill to auto-detect ready.txt sentinel in queue folder\n[ ] 26 Decide auto-run vs manual /meeting after receiver lands a queue entry\n[ ] 27 (Optional) Telegram ping when a recording lands\n[2026-05-29] Proposed due (confirm).",
+      "createdAt": "2026-05-29T12:02:00.000Z",
+      "updatedAt": "2026-05-29T12:02:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-29",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:02:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "30",
+      "title": "Doc 753: re-apply v2 corrections + fire to Bonfire/tracker",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P2",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-01",
+      "notes": "EPIC - Craig 1Jctx re-extraction, ZAOOS research/events/. Concurrent linter reverted v2.\n[ ] 28 Re-apply v2 corrections to research/events/753-.../README.md\n[ ] 29 Re-apply zee3 attribution in attendees row\n[ ] 30 Re-apply Liquid -> liquidnfts.finance correction\n[ ] 31 Re-apply ZAOscribe bot identification\n[ ] 32 Re-bump meetings-index actions count 3 -> 11\n[ ] 33 Restore doc 760 ZAOville row in meetings-index\n[ ] 34 Fire Bonfire amendment episodes (8 actions + 6 decisions)\n[ ] 35 Insert 11 action rows into Supabase cowork tasks table\n[ ] 36 Generate Telegram copy-paste block (optional)\n[ ] 37 Generate clipboard next-actions page (owner-grouped)\n[ ] 38 Commit doc 753 v2 + index + memory on ws/research-coordination-layers\n[2026-05-29] Proposed due (confirm).",
+      "createdAt": "2026-05-29T12:03:00.000Z",
+      "updatedAt": "2026-05-29T12:03:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-30",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:03:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "31",
+      "title": "ZAO-OS housekeeping: commit untracked dirs + trim MEMORY.md",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - uncommitted from session start.\n[ ] 39 Review + commit research/events/760-zaoville-dcoop-candy-prod-may26/ (untracked)\n[ ] 40 Review + commit research/events/session-2026-05-27-...-zoe-gap-2-shipped/ (untracked)\n[ ] 41 Trim MEMORY.md - exceeded 24.4 KB index limit at session start",
+      "createdAt": "2026-05-29T12:04:00.000Z",
+      "updatedAt": "2026-05-29T12:04:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Intangible",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-31",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:04:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "32",
+      "title": "Research dispatches: agent-builder concept + Liquid x COC partnership",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "ZAO Devz",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - follow-ups Zaal flagged in-call.\n[ ] 42 /zao-research on agent-builder agent concept (sequence: AFTER ZAOscribe ships)\n[ ] 43 /zao-research on Liquid x COC Concertz partnership (liquidnfts.finance)",
+      "createdAt": "2026-05-29T12:05:00.000Z",
+      "updatedAt": "2026-05-29T12:05:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-32",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:05:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "33",
+      "title": "zabalgames: answer 7 fact-audit Qs (unblocks video recording)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P1",
+      "important": true,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-05-31",
+      "notes": "EPIC - blocks video recording. ~1 min to answer all 7:\n9. ZAO Music team - still 'DCoop, GodCloud, Iman'?\n10. ZAOstock sponsors - 'Wallace Events (tents/AV), Limone' both confirmed?\n11. ZAO Music first release - 'Cipher = #1' multi-artist cypher still active?\n12. COC Concertz #6 venue - 'Stilo World Spatial' locked?\n13. NextZAOville - 'DMV July 2026' locked or aspirational?\n14. $ZABAL multipliers - 'staking 2.1-3.0x, empire 4.0-8.6x' current?\n15. '7 active leaderboard slots' in $ZABAL Empire - current count?",
+      "createdAt": "2026-05-29T12:06:00.000Z",
+      "updatedAt": "2026-05-29T12:06:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-33",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:06:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "34",
+      "title": "zabalgames + Magnetiq: Tyler + Thy Rev coordination DMs",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P1",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-05-31",
+      "notes": "EPIC - ~10 min of DMs that unblock content + scheduling.\n[ ] Send Tyler the Magnetiq mementos DM (clipboard clip-*-tyler-magnetiq-handoff-dm.html)\n[ ] Tyler reply: brand-education content path A/B/C from docs/tyler-notion-brief-2026-05-28.md\n[ ] DM Tyler for his workshop date in June\n[ ] DM Thy Rev for session 1 date + topic\n[ ] DM Tyler for his FID (HAATZ avatar wiring)\n[ ] DM Thy Rev for her FID",
+      "createdAt": "2026-05-29T12:07:00.000Z",
+      "updatedAt": "2026-05-29T12:07:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-34",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:07:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "35",
+      "title": "Magnetiq: record + edit + ship 8 ZAO brand videos",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Content",
+      "priority": "P1",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-01",
+      "notes": "EPIC - ~10 min record + ~30 min Descript.\n[ ] Record 8 ZAO brand videos (scripts in docs/magnetiq-mementos-zao-brands-2026-05-28.md)\n[ ] Light Descript edit (remove uh/um/repeats)\n[ ] Upload to Magnetiq alongside Tyler's memento pages\n[ ] Send Tyler the video files\nNOTE: blocked on the 7 fact-audit Qs landing first.",
+      "createdAt": "2026-05-29T12:08:00.000Z",
+      "updatedAt": "2026-05-29T12:08:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-35",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:08:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "36",
+      "title": "zabalgames: ship OG card PNG (W11 - last launch blocker)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P1",
+      "important": true,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-05-31",
+      "notes": "EPIC - production currently 404s on /assets/og-card.png. 5 min:\n[ ] Open assets/og-card.svg in browser\n[ ] Screenshot at 1200x630\n[ ] Save as assets/og-card.png\n[ ] Push to repo",
+      "createdAt": "2026-05-29T12:09:00.000Z",
+      "updatedAt": "2026-05-29T12:09:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-36",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:09:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "37",
+      "title": "zabalgames: 5 ElizaOS bot decisions (Doc 770)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Infrastructure",
+      "priority": "P1",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-01",
+      "notes": "EPIC - 5 min to decide; gates the Jun 1-3 bot account setup.\n- Bot Farcaster handle: @zabalbot / @zg-bot / @gameschan / your call\n- VPS choice: Hetzner CX22 (recommended) / DigitalOcean / Railway\n- Bot signup path: A Hypersnap (free, sovereign) / B Neynar (paid, fast)\n- Anthropic API key: zaalp99 account / new bot@thezao.com\n- Announcement cast: you cast / bot's own first cast",
+      "createdAt": "2026-05-29T12:10:00.000Z",
+      "updatedAt": "2026-05-29T12:10:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-37",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:10:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "38",
+      "title": "zabalgames: HAATZ docs URL final lookup",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "If Cassie has a public docs URL beyond haatz.quilibrium.com, drop the link. 2 min.",
+      "createdAt": "2026-05-29T12:11:00.000Z",
+      "updatedAt": "2026-05-29T12:11:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-38",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:11:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "39",
+      "title": "zabalgames READY: logo WebP, FIDs, UI polish, pre-commit linter, sponsor outreach",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-01",
+      "notes": "EPIC - no blocker, just go-ahead. Pre-launch hardening.\n[ ] H Logo WebP variants (10 min) - drops 1.17MB to ~130KB on mobile (R5.1)\n[ ] I FIDs for 5 unverified people in roster (5 min) (R1.3)\n[ ] J Tier 1 UI polish on /info /p /finals /projects (1 hr)\n[ ] K Pre-commit linter for em-dash + emoji + glossary (30 min)\n[ ] Run sponsor outreach to 5 targets (R6.3)",
+      "createdAt": "2026-05-29T12:12:00.000Z",
+      "updatedAt": "2026-05-29T12:12:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-39",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:12:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "40",
+      "title": "zabalgames POST-LAUNCH: N5-N13 site enhancements",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - from TODO.md NEXT, after Jun 1 launch.\n[ ] N5 Hero banner using SVG OG card (15 min)\n[ ] N9 Daily-stats Snap (Doc 654 Empire stats, 30 min) - zlank\n[ ] N10 Live Bonfire push + integration test (5 min) - needs BONFIRE_API_KEY\n[ ] N11 Update llms.txt with kEngram pointers as rounds land (10 min/round)\n[ ] N12 Per-mentor pages populate as roster locks (5 min/mentor)\n[ ] N13 Builder OAuth flow Doc 750 (mid-June, 3-4 weeks)",
+      "createdAt": "2026-05-29T12:13:00.000Z",
+      "updatedAt": "2026-05-29T12:13:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-40",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:13:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "41",
+      "title": "zabalgames: Notion CMS migration (Doc 760)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "BLOCKED",
+      "category": "Infrastructure",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - post-launch.\n[ ] Phase 1 Set up 4 Notion DBs + sync script (1-2 days dev)\n[ ] Phase 2 Announcements + FAQ DBs migrate (1 day)\n[ ] Phase 3 Notion MCP for Claude Code direct write (30 min)",
+      "createdAt": "2026-05-29T12:14:00.000Z",
+      "updatedAt": "2026-05-29T12:14:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-41",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:14:00.000Z"
+        },
+        {
+          "id": "a-blk-41",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "commented",
+          "detail": "BLOCKED on Tyler confirming scope.",
+          "createdAt": "2026-05-29T12:14:00.000Z"
+        }
+      ],
+      "comments": [
+        {
+          "id": "c-blk-41",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "content": "BLOCKED on Tyler confirming scope.",
+          "createdAt": "2026-05-29T12:14:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "42",
+      "title": "ElizaOS bot Phase 1 build (Doc 770, Jun 1-15)",
+      "createdBy": "zaal",
+      "owner": "Both",
+      "status": "TODO",
+      "category": "Infrastructure",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-15",
+      "notes": "EPIC - zabalgames + Hetzner. Timeline:\nJun 1-3  (you) Bot Farcaster account + signer (Path A or B)\nJun 4-5  (dev) Stand up ElizaOS, wire HAATZ + Anthropic\nJun 6-8  (dev) Knowledge base loader + character file\nJun 9    (dev) Deploy to VPS\nJun 10   (you+dev) First 10 test mentions\nJun 11   (you) Cast announcement\nJun 12-15 (both) Iterate from real interactions\nDepends on the 5 ElizaOS decisions card.",
+      "createdAt": "2026-05-29T12:15:00.000Z",
+      "updatedAt": "2026-05-29T12:15:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-42",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:15:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "43",
+      "title": "zabalgames risk-register: bot-launch + Phase 2 + ongoing hardening",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Security",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - docs/risk-register-2026-05-28.md.\nPre-bot launch (June): [ ] Confirm Hypersnap signup w/ Cassie (R2.4) [ ] Anthropic budget caps (R2.3) [ ] HAATZ+Neynar 2-tier failover (R6.9) [ ] per-FID rate limiting (R2.2) [ ] Sentry + Better Uptime (R2.7)\nPhase 2 (July): [ ] Privy key quorum for tip wallet (R2.4) [ ] Notion webhook + sync (R3.1/3.2/3.4) [ ] Doc 750 Builder OAuth (R6.4)\nOngoing: [ ] Weekly glossary check (R6.8) [ ] Quarterly token rotation (R3.3) [ ] Monthly Farcaster protocol watch (R6.10)",
+      "createdAt": "2026-05-29T12:16:00.000Z",
+      "updatedAt": "2026-05-29T12:16:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-43",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:16:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "44",
+      "title": "COC Rev recap: YELLOW caption approval + render PILL/BAR overlays",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "BLOCKED",
+      "category": "Content",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - in flight this session.\n[ ] Approve YELLOW caption preview (frame already sent)\n[ ] IF approved: batch render PILL + BAR caption overlays\n[ ] Stage all 3 caption .mov to ~/Desktop/COC-Rev-Recap-2026-05-28/overlays-transparent/captions/",
+      "createdAt": "2026-05-29T12:17:00.000Z",
+      "updatedAt": "2026-05-29T12:17:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-44",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:17:00.000Z"
+        },
+        {
+          "id": "a-blk-44",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "commented",
+          "detail": "BLOCKED on Zaal approving the YELLOW caption preview.",
+          "createdAt": "2026-05-29T12:17:00.000Z"
+        }
+      ],
+      "comments": [
+        {
+          "id": "c-blk-44",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "content": "BLOCKED on Zaal approving the YELLOW caption preview.",
+          "createdAt": "2026-05-29T12:17:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "45",
+      "title": "ZAO brand palette: confirm color 1",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Brand",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "You supplied #2 blue + #3 yellow - color 1 TBC. Saved as project_zao_brand_palette.md.",
+      "createdAt": "2026-05-29T12:18:00.000Z",
+      "updatedAt": "2026-05-29T12:18:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-45",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:18:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "46",
+      "title": "COC Concertz #6 announce sequence (Iman + Zambia squad)",
+      "createdBy": "zaal",
+      "owner": "Iman",
+      "status": "TODO",
+      "category": "Release",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - imminent this week, Iman + Zambia squad leading; coordinated with Mickey aka Thy Revolution (livestream lead).\n[ ] COC #6 announce graphics + copy\n[ ] Pair Rev recap (shipped this session) with the announce drop as bridge content",
+      "createdAt": "2026-05-29T12:19:00.000Z",
+      "updatedAt": "2026-05-29T12:19:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-46",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:19:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "47",
+      "title": "ZAOstock: DCoop July test run + Fellenz logistics",
+      "createdBy": "zaal",
+      "owner": "Both",
+      "status": "TODO",
+      "category": "Artist Onboarding",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC.\n[ ] DCoop July test run - apply ZAOstock musician onboarding flow to DCoop July 2026 event as repeatability test before Oct (research/events/760-zaoville-dcoop-candy-prod-may26/)\n[ ] Fellenz logistics - Portland flight + 2.5hr drive to Ellsworth; NFT drop / Giveth give-backs for travel funding; primed for ZAO Festivals SF 2027",
+      "createdAt": "2026-05-29T12:20:00.000Z",
+      "updatedAt": "2026-05-29T12:20:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-47",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:20:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "48",
+      "title": "ZAOstock entry pages: 7 future-expansion pages",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "EPIC - per project_zaostock_entry_pages (21 days old). Extends /team/m/[slug] pattern.\n[ ] /musicians/[slug] per-artist profile\n[ ] /artists/[slug] per-visual-contributor profile\n[ ] /partners/[slug] per-partner-org (Shawn Web3Metal = first)\n[ ] /lineup (first nav item, missing)\n[ ] /about (consolidate lineage+community+team+mission)\n[ ] /partners/apply (PartnerIntakePage) self-serve form\n[ ] PartnerDashboardPage + CheckInPage (Oct 3 QR) + PublicReportPage + DisplayPage (venue screen)",
+      "createdAt": "2026-05-29T12:21:00.000Z",
+      "updatedAt": "2026-05-29T12:21:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "meeting-capture",
+      "activity": [
+        {
+          "id": "a-batch2-48",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T12:21:00.000Z"
         }
       ]
     }
