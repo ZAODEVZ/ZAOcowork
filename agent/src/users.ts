@@ -8,9 +8,11 @@ import { PROVIDERS, type Provider } from './llm';
 
 const USERS_DIR = join(COWORK_PATHS.home, 'users');
 
-export type NotifyChannel = 'morning_digest' | 'eod_check' | 'stale_alert' | 'change_events';
+// Phase J adds four_hour_nudge - the proactive "do this now" DM that
+// fires every 4h during ET waking hours (8a-10p) to Zaal/Iman/Shawn.
+export type NotifyChannel = 'morning_digest' | 'eod_check' | 'stale_alert' | 'change_events' | 'four_hour_nudge';
 
-export const NOTIFY_CHANNELS: readonly NotifyChannel[] = ['morning_digest', 'eod_check', 'stale_alert', 'change_events'];
+export const NOTIFY_CHANNELS: readonly NotifyChannel[] = ['morning_digest', 'eod_check', 'stale_alert', 'change_events', 'four_hour_nudge'];
 
 export interface UserPrefs {
   tg_id: number;
