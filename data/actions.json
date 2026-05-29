@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-29T10:00:00.000Z",
+  "updatedAt": "2026-05-29T11:00:00.000Z",
   "items": [
     {
       "id": "1",
@@ -50,10 +50,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "Wed session",
-      "notes": "Record convo, reuse as content. Topics: ZAO accounts, voice, cadence, who posts what.",
+      "due": "2026-06-10",
+      "notes": "Record convo, reuse as content. Topics: ZAO accounts, voice, cadence, who posts what.\n\n[2026-05-29] Proposed due (confirm/adjust).",
       "createdAt": "2026-05-06T00:00:00.000Z",
-      "updatedAt": "2026-05-06T00:00:00.000Z"
+      "updatedAt": "2026-05-29T11:00:00.000Z"
     },
     {
       "id": "4",
@@ -62,16 +62,16 @@
       "owner": "Zaal",
       "status": "TODO",
       "category": "Social",
-      "priority": "P1",
+      "priority": "P2",
       "important": false,
       "urgent": false,
       "completedAt": "",
       "completedBy": "",
       "phase": "Improve",
-      "due": "Wed session",
+      "due": "2026-06-03",
       "notes": "Customer: ZAO community + Iman\nGive Iman access to ZAO accounts via ZAO OS. Walk thru posting flow. Doc the steps.",
       "createdAt": "2026-05-06T00:00:00.000Z",
-      "updatedAt": "2026-05-06T00:00:00.000Z"
+      "updatedAt": "2026-05-29T10:30:00.000Z"
     },
     {
       "id": "5",
@@ -132,18 +132,28 @@
       "title": "Migrate tracker to Supabase",
       "createdBy": "",
       "owner": "Zaal",
-      "status": "TODO",
+      "status": "DONE",
       "category": "Site / Tech",
       "priority": "P2",
       "important": false,
       "urgent": false,
-      "completedAt": "",
-      "completedBy": "",
+      "completedAt": "2026-05-29T10:30:00.000Z",
+      "completedBy": "zaal",
       "phase": "Define",
       "due": "TBD",
-      "notes": "See BACKLOG.md Phase 2. Enables instant saves + realtime + bot API.",
+      "notes": "See BACKLOG.md Phase 2. Enables instant saves + realtime + bot API.\n\n[2026-05-29] Closed: migration shipped per doc 692 - src/lib/data.ts now reads/writes the Supabase tasks table.",
       "createdAt": "2026-05-06T00:00:00.000Z",
-      "updatedAt": "2026-05-06T00:00:00.000Z"
+      "updatedAt": "2026-05-29T10:30:00.000Z",
+      "activity": [
+        {
+          "id": "a-close-8",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "status_changed",
+          "detail": "TODO -> DONE",
+          "createdAt": "2026-05-29T10:30:00.000Z"
+        }
+      ]
     },
     {
       "id": "9",
@@ -191,8 +201,8 @@
       "priority": "P2",
       "important": false,
       "urgent": false,
-      "completedAt": "",
-      "completedBy": "",
+      "completedAt": "2026-05-08T06:25:53.478Z",
+      "completedBy": "iman",
       "phase": "Define",
       "due": "",
       "notes": "",
@@ -230,10 +240,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "",
+      "due": "2026-06-06",
       "notes": "",
       "createdAt": "2026-05-10T12:22:30.459Z",
-      "updatedAt": "2026-05-10T12:22:30.459Z"
+      "updatedAt": "2026-05-29T10:30:00.000Z"
     },
     {
       "id": "14",
@@ -248,10 +258,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "",
-      "notes": "",
+      "due": "2026-06-10",
+      "notes": "[2026-05-29] Proposed due (confirm/adjust).",
       "createdAt": "2026-05-11T14:15:52.056Z",
-      "updatedAt": "2026-05-11T14:15:52.056Z"
+      "updatedAt": "2026-05-29T11:00:00.000Z"
     },
     {
       "id": "15",
@@ -266,10 +276,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "",
-      "notes": "",
+      "due": "2026-06-07",
+      "notes": "[2026-05-29] Proposed due (confirm/adjust).",
       "createdAt": "2026-05-13T23:01:10.902Z",
-      "updatedAt": "2026-05-13T23:01:10.902Z"
+      "updatedAt": "2026-05-29T11:00:00.000Z"
     },
     {
       "id": "16",
@@ -284,10 +294,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "",
-      "notes": "",
+      "due": "2026-06-10",
+      "notes": "[2026-05-29] Proposed due (confirm/adjust).",
       "createdAt": "2026-05-14T12:35:13.737Z",
-      "updatedAt": "2026-05-14T12:35:13.737Z",
+      "updatedAt": "2026-05-29T11:00:00.000Z",
       "activity": [
         {
           "id": "a-1778762113737-oah9",
@@ -564,10 +574,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "",
-      "notes": "Branch ws/research-coordination-layers, commit 9dd791a6 has doc 765. The Areas/Projects/Tasks coordination-layer decision likely cascades into Phase I of this tracker (Project type + projectId already partly in types.ts). Read before touching cowork UX.",
+      "due": "2026-06-04",
+      "notes": "Branch ws/research-coordination-layers, commit 9dd791a6 has doc 765. The Areas/Projects/Tasks coordination-layer decision likely cascades into Phase I of this tracker (Project type + projectId already partly in types.ts). Read before touching cowork UX.\n\n[2026-05-29] Proposed due (confirm/adjust).",
       "createdAt": "2026-05-29T10:48:00.000Z",
-      "updatedAt": "2026-05-29T10:48:00.000Z",
+      "updatedAt": "2026-05-29T11:00:00.000Z",
       "brands": [],
       "taskType": "task",
       "serviceClass": "Standard",
@@ -643,10 +653,10 @@
       "completedAt": "",
       "completedBy": "",
       "phase": "Define",
-      "due": "",
-      "notes": "Per Q11=NOW. Create research/agents/100-ai-agent-best-practices/ folder + _meta.yaml + first 10 items. Structure spec in doc 759 v2 deltas Part B. Author in Week 3 while the gap-3 critics design is fresh.",
+      "due": "2026-06-15",
+      "notes": "Per Q11=NOW. Create research/agents/100-ai-agent-best-practices/ folder + _meta.yaml + first 10 items. Structure spec in doc 759 v2 deltas Part B. Author in Week 3 while the gap-3 critics design is fresh.\n\n[2026-05-29] Proposed due (confirm/adjust).",
       "createdAt": "2026-05-29T10:52:00.000Z",
-      "updatedAt": "2026-05-29T10:52:00.000Z",
+      "updatedAt": "2026-05-29T11:00:00.000Z",
       "brands": [],
       "taskType": "task",
       "serviceClass": "Standard",
