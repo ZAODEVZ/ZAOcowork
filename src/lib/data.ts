@@ -310,7 +310,21 @@ export async function getActions(): Promise<ActionDoc> {
   if (error) throw new Error(`tasks read failed: ${error.message}`);
   let items = ((data ?? []) as unknown as TaskRow[])
     .map((row) => normalizeItem(rowToItem(row, team)))
-    .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+    // Chronological (do-order) sort: items with a real YYYY-MM-DD due date come
+    // first, soonest-due first; undated items fall to the bottom in id (creation)
+    // order. Within a kanban column this surfaces what's due next at the top.
+    .sort((a, b) => {
+      const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+      const da = dateRe.test(a.due) ? a.due : "";
+      const db = dateRe.test(b.due) ? b.due : "";
+      if (da && db) {
+        if (da !== db) return da < db ? -1 : 1;
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      }
+      if (da) return -1;
+      if (db) return 1;
+      return (Number(a.id) || 0) - (Number(b.id) || 0);
+    });
   // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +
   // returns the items with archivedAt populated so the UI hides them
   // on this same render rather than waiting for the next read.

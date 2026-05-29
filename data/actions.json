@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-29T13:00:00.000Z",
+  "updatedAt": "2026-05-29T14:00:00.000Z",
   "items": [
     {
       "id": "1",
@@ -178,7 +178,7 @@
       "title": "Candy and Ohnahji onboarding to website",
       "createdBy": "iman",
       "owner": "Zaal",
-      "status": "TODO",
+      "status": "BLOCKED",
       "category": "Other",
       "priority": "P2",
       "important": true,
@@ -189,7 +189,26 @@
       "due": "",
       "notes": "on hold",
       "createdAt": "2026-05-08T06:25:03.723Z",
-      "updatedAt": "2026-05-13T19:01:34.967Z"
+      "updatedAt": "2026-05-29T14:00:00.000Z",
+      "comments": [
+        {
+          "id": "c-blk-10",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "content": "On hold - blocker: onboarding paused (was marked 'on hold' in notes).",
+          "createdAt": "2026-05-29T14:00:00.000Z"
+        }
+      ],
+      "activity": [
+        {
+          "id": "a-blk-10",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "status_changed",
+          "detail": "TODO -> BLOCKED",
+          "createdAt": "2026-05-29T14:00:00.000Z"
+        }
+      ]
     },
     {
       "id": "11",
@@ -214,7 +233,7 @@
       "title": "Fix ui for Zao Nexus",
       "createdBy": "iman",
       "owner": "Iman",
-      "status": "WIP",
+      "status": "BLOCKED",
       "category": "Other",
       "priority": "P2",
       "important": true,
@@ -225,7 +244,26 @@
       "due": "",
       "notes": "waiting for review",
       "createdAt": "2026-05-08T16:23:53.755Z",
-      "updatedAt": "2026-05-11T14:19:33.566Z"
+      "updatedAt": "2026-05-29T14:00:00.000Z",
+      "comments": [
+        {
+          "id": "c-blk-12",
+          "userId": "iman",
+          "displayName": "Iman",
+          "content": "Blocker: waiting for review before it can progress.",
+          "createdAt": "2026-05-29T14:00:00.000Z"
+        }
+      ],
+      "activity": [
+        {
+          "id": "a-blk-12",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "status_changed",
+          "detail": "WIP -> BLOCKED",
+          "createdAt": "2026-05-29T14:00:00.000Z"
+        }
+      ]
     },
     {
       "id": "13",
@@ -358,34 +396,6 @@
           "action": "status_changed",
           "detail": "TODO \u2192 DONE",
           "createdAt": "2026-05-14T16:12:59.939Z"
-        }
-      ]
-    },
-    {
-      "id": "18",
-      "title": "Test Todo feature",
-      "createdBy": "iman",
-      "owner": "Open",
-      "status": "TODO",
-      "category": "ZAO Devz",
-      "priority": "P2",
-      "important": true,
-      "urgent": true,
-      "completedAt": "",
-      "completedBy": "",
-      "phase": "Define",
-      "due": "",
-      "notes": "",
-      "createdAt": "2026-05-14T16:13:53.278Z",
-      "updatedAt": "2026-05-14T16:13:53.278Z",
-      "claimable": true,
-      "activity": [
-        {
-          "id": "a-1778775233278-acpp",
-          "userId": "iman",
-          "displayName": "Iman",
-          "action": "created",
-          "createdAt": "2026-05-14T16:13:53.278Z"
         }
       ]
     },
