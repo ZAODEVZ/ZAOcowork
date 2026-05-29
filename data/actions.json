@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-14T16:13:53.278Z",
+  "updatedAt": "2026-05-29T10:00:00.000Z",
   "items": [
     {
       "id": "1",
@@ -346,7 +346,7 @@
           "userId": "iman",
           "displayName": "Iman",
           "action": "status_changed",
-          "detail": "TODO → DONE",
+          "detail": "TODO \u2192 DONE",
           "createdAt": "2026-05-14T16:12:59.939Z"
         }
       ]
@@ -376,6 +376,319 @@
           "displayName": "Iman",
           "action": "created",
           "createdAt": "2026-05-14T16:13:53.278Z"
+        }
+      ]
+    },
+    {
+      "id": "19",
+      "title": "Decide neko stream destination + OBS/Meld host (blocks deploy)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Infrastructure",
+      "priority": "P1",
+      "important": true,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-05-31",
+      "notes": "Two open decisions blocking the neko deploy (task 20):\n1) RTMP DESTINATION - OBS/Meld is the encoder/compositor, NOT a destination. Pick where it pushes: YouTube Live / Twitch / Restream (multi-platform).\n2) OBS/Meld HOST - Mac = fine for the Jun 2 kickoff DEMO but the stream dies when the Mac sleeps (not true 24/7). VPS = real 24/7 encode but heavier.\nLOCKED: D2=B (RTMP creds in the docker-compose env block on the VPS, chmod 600). D3=A (host neko on 31.97.148.88).\nNOTE: 31.97.148.88 also runs Hermes - watch CPU/RAM after deploy; fall back to VPS2 (Iman, 187.77.3.104) if co-tenancy gets tight.",
+      "createdAt": "2026-05-29T10:38:00.000Z",
+      "updatedAt": "2026-05-29T10:38:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-19",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:38:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "20",
+      "title": "Deploy neko 24/7 music stream on 31.97.148.88 (Leeward kickoff)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "BLOCKED",
+      "category": "Infrastructure",
+      "priority": "P1",
+      "important": true,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Improve",
+      "due": "2026-06-02",
+      "notes": "Runbook (run on 31.97.148.88 once task 19 is decided):\nSTEP 1 - Verify SSH: ssh root@31.97.148.88 'hostname && docker --version && uname -a'. If publickey denied: ssh-copy-id, or fall back to VPS2 (Iman).\nSTEP 2 - Verify UDP 52000-52100 inbound (iptables/ufw + 2-terminal nc -u test). If blocked: open at Hostinger control panel first, then iptables -I INPUT -p udp --dport 52000:52100 -j ACCEPT + netfilter-persistent save.\nSTEP 3 - mkdir /opt/neko; write docker-compose.yml (image ghcr.io/m1k1o/neko/chromium:latest, NAT1TO1=31.97.148.88, EPR 52000-52100, h264 2500k, opus). REPLACE both CHANGE_ME_* passwords. Leave NEKO_CAPTURE_BROADCAST_URL BLANK (OBS/Meld broadcasts, not neko). chmod 600 + docker compose up -d.\nSTEP 4 - open http://31.97.148.88:8080, log in admin, open YT Music/Bandcamp in the neko browser, verify audio.\nSTEP 5 (optional/deferrable) - Cloudflare tunnel route neko.zaoos.com -> localhost:8080 in /etc/cloudflared/config.yml + DNS CNAME.\nFull compose block is in the Leeward kickoff packet (2026-05-29).",
+      "createdAt": "2026-05-29T10:40:00.000Z",
+      "updatedAt": "2026-05-29T10:40:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-20",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:40:00.000Z"
+        },
+        {
+          "id": "a-cmt-20",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "commented",
+          "detail": "BLOCKED on task 19: stream destination (YT/Twitch/Restream) + OBS/Meld host (Mac vs VPS) not yet decided.",
+          "createdAt": "2026-05-29T10:40:00.000Z"
+        }
+      ],
+      "comments": [
+        {
+          "id": "c-block-20",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "content": "BLOCKED on task 19: stream destination (YT/Twitch/Restream) + OBS/Meld host (Mac vs VPS) not yet decided.",
+          "createdAt": "2026-05-29T10:40:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "21",
+      "title": "DM Leeward morning of Jun 2 - kick off composite-stream build",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P1",
+      "important": true,
+      "urgent": true,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-02",
+      "notes": "Per L4. Once neko is live, DM Leeward: 'Hey, neko is live at neko.zaoos.com [or 31.97.148.88:8080], ready when you are - want to pair on the Pion bridge?'\nAlready tracked in Supabase as meeting-leeward-followup-d; mirrored here because it's the kickoff trigger.",
+      "createdAt": "2026-05-29T10:42:00.000Z",
+      "updatedAt": "2026-05-29T10:42:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-21",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:42:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "22",
+      "title": "Ship ZOE Gap 1 - decompose.ts router",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "ZAO Devz",
+      "priority": "P1",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "2026-06-02",
+      "notes": "Sprint Week 2 (starts 2026-06-02) per locked Q10 sprint order. Fork a fresh terminal off main. Branch: ws/zoe-gap-1-decompose.\nFile: bot/src/zoe/decompose.ts - reads Zaal's goal, identifies subtask shapes (code/research/comms/data/multi-step), returns a routing plan ZOE then dispatches.\nPattern from bot/src/zoe/.claude/agents/task-dispatcher.md. Builds on Gap 2 (PR #712).",
+      "createdAt": "2026-05-29T10:44:00.000Z",
+      "updatedAt": "2026-05-29T10:44:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "FixedDate",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-22",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:44:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "23",
+      "title": "Post-merge: migrate live ZOE to GATEWAY persona (PR #712)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Infrastructure",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "After PR #712 (ZOE Gap 2) merges: on the Iman VPS (VPS2, 187.77.3.104) manually rm ~/.zao/zoe/persona.md + restart ZOE so the live agent picks up the new GATEWAY routing pattern (8-worker description + anti-fabrication binding). No action until merge.",
+      "createdAt": "2026-05-29T10:46:00.000Z",
+      "updatedAt": "2026-05-29T10:46:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-23",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:46:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "24",
+      "title": "Read cowork-fork doc 765 (coordination layers) before any cowork UX change",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Site / Tech",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "Branch ws/research-coordination-layers, commit 9dd791a6 has doc 765. The Areas/Projects/Tasks coordination-layer decision likely cascades into Phase I of this tracker (Project type + projectId already partly in types.ts). Read before touching cowork UX.",
+      "createdAt": "2026-05-29T10:48:00.000Z",
+      "updatedAt": "2026-05-29T10:48:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-24",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:48:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "25",
+      "title": "Confirm ZABAL mentor-handbook specifics before any draft ships",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "BLOCKED",
+      "category": "Other",
+      "priority": "P2",
+      "important": true,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "Per feedback_no_sub_agent_context_fabrication (the 758e incident): NO mentor handbook draft ships until Zaal confirms the actual specifics - USDC amount + ETH pool + hr/week + cadences + kickoff date + NDA decision + escalation contact. ZABAL-fork owns the handbook (Q15). PR #708 already merged the fabrication fix to main.",
+      "createdAt": "2026-05-29T10:50:00.000Z",
+      "updatedAt": "2026-05-29T10:50:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-25",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:50:00.000Z"
+        },
+        {
+          "id": "a-cmt-25",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "commented",
+          "detail": "BLOCKED: comp specifics (USDC / ETH pool / hrs / cadence / dates / NDA / escalation) not yet Zaal-confirmed. Anti-fabrication rule gates the draft.",
+          "createdAt": "2026-05-29T10:50:00.000Z"
+        }
+      ],
+      "comments": [
+        {
+          "id": "c-block-25",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "content": "BLOCKED: comp specifics (USDC / ETH pool / hrs / cadence / dates / NDA / escalation) not yet Zaal-confirmed. Anti-fabrication rule gates the draft.",
+          "createdAt": "2026-05-29T10:50:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "26",
+      "title": "Bootstrap the 100-list - agent best-practices (first 10 items)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "ZAO Devz",
+      "priority": "P2",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "Per Q11=NOW. Create research/agents/100-ai-agent-best-practices/ folder + _meta.yaml + first 10 items. Structure spec in doc 759 v2 deltas Part B. Author in Week 3 while the gap-3 critics design is fresh.",
+      "createdAt": "2026-05-29T10:52:00.000Z",
+      "updatedAt": "2026-05-29T10:52:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-26",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:52:00.000Z"
+        }
+      ]
+    },
+    {
+      "id": "27",
+      "title": "Discord 24/7 radio bot - deferred (Week 2-3, post-kickoff)",
+      "createdBy": "zaal",
+      "owner": "Zaal",
+      "status": "TODO",
+      "category": "Other",
+      "priority": "P3",
+      "important": false,
+      "urgent": false,
+      "completedAt": "",
+      "completedBy": "",
+      "phase": "Define",
+      "due": "",
+      "notes": "Per doc 758d this is Week 2-3 work, NOT a Jun 2 dependency. Skip until the Leeward kickoff defines whether Discord is in the composite-stream scope or a separate workstream.",
+      "createdAt": "2026-05-29T10:54:00.000Z",
+      "updatedAt": "2026-05-29T10:54:00.000Z",
+      "brands": [],
+      "taskType": "task",
+      "serviceClass": "Standard",
+      "source": "human-web",
+      "activity": [
+        {
+          "id": "a-leeward-27",
+          "userId": "zaal",
+          "displayName": "Zaal",
+          "action": "created",
+          "createdAt": "2026-05-29T10:54:00.000Z"
         }
       ]
     }
