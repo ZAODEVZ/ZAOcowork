@@ -26,6 +26,11 @@ export interface UserPrefs {
   // step and write directly. Default: false (confirm flow). Admins typically
   // enable this for daily ops; cautious users leave it off.
   auto_confirm?: boolean;
+  // Phase J followup: per-user mute window for the four_hour_nudge channel.
+  // ISO timestamp - if set and in the future, the scheduler skips the nudge
+  // for this user. Cleared via /quiet off or naturally when the time passes.
+  // Set via /quiet until HH:MM (today, ET) or /quiet until tomorrow HH:MM.
+  quiet_until?: string | null;
   updated_at?: string;
 }
 
@@ -127,4 +132,30 @@ export async function setAutoConfirm(tgId: number, enabled: boolean): Promise<vo
 export async function isAutoConfirm(tgId: number): Promise<boolean> {
   const prefs = await loadUserPrefs(tgId);
   return prefs?.auto_confirm === true;
+}
+
+// Phase J followup - per-user quiet override.
+//
+// setQuietUntil(tgId, iso) - store an explicit "do not nudge me until X"
+// time. Null clears.
+// getQuietUntil(tgId) - returns the stored ISO or null. Caller decides
+// whether the time has passed.
+// isQuietActive(tgId) - convenience: true if quiet_until is in the future.
+export async function setQuietUntil(tgId: number, iso: string | null): Promise<void> {
+  const existing = (await loadUserPrefs(tgId)) ?? { tg_id: tgId };
+  existing.quiet_until = iso;
+  await saveUserPrefs(existing);
+}
+
+export async function getQuietUntil(tgId: number): Promise<string | null> {
+  const prefs = await loadUserPrefs(tgId);
+  return prefs?.quiet_until ?? null;
+}
+
+export async function isQuietActive(tgId: number): Promise<boolean> {
+  const iso = await getQuietUntil(tgId);
+  if (!iso) return false;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return false;
+  return t > Date.now();
 }
