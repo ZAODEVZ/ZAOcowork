@@ -53,7 +53,7 @@ const REVIEW_BADGE: Record<string, string> = {
   changes_requested: "bg-orange-500/15 text-orange-300 border-orange-500/30",
 };
 
-function userAvatar(userId: string, displayName: string, size = "h-7 w-7 text-xs") {
+function userAvatar(userId?: string, displayName?: string, size = "h-7 w-7 text-xs") {
   const color =
     userId === "zaal"
       ? "bg-blue-600/40 text-blue-200"
@@ -62,11 +62,16 @@ function userAvatar(userId: string, displayName: string, size = "h-7 w-7 text-xs
       : userId === "thyrev"
       ? "bg-emerald-600/40 text-emerald-200"
       : "bg-slate-600/40 text-slate-200";
+  // Defensive: comments/updates created via the bot or API can land without a
+  // displayName. Calling .slice on undefined here crashes the SSR render of
+  // TaskRoom (and 500s the whole page on a ?task= deep link), so fall back to
+  // the userId or a neutral dot instead of assuming the field is present.
+  const initial = (displayName || userId || "?").slice(0, 1).toUpperCase();
   return (
     <div
       className={`${size} flex-shrink-0 rounded-full flex items-center justify-center font-bold ${color}`}
     >
-      {displayName.slice(0, 1).toUpperCase()}
+      {initial}
     </div>
   );
 }
@@ -742,9 +747,9 @@ function UpdateCard({ update }: { update: TaskUpdate }) {
               {relativeTime(update.createdAt)}
             </div>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium whitespace-nowrap ${REVIEW_BADGE[update.reviewStatus]}`}
+              className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium whitespace-nowrap ${REVIEW_BADGE[update.reviewStatus] ?? ""}`}
             >
-              {update.reviewStatus.replace("_", " ")}
+              {(update.reviewStatus ?? "pending").replace("_", " ")}
             </span>
           </div>
           <p className="text-sm text-white/75 whitespace-pre-wrap leading-relaxed">{update.content}</p>
