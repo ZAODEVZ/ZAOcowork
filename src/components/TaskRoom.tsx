@@ -776,14 +776,20 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
     setIsMac(/Mac/i.test(navigator.platform || navigator.userAgent || ""));
   }, []);
   const comments = item.comments || [];
+  const [error, setError] = useState<string | null>(null);
 
   function handleSend() {
     if (!content.trim()) return;
     const fd = new FormData();
     fd.set("id", item.id);
     fd.set("content", content);
+    setError(null);
     start(async () => {
-      await addComment(fd);
+      const res = await addComment(fd);
+      if (res?.error) {
+        setError(res.error);
+        return;
+      }
       setContent("");
     });
   }
@@ -827,12 +833,17 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
           rows={3}
           className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/80 placeholder-white/25 resize-none focus:outline-none"
         />
-        <div className="flex justify-end p-2.5 pt-1">
+        <div className="flex items-center justify-between gap-2 p-2.5 pt-1">
+          {error ? (
+            <p className="text-[11px] text-red-300 break-words flex-1">{error}</p>
+          ) : (
+            <span className="flex-1" />
+          )}
           <button
             type="button"
             onClick={handleSend}
             disabled={pending || !content.trim()}
-            className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-1.5 text-xs font-semibold transition disabled:opacity-40"
+            className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-1.5 text-xs font-semibold transition disabled:opacity-40 flex-shrink-0"
           >
             {pending ? "Sending…" : "Send"}
           </button>

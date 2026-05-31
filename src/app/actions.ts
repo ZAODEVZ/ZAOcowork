@@ -319,34 +319,43 @@ export async function deleteItem(form: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function addComment(form: FormData): Promise<void> {
-  const user = await requireSession();
-  const id = String(form.get("id") ?? "");
-  const content = String(form.get("content") ?? "").trim();
-  if (!id || !content) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const now = new Date().toISOString();
-  const comment: Comment = {
-    id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    userId: user,
-    displayName: displayName(user),
-    content,
-    createdAt: now,
-  };
-  const item = doc.items[idx];
-  doc.items[idx] = {
-    ...item,
-    updatedAt: now,
-    comments: [...(item.comments || []), comment],
-    activity: [
-      ...(item.activity || []),
-      makeActivity(user, "commented", content.slice(0, 60), now),
-    ],
-  };
-  await saveActions(doc, user, `comment on #${id}`);
-  revalidateAll();
+export async function addComment(form: FormData): Promise<{ error?: string }> {
+  // Wrapped in try/catch so a failed save returns the real message to the
+  // client instead of throwing (which in production gets redacted to a bare
+  // digest and trips the route error boundary, taking down the whole page).
+  try {
+    const user = await requireSession();
+    const id = String(form.get("id") ?? "");
+    const content = String(form.get("content") ?? "").trim();
+    if (!id || !content) return { error: "Missing comment text." };
+    const doc = await getActions();
+    const idx = doc.items.findIndex((x) => x.id === id);
+    if (idx < 0) return { error: `Task #${id} not found.` };
+    const now = new Date().toISOString();
+    const comment: Comment = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      userId: user,
+      displayName: displayName(user),
+      content,
+      createdAt: now,
+    };
+    const item = doc.items[idx];
+    doc.items[idx] = {
+      ...item,
+      updatedAt: now,
+      comments: [...(item.comments || []), comment],
+      activity: [
+        ...(item.activity || []),
+        makeActivity(user, "commented", content.slice(0, 60), now),
+      ],
+    };
+    await saveActions(doc, user, `comment on #${id}`);
+    revalidateAll();
+    return {};
+  } catch (err) {
+    console.error("[addComment] failed", err);
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
 }
 
 export async function submitUpdate(form: FormData): Promise<void> {
