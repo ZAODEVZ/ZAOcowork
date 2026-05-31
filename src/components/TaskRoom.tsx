@@ -762,6 +762,14 @@ function UpdateCard({ update }: { update: TaskUpdate }) {
 function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
   const [pending, start] = useTransition();
   const [content, setContent] = useState("");
+  // Detect the Mac modifier key client-side only. Reading `navigator` during
+  // render crashes SSR (it isn't a reliable global in the Node server
+  // runtime) — and TaskRoom is server-rendered whenever the page loads with
+  // a ?task=<id> deep link, which previously 500'd the whole page.
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.platform || navigator.userAgent || ""));
+  }, []);
   const comments = item.comments || [];
 
   function handleSend() {
@@ -810,7 +818,7 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
               handleSend();
             }
           }}
-          placeholder={`Write a comment… (${/Mac/.test(navigator?.platform ?? "") ? "⌘" : "Ctrl"}+Enter to send)`}
+          placeholder={`Write a comment… (${isMac ? "⌘" : "Ctrl"}+Enter to send)`}
           rows={3}
           className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/80 placeholder-white/25 resize-none focus:outline-none"
         />
