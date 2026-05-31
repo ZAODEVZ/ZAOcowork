@@ -323,18 +323,29 @@ async function applyDiff(
   after: ActionItem[],
   team: TeamMaps,
 ): Promise<void> {
-  const beforeById = new Map(before.map((i) => [i.id, i]));
-  const afterById = new Map(after.map((i) => [i.id, i]));
+  // Key the diff by the real DB primary key (dbId / UUID), NOT by legacy_id.
+  // getActions() reads every source, and legacy_id collides across sources
+  // (e.g. a meeting-captured "meeting-5" and a cowork row can share an id).
+  // Keying by legacy_id collapsed those distinct rows together and produced
+  // spurious updates against the wrong UUID — which then tripped the
+  // (legacy_source, legacy_id) unique constraint. Rows without a dbId are
+  // brand-new (created in-app, not yet persisted) and become inserts.
+  const beforeByDbId = new Map(
+    before.filter((i) => i.dbId).map((i) => [i.dbId as string, i]),
+  );
+  const afterDbIds = new Set(
+    after.filter((i) => i.dbId).map((i) => i.dbId as string),
+  );
 
-  const inserts = after.filter((i) => !beforeById.has(i.id));
+  const inserts = after.filter((i) => !i.dbId);
   const updates = after.filter((i) => {
-    const prev = beforeById.get(i.id);
+    if (!i.dbId) return false;
+    const prev = beforeByDbId.get(i.dbId);
     return prev && JSON.stringify(prev) !== JSON.stringify(i);
   });
-  // Map deleted items to their Supabase UUIDs (dbId). Items missing dbId are
-  // not in the DB yet, so they are no-op deletes - drop them safely.
+  // Deleted = rows present in before but gone from after (matched by UUID).
   const deleteDbIds = before
-    .filter((i) => !afterById.has(i.id))
+    .filter((i) => i.dbId && !afterDbIds.has(i.dbId))
     .map((i) => i.dbId)
     .filter((v): v is string => Boolean(v));
 
@@ -351,9 +362,20 @@ async function applyDiff(
       console.warn(`[data] update skipped: item ${item.id} has no dbId`);
       continue;
     }
+    const row = itemToRow(item, team);
+    // Never rewrite identity / source-scoping columns on update. We target the
+    // row by its UUID, so legacy_source/legacy_id/kind/project/created_at are
+    // immutable here. Rewriting legacy_source to the cowork value re-homes the
+    // row into another source's namespace and can violate the
+    // (legacy_source, legacy_id) unique constraint.
+    delete row.legacy_source;
+    delete row.legacy_id;
+    delete row.kind;
+    delete row.project;
+    delete row.created_at;
     const { error } = await db()
       .from("tasks")
-      .update(itemToRow(item, team))
+      .update(row)
       .eq("id", item.dbId);
     if (error) throw new Error(`task update failed (${item.id}): ${error.message}`);
   }
