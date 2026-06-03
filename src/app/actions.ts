@@ -328,6 +328,9 @@ export async function addComment(form: FormData): Promise<{ error?: string }> {
     const id = String(form.get("id") ?? "");
     const content = String(form.get("content") ?? "").trim();
     if (!id || !content) return { error: "Missing comment text." };
+    // "1" = don't ping the people tagged in this comment (owner/leads still
+    // get notified). Default (absent/"0") = notify.
+    const silent = String(form.get("silent") ?? "") === "1";
     const doc = await getActions();
     const idx = doc.items.findIndex((x) => x.id === id);
     if (idx < 0) return { error: `Task #${id} not found.` };
@@ -351,6 +354,15 @@ export async function addComment(form: FormData): Promise<{ error?: string }> {
     };
     await saveActions(doc, user, `comment on #${id}`);
     revalidateAll();
+    // Best-effort Telegram group ping. Pass the item state BEFORE this comment
+    // for "prior commenters" targeting. Never let a notify failure surface to
+    // the user — the comment is already saved.
+    try {
+      const { notifyComment } = await import("@/lib/notify");
+      await notifyComment({ item, actor: user, commentText: content, silent });
+    } catch (notifyErr) {
+      console.error("[addComment] notify failed", notifyErr);
+    }
     return {};
   } catch (err) {
     console.error("[addComment] failed", err);

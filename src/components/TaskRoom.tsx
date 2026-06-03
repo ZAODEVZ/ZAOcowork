@@ -777,12 +777,17 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
   }, []);
   const comments = item.comments || [];
   const [error, setError] = useState<string | null>(null);
+  // Default: notify the people tagged in the comment. Ticking this posts the
+  // comment but skips pinging the @mentioned people (owner + leads still get
+  // notified server-side).
+  const [silent, setSilent] = useState(false);
 
   function handleSend() {
     if (!content.trim()) return;
     const fd = new FormData();
     fd.set("id", item.id);
     fd.set("content", content);
+    fd.set("silent", silent ? "1" : "0");
     setError(null);
     start(async () => {
       const res = await addComment(fd);
@@ -829,14 +834,23 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
               handleSend();
             }
           }}
-          placeholder={`Write a comment… (${isMac ? "⌘" : "Ctrl"}+Enter to send)`}
+          placeholder={`Write a comment… tag with @name (${isMac ? "⌘" : "Ctrl"}+Enter to send)`}
           rows={3}
           className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/80 placeholder-white/25 resize-none focus:outline-none"
         />
         {error && (
           <p className="px-4 pb-1 text-[11px] text-red-300 break-words">{error}</p>
         )}
-        <div className="flex justify-end p-2.5 pt-1">
+        <div className="flex items-center justify-between gap-2 p-2.5 pt-1">
+          <label className="flex items-center gap-1.5 text-[11px] text-white/45 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={silent}
+              onChange={(e) => setSilent(e.target.checked)}
+              className="h-3.5 w-3.5 rounded"
+            />
+            Don&apos;t notify tagged people
+          </label>
           <button
             type="button"
             onClick={handleSend}
