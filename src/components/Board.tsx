@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -231,10 +231,17 @@ export function Board({
   // multivariate comparison/bulk-scan (NN/g); a table is the standard second
   // layout in mature PM tools. Persisted so the choice sticks per browser.
   const [view, setView] = useState<"board" | "table">("board");
+  // Grouping axis for the Table view (research roadmap A): switchable grouping
+  // is the standard way to re-slice the same items by owner/priority/brand.
+  const [groupBy, setGroupBy] = useState<GroupKey>("none");
   useEffect(() => {
     try {
       const v = window.localStorage.getItem("zao-board-view");
       if (v === "table" || v === "board") setView(v);
+      const g = window.localStorage.getItem("zao-board-group");
+      if (g === "none" || g === "status" || g === "owner" || g === "priority" || g === "brand") {
+        setGroupBy(g);
+      }
     } catch {
       /* ignore */
     }
@@ -246,6 +253,13 @@ export function Board({
       /* ignore */
     }
   }, [view]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zao-board-group", groupBy);
+    } catch {
+      /* ignore */
+    }
+  }, [groupBy]);
   // Phase H: TaskRoom can be opened via the ?task=<id> URL param so a
   // /todo/N permalink lands the user directly on the task. We sync both
   // ways - state -> URL (history.replaceState so back button works) and
@@ -566,25 +580,44 @@ export function Board({
         ) : (
           <span />
         )}
-        {/* View switcher: Board (Kanban) vs Table (compare/bulk-scan) */}
-        <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5 flex-shrink-0">
-          {(["board", "table"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
-                view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
-              }`}
-              aria-pressed={view === v}
-            >
-              {v === "board" ? "▦ Board" : "▤ Table"}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Group-by selector — only meaningful in table view */}
+          {view === "table" && (
+            <label className="flex items-center gap-1.5 text-xs text-white/50">
+              <span className="hidden sm:inline">Group</span>
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value as GroupKey)}
+                className="rounded-md bg-[#0b1220] border border-white/10 px-2 py-1 text-xs text-white/80 focus:outline-none focus:border-zao-accent/60"
+              >
+                <option value="none">No grouping</option>
+                <option value="status">Status</option>
+                <option value="owner">Owner</option>
+                <option value="priority">Priority</option>
+                <option value="brand">Brand</option>
+              </select>
+            </label>
+          )}
+          {/* View switcher: Board (Kanban) vs Table (compare/bulk-scan) */}
+          <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5">
+            {(["board", "table"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
+                  view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
+                }`}
+                aria-pressed={view === v}
+              >
+                {v === "board" ? "▦ Board" : "▤ Table"}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {view === "table" && (
-        <TableView items={filtered} onOpenRoom={setTaskRoomId} />
+        <TableView items={filtered} onOpenRoom={setTaskRoomId} groupBy={groupBy} />
       )}
 
       {/* Mobile: status tabs + single column */}
@@ -993,13 +1026,16 @@ function ExpediteSwimlane({
 // same filtered items and opens the TaskRoom on row click. Read-only here;
 // editing still happens in the card/TaskRoom (keeps this slice low-risk).
 type SortKey = "id" | "title" | "status" | "owner" | "priority" | "age" | "due";
+type GroupKey = "none" | "status" | "owner" | "priority" | "brand";
 
 function TableView({
   items,
   onOpenRoom,
+  groupBy,
 }: {
   items: ActionItem[];
   onOpenRoom: (id: string) => void;
+  groupBy: GroupKey;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [dir, setDir] = useState<"asc" | "desc">("asc");
@@ -1056,9 +1092,38 @@ function TableView({
     { k: "due", label: "Due", cls: "w-28" },
   ];
 
+  // Group the (already sorted) rows. Order group headers sensibly per axis.
+  const groups = useMemo(() => {
+    if (groupBy === "none") return [{ key: "", label: "", rows: sorted }];
+    const map = new Map<string, ActionItem[]>();
+    for (const it of sorted) {
+      let keys: string[];
+      if (groupBy === "status") keys = [it.status];
+      else if (groupBy === "owner") keys = [String(it.owner) || "Open"];
+      else if (groupBy === "priority") keys = [it.priority];
+      else keys = (it.brands ?? []).length ? (it.brands as string[]) : ["(no brand)"];
+      for (const k of keys) {
+        const arr = map.get(k) ?? [];
+        arr.push(it);
+        map.set(k, arr);
+      }
+    }
+    let keys = Array.from(map.keys());
+    if (groupBy === "status") keys.sort((a, b) => (statusRank[a] ?? 9) - (statusRank[b] ?? 9));
+    else keys = keys.sort((a, b) => a.localeCompare(b));
+    return keys.map((k) => ({
+      key: k,
+      label: groupBy === "status" ? STATUS_LABEL[k as ActionStatus] ?? k : k,
+      rows: map.get(k)!,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sorted, groupBy]);
+
   if (items.length === 0) {
     return <div className="text-xs text-white/30 italic px-1 py-6">No items match the current filters.</div>;
   }
+
+  const colCount = headers.length;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
@@ -1078,60 +1143,71 @@ function TableView({
           </tr>
         </thead>
         <tbody>
-          {sorted.map((it) => {
-            const age = ageDays(it.createdAt);
-            const ownerStr = String(it.owner);
-            const isOpen = it.claimable || ownerStr.toLowerCase() === "open";
-            return (
-              <tr
-                key={it.id}
-                onClick={() => onOpenRoom(it.id)}
-                className={`border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition ${
-                  it.status === "DONE" ? "opacity-50" : ""
-                }`}
-              >
-                <td className="px-3 py-2 text-right text-white/40 tabular-nums">{it.id}</td>
-                <td className="px-3 py-2">
-                  <span
-                    className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-black/80 ${PRIORITY_DOT[it.priority]}`}
-                    title={`Priority ${it.priority}`}
+          {groups.map((g) => (
+            <Fragment key={g.key || "all"}>
+              {groupBy !== "none" && (
+                <tr className="bg-white/[0.04]">
+                  <td colSpan={colCount} className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/60">
+                    {g.label} <span className="text-white/35">· {g.rows.length}</span>
+                  </td>
+                </tr>
+              )}
+              {g.rows.map((it) => {
+                const age = ageDays(it.createdAt);
+                const ownerStr = String(it.owner);
+                const isOpen = it.claimable || ownerStr.toLowerCase() === "open";
+                return (
+                  <tr
+                    key={`${g.key}-${it.id}`}
+                    onClick={() => onOpenRoom(it.id)}
+                    className={`border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition ${
+                      it.status === "DONE" ? "opacity-50" : ""
+                    }`}
                   >
-                    {it.priority.slice(1)}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-white/90 max-w-0">
-                  <div className="truncate">{it.title}</div>
-                  {(it.brands ?? []).length > 0 && (
-                    <div className="mt-0.5 flex flex-wrap gap-1">
-                      {(it.brands ?? []).map((b) => (
-                        <span key={b} className={`px-1 rounded text-[9px] border ${brandColor(b)}`}>{b}</span>
-                      ))}
-                    </div>
-                  )}
-                </td>
-                <td className="px-3 py-2">
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] border ${STATUS_HEAD[it.status]}`}>
-                    {STATUS_LABEL[it.status]}
-                  </span>
-                </td>
-                <td className="px-3 py-2">
-                  {isOpen ? (
-                    <span className="text-[10px] uppercase tracking-wider text-amber-300 font-bold">Claim</span>
-                  ) : (
-                    <span className="text-white/70 text-xs">{ownerStr}</span>
-                  )}
-                </td>
-                <td
-                  className={`px-3 py-2 text-right tabular-nums text-xs ${
-                    it.status !== "DONE" && age > 14 ? "text-red-300" : "text-white/50"
-                  }`}
-                >
-                  {age}d
-                </td>
-                <td className="px-3 py-2 text-white/50 text-xs">{it.due || "—"}</td>
-              </tr>
-            );
-          })}
+                    <td className="px-3 py-2 text-right text-white/40 tabular-nums">{it.id}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-black/80 ${PRIORITY_DOT[it.priority]}`}
+                        title={`Priority ${it.priority}`}
+                      >
+                        {it.priority.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-white/90 max-w-0">
+                      <div className="truncate">{it.title}</div>
+                      {(it.brands ?? []).length > 0 && (
+                        <div className="mt-0.5 flex flex-wrap gap-1">
+                          {(it.brands ?? []).map((b) => (
+                            <span key={b} className={`px-1 rounded text-[9px] border ${brandColor(b)}`}>{b}</span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] border ${STATUS_HEAD[it.status]}`}>
+                        {STATUS_LABEL[it.status]}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      {isOpen ? (
+                        <span className="text-[10px] uppercase tracking-wider text-amber-300 font-bold">Claim</span>
+                      ) : (
+                        <span className="text-white/70 text-xs">{ownerStr}</span>
+                      )}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-right tabular-nums text-xs ${
+                        it.status !== "DONE" && age > 14 ? "text-red-300" : "text-white/50"
+                      }`}
+                    >
+                      {age}d
+                    </td>
+                    <td className="px-3 py-2 text-white/50 text-xs">{it.due || "—"}</td>
+                  </tr>
+                );
+              })}
+            </Fragment>
+          ))}
         </tbody>
       </table>
     </div>
