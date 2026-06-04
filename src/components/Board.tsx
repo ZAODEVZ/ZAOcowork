@@ -974,6 +974,12 @@ function Column({
     (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
     0,
   );
+  // Phase A (research roadmap): surface a soft WIP limit on the in-progress
+  // column. Flow research says high WIP is the lever that inflates cycle time;
+  // 5 active items per person is the team's stated target (see HelpModal).
+  // Only WIP gets a limit — TODO is a backlog, DONE is an archive.
+  const WIP_LIMIT = status === "WIP" ? 5 : null;
+  const overWip = WIP_LIMIT !== null && items.length > WIP_LIMIT;
   return (
     <div className="flex flex-col gap-2 min-w-0">
       <div className={`flex items-baseline justify-between border-b pb-1 ${STATUS_HEAD[status]}`}>
@@ -990,7 +996,19 @@ function Column({
               {pendingCount} review
             </span>
           )}
-          <span className="text-xs text-white/40">{items.length}</span>
+          {WIP_LIMIT !== null ? (
+            <span
+              className={`text-xs font-medium ${overWip ? "text-red-300" : "text-white/40"}`}
+              title={overWip
+                ? `Over WIP limit — ${items.length} active vs target ${WIP_LIMIT}. High WIP slows cycle time.`
+                : `WIP ${items.length} of target ${WIP_LIMIT}`}
+            >
+              {items.length}/{WIP_LIMIT}
+              {overWip && <span className="ml-1" aria-hidden>⚠</span>}
+            </span>
+          ) : (
+            <span className="text-xs text-white/40">{items.length}</span>
+          )}
         </div>
       </div>
 
@@ -1066,8 +1084,25 @@ function Card({
     start(() => claimTask(fd));
   }
 
+  // Phase A (research roadmap): make work-item age preattentive. A left-edge
+  // accent warms from transparent -> amber -> orange -> red as an active card
+  // ages, so "this has been sitting too long" reads without parsing a badge.
+  // Only active cards age; DONE is excluded. Paired with the existing day-count
+  // badge so it's never color-alone.
+  const ageAccent =
+    item.status === "DONE"
+      ? "transparent"
+      : age > 21
+      ? "rgba(239,68,68,0.9)" // red — past two SLE-ish windows
+      : age > 14
+      ? "rgba(249,115,22,0.85)" // orange — aging
+      : age > 7
+      ? "rgba(245,158,11,0.7)" // amber — getting old
+      : "transparent";
+
   return (
     <div
+      style={{ borderLeftColor: ageAccent, borderLeftWidth: ageAccent === "transparent" ? undefined : "3px" }}
       className={`group relative rounded-lg bg-zao-ink border p-3 text-sm transition ${
         selected
           ? "border-zao-accent/60 ring-2 ring-zao-accent/20"
@@ -1133,15 +1168,18 @@ function Card({
           />
         )}
         <button
-          aria-label="Cycle priority"
+          aria-label={`Priority ${item.priority} — click to cycle`}
           title={`Priority ${item.priority} — click to cycle`}
           onClick={() => {
             const next =
               item.priority === "P1" ? "P2" : item.priority === "P2" ? "P3" : "P1";
             setField("priority", next);
           }}
-          className={`mt-1 h-2.5 w-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[item.priority]} hover:ring-2 ring-white/30`}
-        />
+          className={`mt-0.5 h-4 w-4 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-black/80 ${PRIORITY_DOT[item.priority]} hover:ring-2 ring-white/30`}
+        >
+          {/* a11y: never encode meaning by color alone — show the level (1/2/3) */}
+          {item.priority.slice(1)}
+        </button>
         <button
           onClick={() => onOpenRoom(item.id)}
           className="flex-1 text-left font-medium leading-snug hover:underline decoration-white/30"
