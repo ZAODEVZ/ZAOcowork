@@ -333,6 +333,27 @@ async function applyDiff(
   const beforeByDbId = new Map(
     before.filter((i) => i.dbId).map((i) => [i.dbId as string, i]),
   );
+  // Recovery index: a read-then-write flow always sources items from a `before`
+  // row that has a dbId. If an `after` item lost its dbId (a call site forgot to
+  // carry it through normalizeItem), we can still recover it by matching the
+  // legacy_id against the `before` snapshot rather than blindly INSERTing into a
+  // UNIQUE(legacy_source, legacy_id) collision -> 500. This is the safety net
+  // for the whole class of "save 500" bugs.
+  const beforeDbIdByLegacy = new Map(
+    before.filter((i) => i.dbId).map((i) => [i.id, i.dbId as string]),
+  );
+  for (const i of after) {
+    if (!i.dbId) {
+      const recovered = beforeDbIdByLegacy.get(i.id);
+      if (recovered) {
+        console.warn(
+          `[data] recovered missing dbId for item ${i.id} via legacy_id — ` +
+            `a caller dropped dbId; treating as UPDATE not INSERT`,
+        );
+        i.dbId = recovered;
+      }
+    }
+  }
   const afterDbIds = new Set(
     after.filter((i) => i.dbId).map((i) => i.dbId as string),
   );

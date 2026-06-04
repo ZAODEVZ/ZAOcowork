@@ -84,6 +84,11 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
   const brands = brandEntries.length > 0 ? brandEntries : prev?.brands ?? [];
   const next = normalizeItem({
     id,
+    // Carry the Supabase UUID through so applyDiff() targets the existing row
+    // for an UPDATE. Without it the item looks new and applyDiff attempts an
+    // INSERT, which trips the UNIQUE(legacy_source, legacy_id) constraint and
+    // 500s every full "Save Changes" (owner/title/status) from the task panel.
+    dbId: prev?.dbId,
     title: String(form.get("title") ?? prev?.title ?? "").trim(),
     createdBy: prev?.createdBy || actor,
     owner: ownerVal,
