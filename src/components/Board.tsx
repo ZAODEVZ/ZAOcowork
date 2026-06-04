@@ -227,6 +227,25 @@ export function Board({
     }
   }, [filters, filterStorageKey]);
   const [activeMobileStatus, setActiveMobileStatus] = useState<BoardStatus>("TODO");
+  // Board vs Table view (research roadmap Phase A/B). Cards are bad at
+  // multivariate comparison/bulk-scan (NN/g); a table is the standard second
+  // layout in mature PM tools. Persisted so the choice sticks per browser.
+  const [view, setView] = useState<"board" | "table">("board");
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem("zao-board-view");
+      if (v === "table" || v === "board") setView(v);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("zao-board-view", view);
+    } catch {
+      /* ignore */
+    }
+  }, [view]);
   // Phase H: TaskRoom can be opened via the ?task=<id> URL param so a
   // /todo/N permalink lands the user directly on the task. We sync both
   // ways - state -> URL (history.replaceState so back button works) and
@@ -533,20 +552,43 @@ export function Board({
         onToggleSelectMode={() => setSelectMode((v) => !v)}
       />
 
-      {filtersActive && (
-        <div className="text-xs text-white/50">
-          showing {filtered.length} of {items.length} items
-          <button
-            onClick={() => setFilters({ ...EMPTY_FILTERS, mineOnly: true })}
-            className="ml-3 underline hover:text-white/80"
-          >
-            clear filters
-          </button>
+      <div className="flex items-center justify-between gap-3">
+        {filtersActive ? (
+          <div className="text-xs text-white/50">
+            showing {filtered.length} of {items.length} items
+            <button
+              onClick={() => setFilters({ ...EMPTY_FILTERS, mineOnly: true })}
+              className="ml-3 underline hover:text-white/80"
+            >
+              clear filters
+            </button>
+          </div>
+        ) : (
+          <span />
+        )}
+        {/* View switcher: Board (Kanban) vs Table (compare/bulk-scan) */}
+        <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5 flex-shrink-0">
+          {(["board", "table"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
+                view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
+              }`}
+              aria-pressed={view === v}
+            >
+              {v === "board" ? "▦ Board" : "▤ Table"}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {view === "table" && (
+        <TableView items={filtered} onOpenRoom={setTaskRoomId} />
       )}
 
       {/* Mobile: status tabs + single column */}
-      <div className="md:hidden">
+      <div className={view === "table" ? "hidden" : "md:hidden"}>
         <div className="grid grid-cols-4 gap-1 rounded-lg bg-zao-ink p-1 border border-white/10">
           {BOARD_STATUSES.map((s) => (
             <button
@@ -578,7 +620,7 @@ export function Board({
         </div>
       </div>
 
-      {expediteActive.length > 0 && (
+      {view === "board" && expediteActive.length > 0 && (
         <ExpediteSwimlane
           items={expediteActive}
           onOpenRoom={setTaskRoomId}
@@ -590,7 +632,7 @@ export function Board({
       )}
 
       {/* Desktop: 4 columns */}
-      <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`${view === "table" ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
         {BOARD_STATUSES.map((s) => (
           <Column
             key={s}
@@ -942,6 +984,156 @@ function ExpediteSwimlane({
           + {hiddenCount} more expedite item{hiddenCount === 1 ? "" : "s"}
         </button>
       )}
+    </div>
+  );
+}
+
+// TableView (research roadmap): a sortable, scannable table layout — the
+// standard "compare + bulk-scan" complement to the Kanban board. Reuses the
+// same filtered items and opens the TaskRoom on row click. Read-only here;
+// editing still happens in the card/TaskRoom (keeps this slice low-risk).
+type SortKey = "id" | "title" | "status" | "owner" | "priority" | "age" | "due";
+
+function TableView({
+  items,
+  onOpenRoom,
+}: {
+  items: ActionItem[];
+  onOpenRoom: (id: string) => void;
+}) {
+  const [sortKey, setSortKey] = useState<SortKey>("priority");
+  const [dir, setDir] = useState<"asc" | "desc">("asc");
+
+  function toggleSort(k: SortKey) {
+    if (k === sortKey) setDir((d) => (d === "asc" ? "desc" : "asc"));
+    else {
+      setSortKey(k);
+      setDir("asc");
+    }
+  }
+
+  const statusRank: Record<string, number> = { TRIAGE: 0, TODO: 1, WIP: 2, BLOCKED: 3, DONE: 4 };
+  const sorted = useMemo(() => {
+    const arr = [...items];
+    arr.sort((a, b) => {
+      let cmp = 0;
+      switch (sortKey) {
+        case "id":
+          cmp = (Number(a.id) || 0) - (Number(b.id) || 0);
+          break;
+        case "title":
+          cmp = (a.title || "").localeCompare(b.title || "");
+          break;
+        case "status":
+          cmp = (statusRank[a.status] ?? 9) - (statusRank[b.status] ?? 9);
+          break;
+        case "owner":
+          cmp = String(a.owner).localeCompare(String(b.owner));
+          break;
+        case "priority":
+          cmp = (a.priority || "P3").localeCompare(b.priority || "P3");
+          break;
+        case "age":
+          cmp = ageDays(a.createdAt) - ageDays(b.createdAt);
+          break;
+        case "due":
+          cmp = (a.due || "~").localeCompare(b.due || "~");
+          break;
+      }
+      return dir === "asc" ? cmp : -cmp;
+    });
+    return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, sortKey, dir]);
+
+  const headers: Array<{ k: SortKey; label: string; cls?: string }> = [
+    { k: "id", label: "#", cls: "w-12 text-right" },
+    { k: "priority", label: "Pri", cls: "w-14" },
+    { k: "title", label: "Title" },
+    { k: "status", label: "Status", cls: "w-28" },
+    { k: "owner", label: "Owner", cls: "w-24" },
+    { k: "age", label: "Age", cls: "w-16 text-right" },
+    { k: "due", label: "Due", cls: "w-28" },
+  ];
+
+  if (items.length === 0) {
+    return <div className="text-xs text-white/30 italic px-1 py-6">No items match the current filters.</div>;
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
+      <table className="w-full text-sm border-collapse">
+        <thead>
+          <tr className="border-b border-white/10 text-[11px] uppercase tracking-wider text-white/45">
+            {headers.map((h) => (
+              <th
+                key={h.k}
+                onClick={() => toggleSort(h.k)}
+                className={`px-3 py-2 font-medium text-left cursor-pointer select-none hover:text-white/80 ${h.cls ?? ""}`}
+              >
+                {h.label}
+                {sortKey === h.k && <span className="ml-1 text-white/70">{dir === "asc" ? "↑" : "↓"}</span>}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sorted.map((it) => {
+            const age = ageDays(it.createdAt);
+            const ownerStr = String(it.owner);
+            const isOpen = it.claimable || ownerStr.toLowerCase() === "open";
+            return (
+              <tr
+                key={it.id}
+                onClick={() => onOpenRoom(it.id)}
+                className={`border-b border-white/[0.06] cursor-pointer hover:bg-white/[0.04] transition ${
+                  it.status === "DONE" ? "opacity-50" : ""
+                }`}
+              >
+                <td className="px-3 py-2 text-right text-white/40 tabular-nums">{it.id}</td>
+                <td className="px-3 py-2">
+                  <span
+                    className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-black/80 ${PRIORITY_DOT[it.priority]}`}
+                    title={`Priority ${it.priority}`}
+                  >
+                    {it.priority.slice(1)}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-white/90 max-w-0">
+                  <div className="truncate">{it.title}</div>
+                  {(it.brands ?? []).length > 0 && (
+                    <div className="mt-0.5 flex flex-wrap gap-1">
+                      {(it.brands ?? []).map((b) => (
+                        <span key={b} className={`px-1 rounded text-[9px] border ${brandColor(b)}`}>{b}</span>
+                      ))}
+                    </div>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] border ${STATUS_HEAD[it.status]}`}>
+                    {STATUS_LABEL[it.status]}
+                  </span>
+                </td>
+                <td className="px-3 py-2">
+                  {isOpen ? (
+                    <span className="text-[10px] uppercase tracking-wider text-amber-300 font-bold">Claim</span>
+                  ) : (
+                    <span className="text-white/70 text-xs">{ownerStr}</span>
+                  )}
+                </td>
+                <td
+                  className={`px-3 py-2 text-right tabular-nums text-xs ${
+                    it.status !== "DONE" && age > 14 ? "text-red-300" : "text-white/50"
+                  }`}
+                >
+                  {age}d
+                </td>
+                <td className="px-3 py-2 text-white/50 text-xs">{it.due || "—"}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
