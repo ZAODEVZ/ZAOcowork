@@ -19,20 +19,6 @@ import { VoiceButton } from "./VoiceButton";
 // `tabBrand` auto-tags every task with the current tab's brand when no #brand
 // is typed - the URL-driven brand context cascades down to creation.
 
-// The just-created task, kept so we can show an obvious "Added #N to <column>"
-// confirmation with a button that opens it. Cleared on the next keystroke.
-type Created = { id: string; title: string; status: string; owner: string };
-
-// QuickAdd always lands a task in TODO, but map defensively so the banner
-// reads the board's column name rather than the raw enum.
-const COLUMN_LABEL: Record<string, string> = {
-  TODO: "TO DO",
-  WIP: "IN PROGRESS",
-  BLOCKED: "BLOCKED",
-  DONE: "DONE",
-  TRIAGE: "TRIAGE",
-};
-
 export function QuickAddBody({
   currentUser,
   defaultCategory,
@@ -54,7 +40,6 @@ export function QuickAddBody({
   const router = useRouter();
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
-  const [created, setCreated] = useState<Created | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -99,9 +84,12 @@ export function QuickAddBody({
     start(async () => {
       const res = await quickCreate(fd);
       setText("");
-      if (res) setCreated({ id: res.id, title: res.title, status: res.status, owner: res.owner });
       onSubmitted?.();
       router.refresh();
+      // Auto-open the new task so you land straight in it to fill in the
+      // details (Jose's flow: create -> immediately add the quest details).
+      // This doubles as the confirmation — you see the task and its number.
+      if (res && onCreated) onCreated(res.id);
     });
   }
 
@@ -121,10 +109,7 @@ export function QuickAddBody({
         <input
           ref={inputRef}
           value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            if (created) setCreated(null);
-          }}
+          onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder='What needs doing?  try "fix bug !p1 @iman due:fri #zaodevz"'
           className="flex-1 rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-zao-accent/60"
@@ -145,33 +130,6 @@ export function QuickAddBody({
         </button>
       </div>
 
-      {created && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
-          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-200 font-bold">
-            ✓
-          </span>
-          <span className="text-emerald-100/90 min-w-0 truncate">
-            Added{" "}
-            <span className="font-bold text-white">#{created.id}</span>{" "}
-            to the{" "}
-            <span className="font-semibold text-white">
-              {COLUMN_LABEL[created.status] ?? created.status}
-            </span>{" "}
-            column
-            <span className="text-emerald-100/60"> · owner {created.owner}</span>
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              if (onCreated) onCreated(created.id);
-              setCreated(null);
-            }}
-            className="ml-auto flex-shrink-0 rounded-md border border-emerald-400/50 bg-emerald-500/15 px-2.5 py-1 font-semibold text-emerald-100 hover:bg-emerald-500/25 transition"
-          >
-            Open #{created.id} →
-          </button>
-        </div>
-      )}
       {hasChips ? (
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-white/40 uppercase tracking-wider mr-1">parsed:</span>
