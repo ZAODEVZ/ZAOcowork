@@ -569,9 +569,20 @@ export async function todoProcess(
     | { type: "update_status"; itemId: string; newStatus: ActionStatus }
     | { type: "add_note"; itemId: string; note: string };
 
+  function isTodoAction(v: unknown): v is TodoAction {
+    if (!v || typeof v !== "object") return false;
+    const a = v as Record<string, unknown>;
+    if (a.type === "create") return typeof a.title === "string";
+    if (a.type === "update_status") return typeof a.itemId === "string" && typeof a.newStatus === "string";
+    if (a.type === "add_note") return typeof a.itemId === "string" && typeof a.note === "string";
+    return false;
+  }
+
   let todoActions: TodoAction[];
   try {
-    todoActions = JSON.parse(raw) as TodoAction[];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return { created: 0, updated: 0 };
+    todoActions = parsed.filter(isTodoAction);
   } catch {
     return { created: 0, updated: 0 };
   }

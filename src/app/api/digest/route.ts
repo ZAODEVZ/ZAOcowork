@@ -20,7 +20,10 @@ import { getSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-const DIGEST_RECIPIENTS = ["zaalp99@gmail.com", "iman@zao.example"];
+// Recipients must be configured via DIGEST_RECIPIENTS env var (comma-separated).
+// No hardcoded fallback — avoids leaking personal emails in source and forces
+// explicit config before the cron can send.
+const DIGEST_RECIPIENTS: string[] = [];
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -67,11 +70,13 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // Recipients can be overridden via DIGEST_RECIPIENTS env (comma-separated)
-  const envRecipients = process.env.DIGEST_RECIPIENTS;
-  const recipients = envRecipients
-    ? envRecipients.split(",").map((s) => s.trim()).filter(Boolean)
-    : DIGEST_RECIPIENTS;
+  const recipients = (process.env.DIGEST_RECIPIENTS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (recipients.length === 0) {
+    return NextResponse.json({ ok: false, error: "DIGEST_RECIPIENTS not configured" }, { status: 503 });
+  }
 
   const from = process.env.DIGEST_FROM_ADDRESS ?? "ZAOcowork <noreply@thezao.xyz>";
 
