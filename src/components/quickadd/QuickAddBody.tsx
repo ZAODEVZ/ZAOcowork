@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { quickCreate } from "@/app/actions";
 import { parseTask, type ParsedPriority } from "@/lib/parse-task";
@@ -19,20 +18,6 @@ import { VoiceButton } from "./VoiceButton";
 //
 // `tabBrand` auto-tags every task with the current tab's brand when no #brand
 // is typed - the URL-driven brand context cascades down to creation.
-
-// The just-created task, kept so we can show an obvious "Added #N to <column>"
-// confirmation with a button that opens it. Cleared on the next keystroke.
-type Created = { id: string; title: string; status: string; owner: string };
-
-// QuickAdd always lands a task in TODO, but map defensively so the banner
-// reads the board's column name rather than the raw enum.
-const COLUMN_LABEL: Record<string, string> = {
-  TODO: "TO DO",
-  WIP: "IN PROGRESS",
-  BLOCKED: "BLOCKED",
-  DONE: "DONE",
-  TRIAGE: "TRIAGE",
-};
 
 export function QuickAddBody({
   currentUser,
@@ -55,7 +40,6 @@ export function QuickAddBody({
   const router = useRouter();
   const [text, setText] = useState("");
   const [pending, start] = useTransition();
-  const [created, setCreated] = useState<Created | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -100,9 +84,12 @@ export function QuickAddBody({
     start(async () => {
       const res = await quickCreate(fd);
       setText("");
-      if (res) setCreated({ id: res.id, title: res.title, status: res.status, owner: res.owner });
       onSubmitted?.();
       router.refresh();
+      // Auto-open the new task so you land straight in it to fill in the
+      // details (Jose's flow: create -> immediately add the quest details).
+      // This doubles as the confirmation — you see the task and its number.
+      if (res && onCreated) onCreated(res.id);
     });
   }
 
@@ -122,10 +109,7 @@ export function QuickAddBody({
         <input
           ref={inputRef}
           value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            if (created) setCreated(null);
-          }}
+          onChange={(e) => setText(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder='What needs doing?  try "fix bug !p1 @iman due:fri #zaodevz"'
           className="flex-1 rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-zao-accent/60"
@@ -146,16 +130,6 @@ export function QuickAddBody({
         </button>
       </div>
 
-      {created && (
-        <CreateBubble
-          created={created}
-          onOpen={() => {
-            if (onCreated) onCreated(created.id);
-            setCreated(null);
-          }}
-          onDone={() => setCreated(null)}
-        />
-      )}
       {hasChips ? (
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-white/40 uppercase tracking-wider mr-1">parsed:</span>
@@ -204,63 +178,5 @@ export function QuickAddBody({
         </div>
       )}
     </div>
-  );
-}
-
-// CreateBubble: a centered "receipt" that surfaces a freshly created task —
-// like a tx-hash confirmation. Per Jose's spec: appears in the middle in cyan,
-// lasts 7s total, fades its opacity out over the final 2s, then vanishes.
-// Clickable to jump straight to the task. Portaled to body so it's centered on
-// the viewport regardless of where the add bar lives or how far you've scrolled.
-function CreateBubble({
-  created,
-  onOpen,
-  onDone,
-}: {
-  created: Created;
-  onOpen: () => void;
-  onDone: () => void;
-}) {
-  const [mounted, setMounted] = useState(false);
-  const [phase, setPhase] = useState<"in" | "out">("in");
-
-  useEffect(() => {
-    setMounted(true);
-    // Start the fade with 2s left of the 7s lifetime.
-    const fadeTimer = window.setTimeout(() => setPhase("out"), 5000);
-    const doneTimer = window.setTimeout(onDone, 7000);
-    return () => {
-      window.clearTimeout(fadeTimer);
-      window.clearTimeout(doneTimer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
-      <button
-        type="button"
-        onClick={onOpen}
-        style={{ transition: "opacity 2000ms ease, transform 300ms ease" }}
-        className={`pointer-events-auto flex items-center gap-3 rounded-2xl border border-cyan-400/50 bg-cyan-500/15 px-5 py-3.5 backdrop-blur-md shadow-2xl shadow-cyan-500/20 hover:bg-cyan-500/25 ${
-          phase === "out" ? "opacity-0" : "opacity-100"
-        } ${phase === "in" ? "animate-[bubblePop_300ms_ease-out]" : ""}`}
-      >
-        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-cyan-400/25 text-base font-bold text-cyan-100">
-          ✓
-        </span>
-        <span className="text-left">
-          <span className="block text-sm font-semibold text-white">
-            Task created · <span className="text-cyan-200">#{created.id}</span>
-          </span>
-          <span className="block text-[11px] text-cyan-100/70">
-            in {COLUMN_LABEL[created.status] ?? created.status} · tap to view →
-          </span>
-        </span>
-      </button>
-    </div>,
-    document.body,
   );
 }
