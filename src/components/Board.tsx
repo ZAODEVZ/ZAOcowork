@@ -566,6 +566,8 @@ export function Board({
         onToggleSelectMode={() => setSelectMode((v) => !v)}
       />
 
+      <PortfolioRollup items={items} />
+
       <div className="flex items-center justify-between gap-3">
         {filtersActive ? (
           <div className="text-xs text-white/50">
@@ -1027,6 +1029,142 @@ function ExpediteSwimlane({
 // editing still happens in the card/TaskRoom (keeps this slice low-risk).
 type SortKey = "id" | "title" | "status" | "owner" | "priority" | "age" | "due";
 type GroupKey = "none" | "status" | "owner" | "priority" | "brand";
+
+// PortfolioRollup (research roadmap B): one row per brand with open/WIP/blocked/
+// aging counts + a RAG health pill, for an at-a-glance ecosystem view above the
+// board. Derived purely from the visible items, so it always matches the
+// current filter scope. RAG logic is explicit + conservative (research: never
+// average real problems into invisible green):
+//   RED   = any blocked OR any aging>14d open item
+//   AMBER = WIP over a soft per-brand cap (>5) but nothing blocked/aging
+//   GREEN = otherwise
+function PortfolioRollup({
+  items,
+  onPickBrand,
+}: {
+  items: ActionItem[];
+  onPickBrand?: (brand: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    try {
+      setOpen(window.localStorage.getItem("zao-rollup-open") === "1");
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function toggle() {
+    setOpen((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem("zao-rollup-open", next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
+  const rows = useMemo(() => {
+    const map = new Map<
+      string,
+      { brand: string; open: number; wip: number; blocked: number; aging: number; total: number }
+    >();
+    for (const it of items) {
+      if (it.archivedAt || it.status === "TRIAGE") continue;
+      const brands = (it.brands ?? []).length ? (it.brands as string[]) : ["(unbranded)"];
+      for (const b of brands) {
+        const r = map.get(b) ?? { brand: b, open: 0, wip: 0, blocked: 0, aging: 0, total: 0 };
+        r.total += 1;
+        if (it.status !== "DONE") r.open += 1;
+        if (it.status === "WIP") r.wip += 1;
+        if (it.status === "BLOCKED") r.blocked += 1;
+        if (it.status !== "DONE" && ageDays(it.createdAt) > 14) r.aging += 1;
+        map.set(b, r);
+      }
+    }
+    return Array.from(map.values())
+      .filter((r) => r.open > 0)
+      .sort((a, b) => b.open - a.open);
+  }, [items]);
+
+  function rag(r: { blocked: number; aging: number; wip: number }): "red" | "amber" | "green" {
+    if (r.blocked > 0 || r.aging > 0) return "red";
+    if (r.wip > 5) return "amber";
+    return "green";
+  }
+  const ragCls = {
+    red: "bg-red-500/15 text-red-300 border-red-500/40",
+    amber: "bg-amber-500/15 text-amber-200 border-amber-500/40",
+    green: "bg-emerald-500/15 text-emerald-300 border-emerald-500/40",
+  } as const;
+
+  if (rows.length === 0) return null;
+
+  const redCount = rows.filter((r) => rag(r) === "red").length;
+
+  return (
+    <div className="rounded-2xl bg-white/[0.04] border border-white/10 overflow-hidden">
+      <button
+        onClick={toggle}
+        className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-white/[0.03] transition"
+      >
+        <span className="flex items-center gap-2 text-sm font-semibold text-white/80">
+          <span className="h-2 w-2 rounded-full bg-sky-400" />
+          Ecosystem health
+          <span className="text-xs font-normal text-white/40">
+            {rows.length} brand{rows.length === 1 ? "" : "s"}
+            {redCount > 0 && <span className="text-red-300"> · {redCount} need attention</span>}
+          </span>
+        </span>
+        <span className="text-white/40 text-xs">{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div className="overflow-x-auto border-t border-white/10">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr className="text-[10px] uppercase tracking-wider text-white/40">
+                <th className="px-4 py-1.5 text-left font-medium">Brand</th>
+                <th className="px-3 py-1.5 text-center font-medium w-20">Health</th>
+                <th className="px-3 py-1.5 text-right font-medium w-16">Open</th>
+                <th className="px-3 py-1.5 text-right font-medium w-16">WIP</th>
+                <th className="px-3 py-1.5 text-right font-medium w-20">Blocked</th>
+                <th className="px-3 py-1.5 text-right font-medium w-20">Aging</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const status = rag(r);
+                return (
+                  <tr
+                    key={r.brand}
+                    onClick={() => onPickBrand?.(r.brand)}
+                    className={`border-t border-white/[0.06] ${onPickBrand ? "cursor-pointer hover:bg-white/[0.04]" : ""} transition`}
+                  >
+                    <td className="px-4 py-2 text-white/85">{r.brand}</td>
+                    <td className="px-3 py-2 text-center">
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${ragCls[status]}`}>
+                        {status}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums text-white/70">{r.open}</td>
+                    <td className="px-3 py-2 text-right tabular-nums text-white/70">{r.wip}</td>
+                    <td className={`px-3 py-2 text-right tabular-nums ${r.blocked > 0 ? "text-red-300" : "text-white/40"}`}>
+                      {r.blocked}
+                    </td>
+                    <td className={`px-3 py-2 text-right tabular-nums ${r.aging > 0 ? "text-red-300" : "text-white/40"}`}>
+                      {r.aging}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function TableView({
   items,
