@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import type {
   ActionItem,
   ActionStatus,
@@ -90,7 +91,26 @@ export function TaskRoom({
   projects?: Array<{ id: string; slug: string; name: string }>;
 }) {
   const [panel, setPanel] = useState<"details" | "log">("details");
+  const [mounted, setMounted] = useState(false);
   const pendingUpdates = (item.updates || []).filter((u) => u.reviewStatus === "pending");
+
+  // Portal target only exists on the client. Without this, the panel's
+  // `fixed inset-0` is positioned relative to the board's backdrop-blur
+  // ancestor instead of the viewport — so opening a task from far down the
+  // page rendered the panel up at the top, off-screen (Jose's "empty box":
+  // it had data, just not where he was looking). Portaling to document.body
+  // makes it cover the viewport no matter how far the user has scrolled.
+  useEffect(() => setMounted(true), []);
+
+  // Lock body scroll while the panel is open so the background board doesn't
+  // scroll underneath it.
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -100,7 +120,9 @@ export function TaskRoom({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-40 flex">
       {/* Backdrop */}
       <button
@@ -201,7 +223,8 @@ export function TaskRoom({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
