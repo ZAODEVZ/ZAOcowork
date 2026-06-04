@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { quickCreate } from "@/app/actions";
 import { parseTask, type ParsedPriority } from "@/lib/parse-task";
@@ -146,31 +147,14 @@ export function QuickAddBody({
       </div>
 
       {created && (
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
-          <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/25 text-emerald-200 font-bold">
-            ✓
-          </span>
-          <span className="text-emerald-100/90 min-w-0 truncate">
-            Added{" "}
-            <span className="font-bold text-white">#{created.id}</span>{" "}
-            to the{" "}
-            <span className="font-semibold text-white">
-              {COLUMN_LABEL[created.status] ?? created.status}
-            </span>{" "}
-            column
-            <span className="text-emerald-100/60"> · owner {created.owner}</span>
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              if (onCreated) onCreated(created.id);
-              setCreated(null);
-            }}
-            className="ml-auto flex-shrink-0 rounded-md border border-emerald-400/50 bg-emerald-500/15 px-2.5 py-1 font-semibold text-emerald-100 hover:bg-emerald-500/25 transition"
-          >
-            Open #{created.id} →
-          </button>
-        </div>
+        <CreateBubble
+          created={created}
+          onOpen={() => {
+            if (onCreated) onCreated(created.id);
+            setCreated(null);
+          }}
+          onDone={() => setCreated(null)}
+        />
       )}
       {hasChips ? (
         <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
@@ -220,5 +204,63 @@ export function QuickAddBody({
         </div>
       )}
     </div>
+  );
+}
+
+// CreateBubble: a centered "receipt" that surfaces a freshly created task —
+// like a tx-hash confirmation. Per Jose's spec: appears in the middle in cyan,
+// lasts 7s total, fades its opacity out over the final 2s, then vanishes.
+// Clickable to jump straight to the task. Portaled to body so it's centered on
+// the viewport regardless of where the add bar lives or how far you've scrolled.
+function CreateBubble({
+  created,
+  onOpen,
+  onDone,
+}: {
+  created: Created;
+  onOpen: () => void;
+  onDone: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const [phase, setPhase] = useState<"in" | "out">("in");
+
+  useEffect(() => {
+    setMounted(true);
+    // Start the fade with 2s left of the 7s lifetime.
+    const fadeTimer = window.setTimeout(() => setPhase("out"), 5000);
+    const doneTimer = window.setTimeout(onDone, 7000);
+    return () => {
+      window.clearTimeout(fadeTimer);
+      window.clearTimeout(doneTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none">
+      <button
+        type="button"
+        onClick={onOpen}
+        style={{ transition: "opacity 2000ms ease, transform 300ms ease" }}
+        className={`pointer-events-auto flex items-center gap-3 rounded-2xl border border-cyan-400/50 bg-cyan-500/15 px-5 py-3.5 backdrop-blur-md shadow-2xl shadow-cyan-500/20 hover:bg-cyan-500/25 ${
+          phase === "out" ? "opacity-0" : "opacity-100"
+        } ${phase === "in" ? "animate-[bubblePop_300ms_ease-out]" : ""}`}
+      >
+        <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-cyan-400/25 text-base font-bold text-cyan-100">
+          ✓
+        </span>
+        <span className="text-left">
+          <span className="block text-sm font-semibold text-white">
+            Task created · <span className="text-cyan-200">#{created.id}</span>
+          </span>
+          <span className="block text-[11px] text-cyan-100/70">
+            in {COLUMN_LABEL[created.status] ?? created.status} · tap to view →
+          </span>
+        </span>
+      </button>
+    </div>,
+    document.body,
   );
 }
