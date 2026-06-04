@@ -172,10 +172,12 @@ export async function createItem(form: FormData): Promise<void> {
   revalidateAll();
 }
 
-export async function quickCreate(form: FormData): Promise<void> {
+export async function quickCreate(
+  form: FormData,
+): Promise<{ id: string; title: string; status: ActionStatus; category: string; owner: string } | null> {
   const user = await requireSession();
   const title = String(form.get("title") ?? "").trim();
-  if (!title) return;
+  if (!title) return null;
   const doc = await getActions();
   const id = newId(doc.items);
   const status = asStatus(form.get("status"));
@@ -188,6 +190,9 @@ export async function quickCreate(form: FormData): Promise<void> {
   doc.items.push(item);
   await saveActions(doc, user, `quick-add #${id} ${title.slice(0, 40)}`);
   revalidateAll();
+  // Return the new task's identity so the UI can show an obvious "created #N
+  // in <column>" confirmation with a jump-to link.
+  return { id, title, status, category, owner: item.owner };
 }
 
 export async function updateItem(form: FormData): Promise<void> {

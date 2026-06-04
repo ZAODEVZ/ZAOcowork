@@ -36,6 +36,9 @@ export function QuickAdd({
   items?: ActionItem[];
   onOpenTask?: (id: string) => void;
 }) {
+  // onCreated: after a quick-add, jump straight into the new task so the user
+  // sees exactly what landed (reusing the same TaskRoom open path as find).
+  const onCreated = onOpenTask;
   const [modalOpen, setModalOpen] = useState(false);
   const [mode, setMode] = useState<Mode>("add");
   const [searchQuery, setSearchQuery] = useState("");
@@ -120,6 +123,7 @@ export function QuickAdd({
           currentUser={currentUser}
           defaultCategory={defaultCategory}
           tabBrand={tabBrand}
+          onCreated={onCreated}
         />
         <div className="hidden md:block absolute top-3 right-32 text-[10px] text-white/30 pointer-events-none">
           <kbd className="rounded border border-white/15 bg-white/[0.04] px-1.5 py-0.5">⌘K</kbd>{" "}
@@ -182,6 +186,7 @@ export function QuickAdd({
                   tabBrand={tabBrand}
                   autoFocus
                   compact
+                  onCreated={onCreated}
                   onSubmitted={() => setModalOpen(false)}
                 />
               </>
