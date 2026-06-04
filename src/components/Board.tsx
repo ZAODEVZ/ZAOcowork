@@ -32,6 +32,7 @@ import { TodoPanel, TodoTrigger } from "./TodoPanel";
 import { NotificationBell } from "./NotificationBell";
 import { QuickAdd } from "./quickadd/QuickAdd";
 import { BulkActionBar } from "./BulkActionBar";
+import { InsightsPanel } from "./InsightsPanel";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TRIAGE: "TRIAGE",
@@ -231,6 +232,7 @@ export function Board({
   // multivariate comparison/bulk-scan (NN/g); a table is the standard second
   // layout in mature PM tools. Persisted so the choice sticks per browser.
   const [view, setView] = useState<"board" | "table">("board");
+  const [showInsights, setShowInsights] = useState(false);
   // Grouping axis for the Table view (research roadmap A): switchable grouping
   // is the standard way to re-slice the same items by owner/priority/brand.
   const [groupBy, setGroupBy] = useState<GroupKey>("none");
@@ -583,6 +585,17 @@ export function Board({
           <span />
         )}
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => setShowInsights((v) => !v)}
+            className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+              showInsights
+                ? "bg-violet-500/15 border-violet-500/40 text-violet-200"
+                : "bg-zao-ink border-white/10 text-white/55 hover:text-white/85"
+            }`}
+            aria-pressed={showInsights}
+          >
+            📊 Insights
+          </button>
           {/* Group-by selector — only meaningful in table view */}
           {view === "table" && (
             <label className="flex items-center gap-1.5 text-xs text-white/50">
@@ -617,6 +630,8 @@ export function Board({
           </div>
         </div>
       </div>
+
+      {showInsights && <InsightsPanel items={filtered} />}
 
       {view === "table" && (
         <TableView items={filtered} onOpenRoom={setTaskRoomId} groupBy={groupBy} />
