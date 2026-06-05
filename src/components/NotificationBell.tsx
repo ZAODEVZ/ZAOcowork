@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { relativeTime } from "@/lib/types";
 import type { ActionItem } from "@/lib/types";
 
-type NotifType = "assigned" | "approval_needed" | "open_task" | "claimed";
+type NotifType =
+  | "assigned"
+  | "approval_needed"
+  | "open_task"
+  | "claimed"
+  | "comment"
+  | "mention"
+  | "review_done";
 
 interface Notification {
   id: string;
@@ -19,6 +26,11 @@ interface Snapshot {
   assignedIds: string[];
   openIds: string[];
   pendingUpdateIds: string[];
+  // Highest comment id seen per task I care about, so we only notify on NEW
+  // comments (not the whole backlog) after the first snapshot.
+  commentIds?: string[];
+  // Update ids that had already been reviewed last time we looked.
+  reviewedUpdateIds?: string[];
 }
 
 const TYPE_DOT: Record<NotifType, string> = {
@@ -26,6 +38,9 @@ const TYPE_DOT: Record<NotifType, string> = {
   approval_needed: "bg-amber-400",
   open_task: "bg-emerald-400",
   claimed: "bg-purple-400",
+  comment: "bg-sky-400",
+  mention: "bg-pink-400",
+  review_done: "bg-teal-400",
 };
 
 function genId(): string {
@@ -86,8 +101,46 @@ export function NotificationBell({
       }
     }
 
+    // "My tasks" = owned by me OR I commented on them OR I submitted an update.
+    // We watch these for new comments + @mentions of me.
+    const mentionToken = `@${userKey}`;
+    const isMine = (it: ActionItem) =>
+      String(it.owner).toLowerCase() === userKey ||
+      (it.comments || []).some((c) => (c.userId || "").toLowerCase() === userKey) ||
+      (it.updates || []).some((u) => (u.submittedBy || "").toLowerCase() === userKey);
+
+    // Comment ids on tasks I'm involved in, plus any comment that @mentions me
+    // anywhere. Track ids so we only fire on genuinely new comments.
+    const commentIds: string[] = [];
+    for (const it of items) {
+      const mine = isMine(it);
+      for (const c of it.comments || []) {
+        const mentionsMe = (c.content || "").toLowerCase().includes(mentionToken);
+        const fromMe = (c.userId || "").toLowerCase() === userKey;
+        if ((mine || mentionsMe) && !fromMe) commentIds.push(c.id);
+      }
+    }
+
+    // Updates I submitted that now have a review decision (approved/rejected/
+    // changes_requested) — so the worker learns their submission was actioned.
+    const reviewedUpdateIds: string[] = [];
+    for (const it of items) {
+      for (const u of it.updates || []) {
+        if (
+          (u.submittedBy || "").toLowerCase() === userKey &&
+          u.reviewStatus &&
+          u.reviewStatus !== "pending"
+        ) {
+          reviewedUpdateIds.push(u.id);
+        }
+      }
+    }
+
     // Persist updated snapshot
-    window.localStorage.setItem(snapKey, JSON.stringify({ assignedIds, openIds, pendingUpdateIds }));
+    window.localStorage.setItem(
+      snapKey,
+      JSON.stringify({ assignedIds, openIds, pendingUpdateIds, commentIds, reviewedUpdateIds }),
+    );
 
     // No previous snapshot = first ever visit, initialize only
     if (!snap) return;
@@ -158,6 +211,48 @@ export function NotificationBell({
             }
           }
         }
+      }
+    }
+
+    // New comments on tasks I'm involved in, and @mentions of me
+    const prevComments = new Set(snap.commentIds ?? []);
+    for (const it of items) {
+      for (const c of it.comments || []) {
+        if (!commentIds.includes(c.id) || prevComments.has(c.id)) continue;
+        const mentionsMe = (c.content || "").toLowerCase().includes(mentionToken);
+        const who = c.displayName || c.userId || "Someone";
+        newNotifs.push({
+          id: genId(),
+          type: mentionsMe ? "mention" : "comment",
+          itemId: it.id,
+          message: mentionsMe
+            ? `${who} mentioned you on: ${it.title}`
+            : `${who} commented on: ${it.title}`,
+          read: false,
+          createdAt: now,
+        });
+      }
+    }
+
+    // My submitted update got a review decision
+    const prevReviewed = new Set(snap.reviewedUpdateIds ?? []);
+    for (const it of items) {
+      for (const u of it.updates || []) {
+        if (!reviewedUpdateIds.includes(u.id) || prevReviewed.has(u.id)) continue;
+        const verb =
+          u.reviewStatus === "approved"
+            ? "approved"
+            : u.reviewStatus === "rejected"
+            ? "rejected"
+            : "requested changes on";
+        newNotifs.push({
+          id: genId(),
+          type: "review_done",
+          itemId: it.id,
+          message: `Your update was ${verb}: ${it.title}`,
+          read: false,
+          createdAt: now,
+        });
       }
     }
 
@@ -264,7 +359,7 @@ export function NotificationBell({
                 <div className="text-2xl mb-2">🔔</div>
                 <p className="text-sm text-white/40">No notifications yet</p>
                 <p className="text-[11px] text-white/25 mt-1">
-                  You&apos;ll see task assignments, open tasks, and review requests here.
+                  You&apos;ll see assignments, comments, @mentions, reviews, and open tasks here.
                 </p>
               </div>
             ) : (
