@@ -52,6 +52,7 @@ export function NavBar({
 
   const onBoard = pathname === "/";
   const onChat = pathname === "/chat";
+  const onActivity = pathname === "/activity";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
 
@@ -91,6 +92,13 @@ export function NavBar({
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <SimpleTab
+            href="/activity"
+            label="Activity"
+            active={onActivity}
+            dot="bg-sky-400"
+            activeClass="bg-sky-500/20 text-sky-200 border-sky-500/40"
+          />
           <SimpleTab
             href="/chat"
             label="Assistant"
