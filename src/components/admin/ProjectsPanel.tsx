@@ -219,6 +219,20 @@ function ProjectRow({
     });
   }
 
+  function togglePublic() {
+    const fd = new FormData();
+    fd.set("id", project.id);
+    fd.set("is_public", project.isPublic ? "false" : "true");
+    start(async () => {
+      try {
+        await updateProjectAction(fd);
+        router.refresh();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "public toggle failed");
+      }
+    });
+  }
+
   function onDelete() {
     if (!confirm(`Delete project "${project.name}"? Tasks will be unparented (not deleted).`)) return;
     const fd = new FormData();
@@ -329,6 +343,18 @@ function ProjectRow({
             className="text-[10px] text-white/50 hover:text-white border border-white/10 rounded px-2 py-0.5"
           >
             Edit
+          </button>
+          <button
+            type="button"
+            onClick={togglePublic}
+            disabled={pending}
+            className={`text-[10px] border rounded px-2 py-0.5 transition disabled:opacity-50 ${
+              project.isPublic
+                ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/40 hover:bg-emerald-500/30"
+                : "text-white/50 hover:text-white border-white/10 hover:border-white/30"
+            }`}
+          >
+            {project.isPublic ? "Public" : "Private"}
           </button>
           <select
             value={project.status}

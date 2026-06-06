@@ -23,7 +23,7 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency } from "@/app/actions";
+import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride } from "@/app/actions";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
 
@@ -507,10 +507,49 @@ function DetailsPanel({
     });
   }
 
+  function handlePublicOverride(value: "inherit" | "show" | "hide") {
+    if (!item.dbId) return;
+    const fd = new FormData();
+    fd.set("taskId", item.dbId);
+    fd.set("value", value);
+    start(async () => {
+      const result = await setTaskPublicOverride(fd);
+      if (!result.ok) {
+        // Error handled server-side
+      }
+    });
+  }
+
   return (
     <div className="p-5 space-y-5 flex-1">
       <OriginBlock item={item} />
       <DependenciesBlock item={item} />
+      {item.dbId && (
+        <div className="rounded-lg bg-white/[0.04] border border-white/10 p-3">
+          <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Public visibility</div>
+          <div className="flex gap-2">
+            {(["inherit", "show", "hide"] as const).map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                disabled={pending}
+                onClick={() => handlePublicOverride(opt)}
+                className={`text-xs px-3 py-1.5 rounded border transition disabled:opacity-50 ${
+                  item.publicOverride === null && opt === "inherit"
+                    ? "bg-blue-500/20 text-blue-200 border-blue-500/40"
+                    : item.publicOverride === true && opt === "show"
+                      ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/40"
+                      : item.publicOverride === false && opt === "hide"
+                        ? "bg-red-500/20 text-red-200 border-red-500/40"
+                        : "text-white/50 border-white/10 hover:text-white/75"
+                }`}
+              >
+                {opt === "inherit" ? "Inherit" : opt === "show" ? "Show" : "Hide"}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <form action={handleSave} className="space-y-4">
         {/* Hidden sentinel so requiresApproval=false is distinguishable from not-present */}
         <input type="hidden" name="_hasRequiresApproval" value="1" />

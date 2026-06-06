@@ -1327,3 +1327,36 @@ export async function bulkAssignUnowned(form: FormData): Promise<{ assigned: num
   }
   return { assigned: touched };
 }
+
+export async function setTaskPublicOverride(form: FormData): Promise<{ ok: boolean }> {
+  const user = await requireSession();
+  if (!user) return { ok: false };
+
+  const taskId = String(form.get("taskId") ?? "").trim();
+  const raw = String(form.get("value") ?? "").trim();
+
+  if (!taskId || !["inherit", "show", "hide"].includes(raw)) {
+    return { ok: false };
+  }
+
+  const value = raw === "show" ? true : raw === "hide" ? false : null;
+
+  const { createClient } = await import("@supabase/supabase-js");
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return { ok: false };
+
+  const sb = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { error } = await sb.from("tasks").update({ public_override: value }).eq("id", taskId);
+
+  if (error) {
+    console.error("setTaskPublicOverride failed:", error.message);
+    return { ok: false };
+  }
+
+  revalidatePath("/");
+  return { ok: true };
+}

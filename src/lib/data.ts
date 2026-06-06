@@ -80,7 +80,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
   "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-  "updated_at, metadata, brands, service_class, archived_at, project_id, source";
+  "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -125,6 +125,7 @@ interface TaskRow {
   archived_at: string | null;
   project_id: string | null;
   source: string | null;
+  public_override: boolean | null;
 }
 
 interface TeamMaps {
@@ -204,6 +205,8 @@ export function normalizeItem(
   // Doc 765 Phase I
   if (raw.projectId !== undefined) base.projectId = raw.projectId;
   if (raw.source !== undefined) base.source = raw.source as TaskSource;
+  // Doc 009 public layer
+  if (raw.publicOverride !== undefined) base.publicOverride = raw.publicOverride;
   return base;
 }
 
@@ -258,6 +261,8 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (typeof meta.prState === "string") item.prState = meta.prState as "open" | "merged" | "closed";
   // Doc 764 F5: videoUrl stored in metadata jsonb (no dedicated column)
   if (typeof meta.videoUrl === "string") item.videoUrl = meta.videoUrl;
+  // Doc 009 public layer: public_override (null=inherit, true=show, false=hide)
+  if (row.public_override !== undefined) item.publicOverride = row.public_override;
   return item;
 }
 
