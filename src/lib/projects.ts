@@ -26,7 +26,7 @@ function db(): SupabaseClient {
 
 const SELECT_COLS =
   "id, slug, name, description, status, brand_default, started_at, target_date, " +
-  "closed_at, closed_by, color, sort_order, created_at, created_by";
+  "closed_at, closed_by, color, sort_order, created_at, created_by, is_public";
 
 interface ProjectRow {
   id: string;
@@ -43,6 +43,7 @@ interface ProjectRow {
   sort_order: number;
   created_at: string;
   created_by: string | null;
+  is_public: boolean;
 }
 
 function rowToProject(row: ProjectRow): Project {
@@ -61,6 +62,7 @@ function rowToProject(row: ProjectRow): Project {
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     createdBy: row.created_by,
+    isPublic: row.is_public,
   };
 }
 
@@ -154,6 +156,7 @@ export async function updateProject(
     target_date: string | null;
     color: string;
     sort_order: number;
+    is_public: boolean;
   }>,
   decidedBy?: string,
 ): Promise<void> {

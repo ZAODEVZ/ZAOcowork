@@ -186,6 +186,8 @@ export type ActionItem = {
   // (legacy_source, legacy_id) unique constraint.
   legacyId?: string | null;
   legacySource?: string;
+  // Doc 009 public layer: null=inherit from project, true=show, false=hide
+  publicOverride?: boolean | null;
 };
 
 // Provenance taxonomy (doc 765 decision 2). Every task carries exactly
@@ -256,6 +258,7 @@ export interface Project {
   sortOrder: number;
   createdAt: string;
   createdBy: string | null;
+  isPublic: boolean;
 }
 
 export type ActionDoc = {

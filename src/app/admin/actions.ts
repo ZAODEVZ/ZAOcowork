@@ -338,6 +338,7 @@ export async function updateProjectAction(form: FormData): Promise<void> {
     target_date?: string | null;
     color?: string;
     sort_order?: number;
+    is_public?: boolean;
   } = {};
 
   const nameRaw = form.get("name");
@@ -365,6 +366,11 @@ export async function updateProjectAction(form: FormData): Promise<void> {
     const sort_order = Number(String(sortRaw).trim());
     if (!Number.isFinite(sort_order)) bouncedErr("sort_order must be numeric");
     patch.sort_order = sort_order;
+  }
+  const isPublicRaw = form.get("is_public");
+  if (isPublicRaw !== null) {
+    const s = String(isPublicRaw).trim().toLowerCase();
+    patch.is_public = s === "1" || s === "true" || s === "on" || s === "yes";
   }
 
   if (Object.keys(patch).length === 0) return;
