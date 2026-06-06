@@ -185,8 +185,10 @@ async function withErrorReply(ctx: Context, fn: () => Promise<void>): Promise<vo
   try {
     await fn();
   } catch (err) {
+    // Log the detail server-side only; raw error text can leak Supabase/GitHub/
+    // filesystem internals to whoever triggered it (security audit A3).
     console.error('[zaocoworking] handler failed:', (err as Error).message);
-    await ctx.reply(`error: ${(err as Error).message.slice(0, 200)}`).catch(() => {});
+    await ctx.reply("something went wrong - try again, or ping Zaal if it persists.").catch(() => {});
   }
 }
 
@@ -324,7 +326,7 @@ bot.on('message:text', async (ctx) => {
   } catch (err) {
     await clearAck();
     console.error('[zaocoworking] llm failed:', (err as Error).message);
-    await ctx.reply(`error: ${(err as Error).message.slice(0, 200)}`);
+    await ctx.reply("the model call failed - try again in a moment.");
   }
 });
 
