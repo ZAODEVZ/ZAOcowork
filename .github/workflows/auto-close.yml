@@ -1,0 +1,16 @@
+# auto-close-merged-tasks
+# Polls every 15 min: closes tracker tasks whose PR merged.
+name: auto-close-merged-tasks
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+jobs:
+  autoclose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit auto-close endpoint
+        run: |
+          curl -fsS -X POST "https://www.thezao.xyz/api/v1/auto-close" \
+            -H "Authorization: Bearer ${{ secrets.AUTOCLOSE_KEY }}" \
+            -H "Content-Type: application/json" | tee /dev/stderr
