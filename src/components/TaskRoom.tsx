@@ -23,8 +23,9 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem } from "@/app/actions";
+import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency } from "@/app/actions";
 import { resolveSource } from "@/lib/source-resolver";
+import type { DepRef } from "@/lib/dependencies";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TRIAGE: "TRIAGE",
@@ -229,6 +230,185 @@ export function TaskRoom({
   );
 }
 
+function DependenciesBlock({ item }: { item: ActionItem }) {
+  const taskId = item.dbId;
+  const [deps, setDeps] = useState<{ blockedBy: DepRef[]; blocks: DepRef[] } | null>(null);
+  const [allTasks, setAllTasks] = useState<Array<{ id: string; title: string }> | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  // Guard: unsaved task can't have dependencies
+  if (!taskId) return null;
+
+  const id = taskId; // Type-narrowed after guard
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchDeps() {
+      try {
+        const res = await fetch(`/api/dependencies?taskId=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (!cancelled && data.ok) {
+          setDeps({ blockedBy: data.blockedBy || [], blocks: data.blocks || [] });
+        }
+      } catch {
+        // Silently ignore fetch errors
+      }
+    }
+    fetchDeps();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  const linkedIds = new Set([
+    ...((deps?.blockedBy ?? []).map((d) => d.id) ?? []),
+    ...((deps?.blocks ?? []).map((d) => d.id) ?? []),
+  ]);
+
+  async function handleRemove(blockerId: string, blockedId: string) {
+    start(async () => {
+      const fd = new FormData();
+      fd.set("blockerId", blockerId);
+      fd.set("blockedId", blockedId);
+      const result = await removeTaskDependency(fd);
+      if (result.ok) {
+        const res = await fetch(`/api/dependencies?taskId=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (data.ok) {
+          setDeps({ blockedBy: data.blockedBy || [], blocks: data.blocks || [] });
+        }
+      }
+    });
+  }
+
+  async function handleAddBlocker(blockerId: string) {
+    setError(null);
+    start(async () => {
+      const fd = new FormData();
+      fd.set("blockerId", blockerId);
+      fd.set("blockedId", id);
+      const result = await addTaskDependency(fd);
+      if (result.ok) {
+        const res = await fetch(`/api/dependencies?taskId=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (data.ok) {
+          setDeps({ blockedBy: data.blockedBy || [], blocks: data.blocks || [] });
+          setShowPicker(false);
+        }
+      } else {
+        setError(result.error || "Failed to add dependency");
+      }
+    });
+  }
+
+  async function handleShowPicker() {
+    if (!allTasks) {
+      try {
+        const res = await fetch("/api/tasks-min");
+        const data = await res.json();
+        if (data.ok) setAllTasks(data.tasks || []);
+      } catch {
+        setError("Failed to load task list");
+      }
+    }
+    setShowPicker(true);
+  }
+
+  const blockedByOpen = deps?.blockedBy?.filter((d) => d.status !== "done") ?? [];
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Dependencies</div>
+
+      {blockedByOpen.length > 0 && (
+        <div className="mb-3">
+          <div className="text-[9px] text-white/40 mb-1">Blocked by (open)</div>
+          <div className="space-y-1">
+            {blockedByOpen.map((d) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between gap-2 text-xs text-white/70 bg-red-500/10 border border-red-500/20 rounded px-2 py-1"
+              >
+                <span>{d.title}</span>
+                <button
+                  onClick={() => handleRemove(d.id, taskId)}
+                  disabled={pending}
+                  className="text-red-400/60 hover:text-red-300 disabled:opacity-50"
+                  aria-label="Remove blocker"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {(deps?.blocks?.length ?? 0) > 0 && (
+        <div className="mb-3">
+          <div className="text-[9px] text-white/40 mb-1">Blocks</div>
+          <div className="space-y-1">
+            {deps?.blocks?.map((d) => (
+              <div
+                key={d.id}
+                className="flex items-center justify-between gap-2 text-xs text-white/70 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1"
+              >
+                <span>{d.title}</span>
+                <button
+                  onClick={() => handleRemove(taskId, d.id)}
+                  disabled={pending}
+                  className="text-amber-400/60 hover:text-amber-300 disabled:opacity-50"
+                  aria-label="Remove blocked task"
+                >
+                  x
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        {showPicker && allTasks ? (
+          <div className="space-y-2">
+            {error && <div className="text-xs text-red-300">{error}</div>}
+            <div className="text-[9px] text-white/40 mb-1">Add blocker</div>
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {allTasks
+                .filter((t) => t.id !== taskId && !linkedIds.has(t.id))
+                .map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleAddBlocker(t.id)}
+                    disabled={pending}
+                    className="w-full text-left text-xs px-2 py-1 rounded bg-blue-500/15 border border-blue-500/30 text-blue-200 hover:bg-blue-500/25 disabled:opacity-50"
+                  >
+                    {t.title}
+                  </button>
+                ))}
+            </div>
+            <button
+              onClick={() => setShowPicker(false)}
+              className="w-full text-xs text-white/50 hover:text-white/70 py-1"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleShowPicker}
+            className="text-xs text-blue-300 hover:text-blue-200 transition underline"
+          >
+            + add blocker
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function OriginBlock({ item }: { item: ActionItem }) {
   const origin = resolveSource(item);
 
@@ -330,6 +510,7 @@ function DetailsPanel({
   return (
     <div className="p-5 space-y-5 flex-1">
       <OriginBlock item={item} />
+      <DependenciesBlock item={item} />
       <form action={handleSave} className="space-y-4">
         {/* Hidden sentinel so requiresApproval=false is distinguishable from not-present */}
         <input type="hidden" name="_hasRequiresApproval" value="1" />

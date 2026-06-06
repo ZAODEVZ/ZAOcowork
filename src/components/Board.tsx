@@ -186,6 +186,7 @@ export function Board({
   urlProjectSlug,
   urlProjectName,
   projects,
+  depCounts,
 }: {
   items: ActionItem[];
   currentUser: string;
@@ -203,6 +204,7 @@ export function Board({
   urlProjectSlug?: string | null;
   urlProjectName?: string | null;
   projects?: Array<{ id: string; slug: string; name: string; color: string }>;
+  depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
 }) {
   const router = useRouter();
   // Land on "my open work" by default, not the full firehose. Subsequent
@@ -667,6 +669,7 @@ export function Board({
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
+            depCounts={depCounts}
           />
         </div>
       </div>
@@ -679,6 +682,7 @@ export function Board({
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
+          depCounts={depCounts}
         />
       )}
 
@@ -696,6 +700,7 @@ export function Board({
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
+            depCounts={depCounts}
           />
         ))}
       </div>
@@ -972,6 +977,7 @@ function ExpediteSwimlane({
   selectMode,
   selectedIds,
   onToggleSelect,
+  depCounts,
 }: {
   items: ActionItem[];
   onOpenRoom: (id: string) => void;
@@ -979,6 +985,7 @@ function ExpediteSwimlane({
   selectMode: boolean;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
+  depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const overCap = items.length > EXPEDITE_VISIBLE_DEFAULT;
@@ -1023,6 +1030,7 @@ function ExpediteSwimlane({
             selectMode={selectMode}
             selected={selectedIds.has(it.id)}
             onToggleSelect={onToggleSelect}
+            depCounts={depCounts}
           />
         ))}
       </div>
@@ -1378,6 +1386,7 @@ function Column({
   selectMode,
   selectedIds,
   onToggleSelect,
+  depCounts,
 }: {
   status: BoardStatus;
   items: ActionItem[];
@@ -1388,6 +1397,7 @@ function Column({
   selectMode: boolean;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
+  depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
 }) {
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? items : items.slice(0, 25);
@@ -1447,6 +1457,7 @@ function Column({
             selectMode={selectMode}
             selected={selectedIds.has(it.id)}
             onToggleSelect={onToggleSelect}
+            depCounts={depCounts}
           />
         ))}
         {hiddenCount > 0 && (
@@ -1472,6 +1483,7 @@ function Card({
   selectMode,
   selected,
   onToggleSelect,
+  depCounts,
 }: {
   item: ActionItem;
   onOpenRoom: (id: string) => void;
@@ -1479,6 +1491,7 @@ function Card({
   selectMode: boolean;
   selected: boolean;
   onToggleSelect: (id: string) => void;
+  depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
 }) {
   const [pending, start] = useTransition();
   const age = ageDays(item.createdAt);
@@ -1662,6 +1675,16 @@ function Card({
             </a>
           );
         })()}
+        {depCounts?.[item.dbId ?? ""]?.blockedByOpen ? (
+          <span className="text-[10px] text-amber-300/80" title="blocked by open tasks">
+            ↔ {depCounts[item.dbId!].blockedByOpen}
+          </span>
+        ) : null}
+        {depCounts?.[item.dbId ?? ""]?.blocks ? (
+          <span className="text-[10px] text-white/50" title="blocks other tasks">
+            → {depCounts[item.dbId!].blocks}
+          </span>
+        ) : null}
         {(item.brands ?? []).map((b) => (
           <span
             key={b}
