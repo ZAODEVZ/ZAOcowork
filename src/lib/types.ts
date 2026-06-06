@@ -255,6 +255,10 @@ export interface Project {
 export type ActionDoc = {
   updatedAt: string;
   items: ActionItem[];
+  // Pristine snapshot of `items` at read time, set by getActions(). saveActions
+  // diffs against this instead of re-reading, to avoid clobbering rows other
+  // requests created concurrently. Optional so hand-built docs still work.
+  before?: ActionItem[];
 };
 
 export function ageDays(createdAt: string): number {
@@ -264,11 +268,17 @@ export function ageDays(createdAt: string): number {
 
 export function cycleDays(
   createdAt: string,
-  updatedAt: string,
+  completedAt: string,
   status: ActionStatus,
+  updatedAt?: string,
 ): number | null {
   if (status !== "DONE") return null;
-  const ms = new Date(updatedAt).getTime() - new Date(createdAt).getTime();
+  // Cycle time = created -> completed. Was using updatedAt, which advances every
+  // time a DONE task is touched (comment, brand edit), inflating the metric
+  // (doc 766 finding #8). Fall back to updatedAt only when completedAt is empty.
+  const end = completedAt || updatedAt;
+  if (!end) return null;
+  const ms = new Date(end).getTime() - new Date(createdAt).getTime();
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));
 }
 

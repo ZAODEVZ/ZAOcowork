@@ -56,6 +56,10 @@ function jaccardScore(a: string, b: string): number {
 function detectOwner(text: string): Owner | null {
   if (/\biman\b/i.test(text)) return "Iman";
   if (/\bzaal\b/i.test(text)) return "Zaal";
+  if (/\bthyrev\b/i.test(text)) return "ThyRev";
+  if (/\bsamantha\b/i.test(text)) return "Samantha";
+  if (/\btyler\b/i.test(text)) return "Tyler";
+  if (/\bshawn\b/i.test(text)) return "Shawn";
   if (/\bboth\b/i.test(text)) return "Both";
   return null;
 }
@@ -94,7 +98,7 @@ function isTaskLike(line: string): boolean {
 function cleanTitle(raw: string): string {
   return raw
     .replace(TASK_MARKERS, "")
-    .replace(/\b(iman|zaal|both)\s*[-:–]?\s*/gi, "")
+    .replace(/\b(iman|zaal|thyrev|samantha|tyler|shawn|both)\s*[-:–]?\s*/gi, "")
     .replace(/\b(p1|p2|p3)\b/gi, "")
     .replace(
       /\b(urgent|critical|asap|done|completed|finished|in progress|wip|blocked|stuck)\b/gi,

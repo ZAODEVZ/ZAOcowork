@@ -79,6 +79,17 @@ export function Chat() {
           return copy;
         });
       }
+      // Flush any bytes the decoder buffered (a multi-byte char split across the
+      // final chunks would otherwise be dropped/corrupted — doc 766 finding #12).
+      const tail = decoder.decode();
+      if (tail) {
+        acc += tail;
+        setMessages((prev) => {
+          const copy = [...prev];
+          copy[copy.length - 1] = { role: "assistant", content: acc };
+          return copy;
+        });
+      }
 
       if (!acc.trim()) {
         setMessages((prev) => {

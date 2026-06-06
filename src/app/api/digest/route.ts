@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { buildWeeklyDigest, digestToHtml, digestToText } from "@/lib/digest";
+import { getSession } from "@/lib/auth";
 
 // /api/digest - returns the weekly throughput digest (doc 764 F6).
 //
@@ -31,9 +32,15 @@ export async function GET(req: NextRequest) {
   const bearerOk = cronToken && auth === `Bearer ${cronToken}`;
 
   if (!bearerOk) {
-    // Fall back to session auth via middleware (set on this route by default)
-    // - if the user reached this route they have a session. Allow preview but
-    // not actual send (sending requires the bearer token).
+    // /api/digest is exempt from the middleware cookie check (so the cron can
+    // hit it with a bearer token), so we MUST verify the session here. Without
+    // this, any anonymous caller could GET the digest and read the whole board
+    // (doc 766 finding #2 — data leak).
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+    // Authed preview only; actual send still requires the bearer token.
     if (wantSend) {
       return NextResponse.json({ ok: false, error: "send requires Bearer DIGEST_CRON_TOKEN" }, { status: 401 });
     }

@@ -132,8 +132,20 @@ interface TeamMaps {
 }
 
 let cachedTeam: TeamMaps | null = null;
+let cachedTeamExpiry = 0;
+// Short TTL so a member added via /admin shows up within a minute without a
+// process restart. Was a permanent module singleton (doc 766 finding #4 /
+// agent A2): new members' UUIDs mapped to undefined -> owner rendered "Both".
+const TEAM_CACHE_TTL_MS = 60_000;
+
+/** Clear the team cache immediately (call after team_members mutations). */
+export function invalidateTeamCache(): void {
+  cachedTeam = null;
+  cachedTeamExpiry = 0;
+}
+
 async function teamMaps(): Promise<TeamMaps> {
-  if (cachedTeam) return cachedTeam;
+  if (cachedTeam && Date.now() < cachedTeamExpiry) return cachedTeam;
   const { data, error } = await db().from("team_members").select("id, legacy_owner");
   if (error) throw new Error(`team_members read failed: ${error.message}`);
   const idToOwner = new Map<string, string>();
@@ -144,6 +156,7 @@ async function teamMaps(): Promise<TeamMaps> {
     ownerToId.set(row.legacy_owner.toLowerCase(), row.id);
   }
   cachedTeam = { idToOwner, ownerToId };
+  cachedTeamExpiry = Date.now() + TEAM_CACHE_TTL_MS;
   return cachedTeam;
 }
 
@@ -213,7 +226,9 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
     completedAt: row.completed_at ?? "",
     completedBy: completedByName ?? "",
     phase: (row.phase as Phase) ?? "Define",
-    due: dueMeta ?? row.due ?? "",
+    // Prefer the dedicated column (queryable, authoritative) over the metadata
+    // copy; metadata only holds free-text dues now (doc 766 finding #7).
+    due: row.due ?? dueMeta ?? "",
     notes: row.notes ?? "",
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -244,7 +259,10 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
 
 function buildMetadata(item: ActionItem): Record<string, unknown> {
   const meta: Record<string, unknown> = {};
-  if (item.due) meta.due = item.due;
+  // Only stash a free-text due (e.g. "end of Q2") in metadata. ISO dates live
+  // in the dedicated `due` column; storing them here too let the metadata copy
+  // shadow a column update forever (doc 766 finding #7).
+  if (item.due && !/^\d{4}-\d{2}-\d{2}$/.test(item.due)) meta.due = item.due;
   if (item.taskType !== undefined) meta.taskType = item.taskType;
   if (item.requiresApproval !== undefined) meta.requiresApproval = item.requiresApproval;
   if (item.assignedTo !== undefined) meta.assignedTo = item.assignedTo;
@@ -315,7 +333,11 @@ export async function getActions(): Promise<ActionDoc> {
   // returns the items with archivedAt populated so the UI hides them
   // on this same render rather than waiting for the next read.
   items = await autoArchive(items);
-  return { updatedAt: nowIso(), items };
+  // Snapshot the items as the caller sees them. saveActions diffs against THIS
+  // (the read-time state) rather than re-reading at write time, so a task another
+  // request created in the meantime isn't seen as "deleted" and clobbered
+  // (doc 766 finding #1, the concurrent-save data-loss bug).
+  return { updatedAt: nowIso(), items, before: structuredClone(items) };
 }
 
 async function applyDiff(
@@ -415,8 +437,13 @@ export async function saveActions(
   _summary: string,
 ): Promise<void> {
   const team = await teamMaps();
-  const current = await getActions();
-  await applyDiff(current.items, doc.items, team);
+  // Diff against the snapshot captured when the caller read (doc.before), NOT a
+  // fresh read. Re-reading here pulled in rows other requests inserted between
+  // the caller's read and this write, then applyDiff treated those rows as
+  // deletes (absent from the caller's `doc.items`) and erased them. Falling back
+  // to a fresh read keeps old call sites that build a doc by hand working.
+  const before = doc.before ?? (await getActions()).items;
+  await applyDiff(before, doc.items, team);
 }
 
 export function newId(existing: ActionItem[]): string {

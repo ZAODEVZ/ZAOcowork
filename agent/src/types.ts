@@ -46,6 +46,13 @@ export interface ActionItem {
   // Doc 765 Phase I: project layer. Nullable. Bot doesn't set it today
   // (future: parse #project-slug like brand hashtags).
   projectId?: string | null;
+  // Activity timeline / review queue / comments — mirrored from the web app's
+  // task metadata. Loosely typed since the bot only reads a couple of fields.
+  // (These were missing from the bot's ActionItem, so `tsc --noEmit` failed on
+  // commands.ts/scheduler.ts — masked because the bot runs via tsx, audit A-typecheck.)
+  comments?: Array<{ id?: string; userId?: string; content?: string; createdAt?: string }>;
+  updates?: Array<{ reviewStatus?: string; createdAt?: string; [k: string]: unknown }>;
+  activity?: Array<{ createdAt: string; [k: string]: unknown }>;
 }
 
 export interface ActionsFile {

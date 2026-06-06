@@ -81,8 +81,20 @@ interface TeamMaps {
 }
 
 let cachedTeam: TeamMaps | null = null;
+let cachedTeamExpiry = 0;
+// Short TTL so a member added via /adduser shows up within a minute. Was a
+// permanent singleton (audit A2): new members' items were written with
+// owner_id=null until a bot restart.
+const TEAM_CACHE_TTL_MS = 60_000;
+
+/** Clear the owner<->UUID cache immediately (call after roster changes). */
+export function invalidateTeamMaps(): void {
+  cachedTeam = null;
+  cachedTeamExpiry = 0;
+}
+
 async function teamMaps(): Promise<TeamMaps> {
-  if (cachedTeam) return cachedTeam;
+  if (cachedTeam && Date.now() < cachedTeamExpiry) return cachedTeam;
   const { data, error } = await db().from('team_members').select('id, legacy_owner');
   if (error) throw new Error(`team_members read failed: ${error.message}`);
   const idToOwner = new Map<string, string>();
@@ -93,6 +105,7 @@ async function teamMaps(): Promise<TeamMaps> {
     ownerToId.set(row.legacy_owner.toLowerCase(), row.id);
   }
   cachedTeam = { idToOwner, ownerToId };
+  cachedTeamExpiry = Date.now() + TEAM_CACHE_TTL_MS;
   return cachedTeam;
 }
 

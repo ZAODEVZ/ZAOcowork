@@ -48,8 +48,13 @@ export async function ownerToTgIdSupabase(name: string): Promise<number | null> 
       .ilike('legacy_owner', name)
       .maybeSingle();
     if (error || !data) return null;
+    // Supabase returns BIGINT columns as strings to avoid precision loss, so
+    // `typeof tg === 'number'` was always false and this always returned null
+    // (audit A1). Coerce explicitly.
     const tg = data.telegram_id;
-    return typeof tg === 'number' ? tg : null;
+    if (tg == null) return null;
+    const n = Number(tg);
+    return Number.isFinite(n) ? n : null;
   } catch {
     return null;
   }
@@ -77,8 +82,14 @@ export async function tgIdToOwnerSupabase(tgId: number): Promise<Owner | null> {
       .select('legacy_owner')
       .eq('telegram_id', tgId)
       .maybeSingle();
-    if (error || !data?.legacy_owner) {
-      cache.set(tgId, null);
+    if (error) {
+      // Transient error (network/Supabase blip): don't cache, so a retry can
+      // succeed instead of pinning the user to Open for the process lifetime
+      // (audit A6).
+      return null;
+    }
+    if (!data?.legacy_owner) {
+      cache.set(tgId, null); // genuine "no row" — safe to cache
       return null;
     }
     const raw = String(data.legacy_owner).toLowerCase();
@@ -86,7 +97,6 @@ export async function tgIdToOwnerSupabase(tgId: number): Promise<Owner | null> {
     cache.set(tgId, owner);
     return owner;
   } catch {
-    cache.set(tgId, null);
-    return null;
+    return null; // don't cache transient failures (audit A6)
   }
 }

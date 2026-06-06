@@ -4,7 +4,7 @@ import { callClaudeApi } from './claude-api';
 import { callClaudeMax } from './claude-max';
 import { callMinimax } from './minimax';
 import { callOpenAI } from './openai';
-import { type LLMRequest, type Provider } from './types';
+import { type LLMRequest, type Provider, PROVIDERS } from './types';
 
 export async function callLLM(req: LLMRequest): Promise<string> {
   switch (req.provider) {
@@ -17,8 +17,22 @@ export async function callLLM(req: LLMRequest): Promise<string> {
   }
 }
 
-export const DEFAULT_PROVIDER: Provider = (process.env.DEFAULT_LLM_PROVIDER as Provider) ?? 'claude-max';
+// Validate DEFAULT_LLM_PROVIDER at load time. An unchecked cast meant a typo
+// (e.g. "gemini") silently became the default and every default-provider user
+// hit "unknown LLM provider" on their first message (audit A9).
+function resolveDefaultProvider(): Provider {
+  const raw = process.env.DEFAULT_LLM_PROVIDER;
+  if (!raw) return 'claude-max';
+  if ((PROVIDERS as readonly string[]).includes(raw)) return raw as Provider;
+  console.error(
+    `[llm] DEFAULT_LLM_PROVIDER="${raw}" is not a valid provider ` +
+      `(${PROVIDERS.join(', ')}). Falling back to claude-max.`,
+  );
+  return 'claude-max';
+}
+
+export const DEFAULT_PROVIDER: Provider = resolveDefaultProvider();
 export const DEFAULT_MODEL: string = process.env.DEFAULT_LLM_MODEL ?? 'haiku';
 
-export { PROVIDERS } from './types';
+export { PROVIDERS };
 export type { Provider, LLMRequest } from './types';

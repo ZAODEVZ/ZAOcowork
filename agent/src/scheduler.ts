@@ -65,6 +65,10 @@ function fmtItemShort(i: ActionItem): string {
 
 async function runMorningDigest(bot: Bot): Promise<void> {
   if (await alreadyFired('morning-digest')) return;
+  // Mark fired BEFORE the DM loop. A crash mid-loop used to leave the sentinel
+  // unwritten, so a restart re-sent the digest to everyone (audit A4). Better
+  // to risk skipping a few users on a crash than to double-blast the team.
+  await markFired('morning-digest');
   const { data } = await fetchActions();
   const view = await rosterView();
   for (const [tgId, ownerValue] of view.ownerByTgId.entries()) {
@@ -85,11 +89,12 @@ async function runMorningDigest(bot: Bot): Promise<void> {
     ];
     await sendDM(bot.api, tgId, 'morning_digest', lines.join('\n'));
   }
-  await markFired('morning-digest');
 }
 
 async function runEodCheck(bot: Bot): Promise<void> {
   if (await alreadyFired('eod-check')) return;
+  // Mark before delivery so a mid-loop crash doesn't re-send (audit A4).
+  await markFired('eod-check');
   const { data } = await fetchActions();
   const view = await rosterView();
   for (const [tgId, ownerValue] of view.ownerByTgId.entries()) {
@@ -106,7 +111,6 @@ async function runEodCheck(bot: Bot): Promise<void> {
     ];
     await sendDM(bot.api, tgId, 'eod_check', lines.join('\n'));
   }
-  await markFired('eod-check');
 }
 
 interface StalePings {
@@ -236,6 +240,9 @@ async function runFourHourNudge(bot: Bot): Promise<void> {
 
 async function runStaleAlert(bot: Bot): Promise<void> {
   if (await alreadyFired('stale-alert')) return;
+  // Mark before the loop so a mid-loop crash doesn't re-blast on restart
+  // (audit A4). The per-item pings file still throttles re-pings.
+  await markFired('stale-alert');
   const stalePath = join(COWORK_PATHS.home, 'stale-pings.json');
   let pings: StalePings = {};
   try { pings = JSON.parse(await fs.readFile(stalePath, 'utf8')) as StalePings; } catch { /* ignore */ }
@@ -261,7 +268,6 @@ async function runStaleAlert(bot: Bot): Promise<void> {
     pings[item.id] = new Date().toISOString();
   }
   await fs.writeFile(stalePath, JSON.stringify(pings, null, 2), 'utf8');
-  await markFired('stale-alert');
 }
 
 export function startScheduler(bot: Bot): { stop: () => void } {

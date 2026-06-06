@@ -181,7 +181,7 @@ export async function cmdMine(ctx: Context): Promise<void> {
   await ctx.reply(`${me} open (${mine.length}):\n${mine.map(formatItem).join('\n')}`);
 }
 
-const STATUS_ORDER: Record<ActionStatus, number> = { WIP: 0, BLOCKED: 1, TODO: 2, DONE: 3 };
+const STATUS_ORDER: Record<ActionStatus, number> = { TRIAGE: -1, WIP: 0, BLOCKED: 1, TODO: 2, DONE: 3 };
 
 // v2.19 - /list with no args shows a compact summary + tappable owner/status
 // filters instead of dumping every open item. A 100+ task list as one wall is
