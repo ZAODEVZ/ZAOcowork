@@ -94,8 +94,20 @@ function callerDisplayName(ctx: Context): string {
   return ctx.from?.first_name ?? ctx.from?.username ?? `user:${ctx.from?.id ?? '?'}`;
 }
 
-function isAdmin(ctx: Context): boolean {
-  return ADMIN_IDS.has(String(ctx.from?.id ?? ''));
+// Admin = listed in the ADMIN_USER_IDS env OR flagged admin in the team.json
+// roster. Was env-only, which locked roster-flagged admins out of /daily while
+// they could still /adduser (security audit A3 / A8 — the two admin systems
+// disagreed). Union keeps both working and converges them.
+async function isAdmin(ctx: Context): Promise<boolean> {
+  const id = ctx.from?.id;
+  if (id == null) return false;
+  if (ADMIN_IDS.has(String(id))) return true;
+  try {
+    const view = await rosterView();
+    return view.adminUserIds.has(id);
+  } catch {
+    return false;
+  }
 }
 
 function formatItem(item: ActionItem): string {
@@ -581,7 +593,9 @@ export async function cmdPing(ctx: Context, args: string): Promise<void> {
     }
     msgTokens.push(t);
   }
-  const message = msgTokens.join(' ').trim();
+  // Cap relayed free-text so /ping can't be used to fire unbounded DMs at a
+  // teammate (security audit A3). The DM is already labelled with the sender.
+  const message = msgTokens.join(' ').trim().slice(0, 280);
 
   // Resolve target tg_id - Supabase first, GitHub roster fallback.
   let tgId = await ownerToTgIdSupabase(target);
@@ -789,7 +803,7 @@ export async function cmdSetPrio(ctx: Context, args: string): Promise<void> {
 }
 
 export async function cmdDaily(ctx: Context): Promise<void> {
-  if (!isAdmin(ctx)) {
+  if (!(await isAdmin(ctx))) {
     await ctx.reply('admin only');
     return;
   }

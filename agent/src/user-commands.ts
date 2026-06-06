@@ -37,6 +37,12 @@ export async function cmdSetModel(ctx: Context, args: string): Promise<void> {
     await ctx.reply(`unknown provider "${provider}". valid: ${PROVIDERS.join(', ')}`);
     return;
   }
+  // The model string is later passed as a CLI flag value to the claude binary
+  // (claude-max). Constrain it to a safe slug shape (security audit A3).
+  if (!/^[A-Za-z0-9._:\/-]{1,100}$/.test(model)) {
+    await ctx.reply("invalid model name. use letters, digits, and . _ : / - only.");
+    return;
+  }
   await setUserModel(id, provider, model);
   await ctx.reply(`saved: ${provider} / ${model}`);
 }
@@ -73,6 +79,12 @@ export async function cmdSetKey(ctx: Context, args: string): Promise<void> {
   }
   if (provider === 'claude-max') {
     await ctx.reply('claude-max uses local CLI OAuth - no per-user key needed. ignored.');
+    return;
+  }
+  // Validate shape before storing (it's later sent as a Bearer header). Don't
+  // echo the key back (security audit A3).
+  if (!/^[A-Za-z0-9._-]{10,200}$/.test(key)) {
+    await ctx.reply("that doesn't look like a valid API key (expected 10-200 chars: letters, digits, . _ -). not saved.");
     return;
   }
   await setUserApiKey(id, provider, key);
