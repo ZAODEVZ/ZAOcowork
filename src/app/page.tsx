@@ -13,6 +13,7 @@ import { ForecastWidget } from "@/components/ForecastWidget";
 import { FocusWidget } from "@/components/FocusWidget";
 import { computeTopFive } from "@/lib/focus";
 import { SlaGridChip } from "@/components/SlaGridChip";
+import { getDependencyCounts } from "@/lib/dependencies";
 
 export const dynamic = "force-dynamic";
 
@@ -46,8 +47,13 @@ export default async function Page({
   if (!user) return <PublicLanding />;
   // Forecast runs in parallel with getActions() since they touch the same
   // table - both reads happen via the supabase client in the same request,
-  // and the forecast does its own getActions internally.
-  const [doc, forecast] = await Promise.all([getActions(), computeForecast(urlBrand)]);
+  // and the forecast does its own getActions internally. Also fetch dependency
+  // counts for board chip display.
+  const [doc, forecast, depCounts] = await Promise.all([
+    getActions(),
+    computeForecast(urlBrand),
+    getDependencyCounts(),
+  ]);
 
   // Unified board: every category in one place. Brand is a filter via the URL
   // (?brand=X from the top nav), category remains an in-board dropdown. Stat
@@ -166,6 +172,7 @@ export default async function Page({
             urlProjectSlug={urlProjectSlug}
             urlProjectName={urlProject?.name ?? null}
             projects={activeProjects}
+            depCounts={depCounts}
           />
         </div>
 

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getActions, saveActions, type ActionItem } from "@/lib/data";
 import { logAudit } from "@/lib/audit";
+import { onTaskClosed } from "@/lib/dep-flow";
 
 // GitHub webhook handler (doc 763 F3).
 //
@@ -195,17 +196,23 @@ export async function POST(req: NextRequest) {
         });
 
         // Update tasks with matching legacy_id or legacy_source to 'done' status
-        const { error: updateError } = await supabase
+        const { data: closedRows, error: updateError } = await supabase
           .from("tasks")
           .update({ status: "done" })
           .or(`legacy_id.eq.pr-test-${n},legacy_source.eq.pr-auto:${n}`)
-          .neq("status", "done");
+          .neq("status", "done")
+          .select("id");
 
         if (updateError) {
           console.error(
             `Failed to auto-close tasks for PR #${n} merge:`,
             updateError
           );
+        } else {
+          // Unblock dependent tasks for each closed row
+          for (const row of closedRows ?? []) {
+            await onTaskClosed(row.id as string);
+          }
         }
 
         // Upsert PR state into task_source_cache for audit trail

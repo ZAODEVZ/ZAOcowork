@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { destroySession, requireSession, requireAdmin, isLead, userLabel } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { onTaskClosed, recomputeBlockedState } from "@/lib/dep-flow";
+import { addDependency, removeDependency } from "@/lib/dependencies";
 import {
   getActions,
   saveActions,
@@ -213,6 +215,10 @@ export async function updateItem(form: FormData): Promise<void> {
   }
   doc.items[idx] = next;
   await saveActions(doc, user, `edit #${id}`);
+  // Unblock dependent tasks when manually transitioning to DONE
+  if (prev.status !== "DONE" && next.status === "DONE") {
+    await onTaskClosed(id);
+  }
   revalidateAll();
 }
 
@@ -313,8 +319,13 @@ export async function patchField(form: FormData): Promise<void> {
     default:
       return;
   }
+  const shouldUnblockAfterSave = field === "status" && cur.status !== "DONE" && next.status === "DONE";
   doc.items[idx] = next;
   await saveActions(doc, user, `${field} #${id}`);
+  // Unblock dependent tasks when status changes to DONE
+  if (shouldUnblockAfterSave) {
+    await onTaskClosed(id);
+  }
   revalidateAll();
 }
 
@@ -434,6 +445,10 @@ export async function submitUpdate(form: FormData): Promise<void> {
     ],
   };
   await saveActions(doc, user, `update #${id}`);
+  // Unblock dependent tasks when update approves a DONE transition
+  if (!requiresApproval && toStatus === "DONE" && item.status !== "DONE") {
+    await onTaskClosed(id);
+  }
   revalidateAll();
 }
 
@@ -495,6 +510,10 @@ export async function reviewUpdate(form: FormData): Promise<void> {
     ],
   };
   await saveActions(doc, user, `review #${id}`);
+  // Unblock dependent tasks when review approves a DONE transition
+  if (decision === "approved" && reviewed?.toStatus === "DONE" && item.status !== "DONE") {
+    await onTaskClosed(id);
+  }
   revalidateAll();
 }
 
@@ -769,6 +788,33 @@ export async function logout(): Promise<void> {
   // Land on the public homepage after sign out (post-2026-05-23 PR that
   // opened the homepage to anyone). They can re-enter via /login if they want.
   redirect("/");
+}
+
+// ============================================================================
+// Task Dependencies (unblock on close + add/remove actions)
+// ============================================================================
+
+export async function addTaskDependency(form: FormData): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireSession();
+  if (!user) return { ok: false, error: "unauthorized" };
+  const blockerId = String(form.get("blockerId") ?? "");
+  const blockedId = String(form.get("blockedId") ?? "");
+  if (!blockerId || !blockedId) return { ok: false, error: "missing ids" };
+  const res = await addDependency(blockerId, blockedId, user);
+  if (res.ok) await recomputeBlockedState([blockedId]);
+  revalidatePath("/");
+  return res;
+}
+
+export async function removeTaskDependency(form: FormData): Promise<{ ok: boolean }> {
+  const user = await requireSession();
+  if (!user) return { ok: false };
+  const blockerId = String(form.get("blockerId") ?? "");
+  const blockedId = String(form.get("blockedId") ?? "");
+  await removeDependency(blockerId, blockedId);
+  await recomputeBlockedState([blockedId]);
+  revalidatePath("/");
+  return { ok: true };
 }
 
 // ============================================================================
@@ -1127,6 +1173,14 @@ export async function bulkMarkDone(form: FormData): Promise<void> {
   }
   if (touched > 0) {
     await saveActions(doc, user, `bulk mark done ${touched} item${touched === 1 ? "" : "s"}`);
+    // Unblock dependent tasks for each marked-done item (leads only)
+    if (isLead(user)) {
+      for (const it of doc.items) {
+        if (ids.has(it.id) && it.status === "DONE") {
+          await onTaskClosed(it.id);
+        }
+      }
+    }
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
