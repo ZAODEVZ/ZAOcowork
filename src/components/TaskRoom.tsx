@@ -247,11 +247,12 @@ function OriginBlock({ item }: { item: ActionItem }) {
       return;
     }
 
+    let cancelled = false;
     setLoading(true);
     fetch(`/api/source-status?pr=${encodeURIComponent(origin.refId)}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.ok && data.status) {
+        if (!cancelled && data.ok && data.status) {
           setLiveStatus(data.status);
         }
       })
@@ -259,9 +260,12 @@ function OriginBlock({ item }: { item: ActionItem }) {
         // Silently ignore fetch errors
       })
       .finally(() => {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       });
-  }, [origin]);
+    return () => {
+      cancelled = true;
+    };
+  }, [origin.kind, origin.needsLiveStatus, origin.refId]);
 
   const stateColors: Record<"open" | "closed" | "merged" | "unknown", string> = {
     open: "bg-sky-500/20 text-sky-200 border-sky-500/30",
@@ -277,7 +281,7 @@ function OriginBlock({ item }: { item: ActionItem }) {
         <a
           href={origin.url}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="text-xs text-blue-300 hover:text-blue-200 transition underline"
         >
           {origin.label}
