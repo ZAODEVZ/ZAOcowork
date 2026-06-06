@@ -103,7 +103,7 @@ export async function closeMergedSources(): Promise<AutoCloseResult> {
       entity_type: "task",
       entity_id: row.id,
       entity_label: row.legacy_id || row.id,
-      action: "status-change",
+      action: "status_change",
       detail: `auto-closed: PR #${prNumber} merged`,
     });
   }
