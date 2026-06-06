@@ -78,7 +78,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 };
 
 const TASK_COLUMNS =
-  "id, legacy_id, title, status, owner_id, created_by, completed_by, category, " +
+  "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
   "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
   "updated_at, metadata, brands, service_class, archived_at, project_id, source";
 
@@ -103,6 +103,7 @@ function db(): SupabaseClient {
 interface TaskRow {
   id: string;
   legacy_id: string | null;
+  legacy_source: string | null;
   title: string;
   status: string;
   owner_id: string | null;
@@ -233,6 +234,9 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   // Doc 765 Phase I columns
   if (row.project_id) item.projectId = row.project_id;
   if (row.source) item.source = row.source as TaskSource;
+  // Legacy identity fields for source resolver (origin link generation)
+  if (row.legacy_id) item.legacyId = row.legacy_id;
+  if (row.legacy_source) item.legacySource = row.legacy_source;
   // PR linkage still lives in metadata for now (no dedicated column yet)
   if (typeof meta.prUrl === "string") item.prUrl = meta.prUrl;
   if (typeof meta.prNumber === "number") item.prNumber = meta.prNumber;

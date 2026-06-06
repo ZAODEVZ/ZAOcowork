@@ -180,6 +180,12 @@ export type ActionItem = {
   // creation time by the writer, never re-set after. Defaults to
   // 'human-web' for the existing web QuickAdd path.
   source?: TaskSource;
+  // Legacy identity fields - track origin (GitHub PR, research doc, meeting,
+  // or cowork-actions.json). Used by source-resolver to build origin links.
+  // These are sourced from the database columns during read; immutable per
+  // (legacy_source, legacy_id) unique constraint.
+  legacyId?: string | null;
+  legacySource?: string;
 };
 
 // Provenance taxonomy (doc 765 decision 2). Every task carries exactly
