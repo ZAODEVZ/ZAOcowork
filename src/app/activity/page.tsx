@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
 import { getActions, ageDays, relativeTime } from "@/lib/data";
+import { matchMentions } from "@/lib/mentions";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 
@@ -22,7 +23,6 @@ interface FeedEntry {
 
 const TZ = "America/New_York";
 
-// Author avatar tint, keyed by login id. Falls back to neutral for unknowns.
 const AVATAR_TINT: Record<string, string> = {
   zaal: "bg-blue-500/30 text-blue-100",
   iman: "bg-purple-500/30 text-purple-100",
@@ -37,12 +37,9 @@ function tint(authorId: string): string {
 }
 
 function etDateKey(iso: string): string {
-  // en-CA gives YYYY-MM-DD; pin to ET so day boundaries match the team.
   return new Date(iso).toLocaleDateString("en-CA", { timeZone: TZ });
 }
 
-// Highlight @mentions so it's obvious who got pinged. Renders plain text
-// otherwise (server component, no client JS needed).
 function withMentions(text: string): ReactNode {
   const re = /(^|[^\w@])(@[A-Za-z0-9_]{2,32})/g;
   const parts: ReactNode[] = [];
@@ -64,17 +61,51 @@ function withMentions(text: string): ReactNode {
   return parts;
 }
 
-export default async function ActivityPage() {
+function Chip({
+  href,
+  label,
+  active,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      prefetch={false}
+      className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition whitespace-nowrap ${
+        active
+          ? "bg-sky-500/20 text-sky-200 border-sky-500/40"
+          : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+export default async function ActivityPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ type?: string; person?: string; mentions?: string }>;
+}) {
   const user = await getSession();
   if (!user) redirect("/login");
+  const sp = await searchParams;
+  const curType: "all" | "comment" | "update" =
+    sp.type === "comment" || sp.type === "update" ? sp.type : "all";
+  const curPerson = (sp.person ?? "").trim().toLowerCase();
+  const curMentions = sp.mentions === "me";
+
   const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
 
-  // Flatten every comment + update across all tasks into one chronological feed.
-  const entries: FeedEntry[] = [];
+  // Flatten every comment + update across all tasks.
+  const all: FeedEntry[] = [];
   for (const it of doc.items) {
     for (const c of it.comments ?? []) {
       if (!c.content) continue;
-      entries.push({
+      all.push({
         kind: "comment",
         taskId: it.id,
         taskTitle: it.title,
@@ -86,7 +117,7 @@ export default async function ActivityPage() {
     }
     for (const u of it.updates ?? []) {
       if (!u.content) continue;
-      entries.push({
+      all.push({
         kind: "update",
         taskId: it.id,
         taskTitle: it.title,
@@ -97,13 +128,49 @@ export default async function ActivityPage() {
       });
     }
   }
-  entries.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
-  const recent = entries.slice(0, 150);
-  const commentCount = entries.filter((e) => e.kind === "comment").length;
+  all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // Group by ET calendar day, preserving the newest-first order.
+  // People chips reflect the current type filter (who has this kind of activity).
+  const typeScoped = all.filter((e) => curType === "all" || e.kind === curType);
+  const authorMap = new Map<string, string>();
+  for (const e of typeScoped) {
+    const id = e.authorId.trim().toLowerCase();
+    if (id && !authorMap.has(id)) authorMap.set(id, e.author);
+  }
+  const people = [...authorMap.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+
+  // Apply person + "my mentions" filters.
+  const meAliases = [userLabel(user), user];
+  const filtered = typeScoped.filter((e) => {
+    if (curPerson && e.authorId.trim().toLowerCase() !== curPerson) return false;
+    if (
+      curMentions &&
+      matchMentions(e.content, [{ key: "me", aliases: meAliases }]).length === 0
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const recent = filtered.slice(0, 150);
+
+  // Build hrefs that merge current filters with an override.
+  const hrefFor = (o: {
+    type?: "all" | "comment" | "update";
+    person?: string;
+    mentions?: boolean;
+  }): string => {
+    const type = o.type ?? curType;
+    const person = o.person ?? curPerson;
+    const mentions = o.mentions ?? curMentions;
+    const q = new URLSearchParams();
+    if (type !== "all") q.set("type", type);
+    if (person) q.set("person", person);
+    if (mentions) q.set("mentions", "me");
+    const s = q.toString();
+    return s ? `/activity?${s}` : "/activity";
+  };
+
+  // Day grouping (ET), newest first.
   const todayKey = etDateKey(new Date().toISOString());
   const yesterdayKey = etDateKey(new Date(Date.now() - 86_400_000).toISOString());
   const dayLabel = (key: string): string => {
@@ -157,17 +224,45 @@ export default async function ActivityPage() {
         </header>
 
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-6">
-          <div className="mb-5 flex items-baseline gap-2">
+          <div className="mb-4 flex items-baseline gap-2">
             <span className="h-2 w-2 rounded-full bg-sky-400" />
             <h2 className="text-sm font-semibold text-white/85">Recent activity</h2>
             <span className="text-xs text-white/35">
-              {commentCount} comment{commentCount === 1 ? "" : "s"} · all tasks
+              {filtered.length} shown
             </span>
+          </div>
+
+          {/* Filters */}
+          <div className="mb-5 space-y-2">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Chip href={hrefFor({ type: "all" })} label="All" active={curType === "all"} />
+              <Chip href={hrefFor({ type: "comment" })} label="Comments" active={curType === "comment"} />
+              <Chip href={hrefFor({ type: "update" })} label="Updates" active={curType === "update"} />
+              <span className="mx-1 h-4 w-px bg-white/10" />
+              <Chip
+                href={hrefFor({ mentions: !curMentions })}
+                label="✦ My mentions"
+                active={curMentions}
+              />
+            </div>
+            {people.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Chip href={hrefFor({ person: "" })} label="Everyone" active={!curPerson} />
+                {people.map(([id, name]) => (
+                  <Chip
+                    key={id}
+                    href={hrefFor({ person: curPerson === id ? "" : id })}
+                    label={name}
+                    active={curPerson === id}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {recent.length === 0 ? (
             <p className="text-sm text-white/40 py-10 text-center">
-              No comments or updates yet.
+              Nothing matches these filters.
             </p>
           ) : (
             <div className="space-y-6">
