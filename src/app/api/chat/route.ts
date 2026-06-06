@@ -2,12 +2,18 @@ import { NextRequest } from "next/server";
 import { requireSession, userLabel, type SessionUser } from "@/lib/auth";
 import { getActions, ageDays, cycleDays, type ActionItem } from "@/lib/data";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidChatModel, DEFAULT_CHAT_MODEL } from "@/lib/chat-models";
 
 // getActions() touches node:fs / fetch and auth touches node:crypto — keep on the
 // Node.js runtime. force-dynamic so the board snapshot is never cached.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Primary provider is OpenRouter (lets users pick any model in chat-models.ts).
+// MiniMax stays as a fallback so an unset/failed OpenRouter key still works if
+// MINIMAX_API_KEY is configured. Both speak OpenAI-style SSE, so the stream
+// parsing below is shared.
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MINIMAX_URL =
   process.env.MINIMAX_API_URL || "https://api.minimax.io/v1/chat/completions";
 const MINIMAX_MODEL = process.env.MINIMAX_MODEL || "MiniMax-M2.7";
@@ -187,10 +193,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const apiKey = process.env.MINIMAX_API_KEY;
-  if (!apiKey) {
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  const minimaxKey = process.env.MINIMAX_API_KEY;
+  if (!openrouterKey && !minimaxKey) {
     return Response.json(
-      { error: "AI chat is not configured — set MINIMAX_API_KEY." },
+      { error: "AI chat is not configured — set OPENROUTER_API_KEY." },
       { status: 503 },
     );
   }
@@ -201,6 +208,11 @@ export async function POST(req: NextRequest) {
   } catch {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+
+  // Model: only honored on the OpenRouter path; validated against the allowlist
+  // so the client can't request an arbitrary/expensive model.
+  const requestedModel = (body as { model?: unknown })?.model;
+  const model = isValidChatModel(requestedModel) ? requestedModel : DEFAULT_CHAT_MODEL;
 
   const raw = (body as { messages?: unknown })?.messages;
   if (!Array.isArray(raw) || !raw.every(isChatMessage)) {
@@ -219,16 +231,30 @@ export async function POST(req: NextRequest) {
 
   const doc = await getActions();
 
+  // Prefer OpenRouter (model choice); fall back to MiniMax if only that's set.
+  const useOpenRouter = Boolean(openrouterKey);
+  const providerName = useOpenRouter ? "OpenRouter" : "MiniMax";
+  const url = useOpenRouter ? OPENROUTER_URL : MINIMAX_URL;
+  const apiKey = useOpenRouter ? openrouterKey! : minimaxKey!;
+  const upstreamModel = useOpenRouter ? model : MINIMAX_MODEL;
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+  if (useOpenRouter) {
+    // OpenRouter attribution headers (used for its dashboard/rankings).
+    headers["HTTP-Referer"] =
+      process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.thezao.xyz";
+    headers["X-Title"] = "The Zao Co-Works";
+  }
+
   let upstream: Response;
   try {
-    upstream = await fetch(MINIMAX_URL, {
+    upstream = await fetch(url, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers,
       body: JSON.stringify({
-        model: MINIMAX_MODEL,
+        model: upstreamModel,
         stream: true,
         max_tokens: 2048,
         messages: [
@@ -240,13 +266,13 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "upstream fetch failed";
-    return Response.json({ error: `MiniMax unreachable: ${msg}` }, { status: 502 });
+    return Response.json({ error: `${providerName} unreachable: ${msg}` }, { status: 502 });
   }
 
   if (!upstream.ok || !upstream.body) {
     const detail = (await upstream.text()).slice(0, 300);
     return Response.json(
-      { error: `MiniMax error ${upstream.status}`, detail },
+      { error: `${providerName} error ${upstream.status}`, detail },
       { status: 502 },
     );
   }

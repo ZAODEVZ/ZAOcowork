@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CHAT_MODELS, DEFAULT_CHAT_MODEL } from "@/lib/chat-models";
 
 type Role = "user" | "assistant";
 type Message = { role: Role; content: string };
+
+const MODEL_KEY = "zao-chat-model-v1";
 
 const SUGGESTIONS = [
   "What should I work on next?",
@@ -20,9 +23,17 @@ export function Chat() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [model, setModel] = useState(DEFAULT_CHAT_MODEL);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+
+  // Restore the last-picked model.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.localStorage.getItem(MODEL_KEY);
+    if (saved && CHAT_MODELS.some((m) => m.id === saved)) setModel(saved);
+  }, []);
 
   // Stick to the bottom as tokens stream in.
   useEffect(() => {
@@ -51,7 +62,7 @@ export function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next }),
+        body: JSON.stringify({ messages: next, model }),
         signal: controller.signal,
       });
 
@@ -212,9 +223,30 @@ export function Chat() {
           </button>
         )}
       </div>
-      <p className="mt-1.5 text-[10px] text-white/30">
-        Enter to send · Shift+Enter for a new line · the assistant reads the live board but cannot edit it
-      </p>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <p className="text-[10px] text-white/30">
+          Enter to send · Shift+Enter for a new line · reads the live board, can&apos;t edit it
+        </p>
+        <label className="flex items-center gap-1.5 text-[10px] text-white/30">
+          <span>Model</span>
+          <select
+            value={model}
+            onChange={(e) => {
+              setModel(e.target.value);
+              if (typeof window !== "undefined") {
+                window.localStorage.setItem(MODEL_KEY, e.target.value);
+              }
+            }}
+            className="rounded-md bg-[#0b1220] border border-white/10 px-1.5 py-1 text-[10px] text-white/70 focus:outline-none focus:border-teal-400/60"
+          >
+            {CHAT_MODELS.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
     </div>
   );
 }
