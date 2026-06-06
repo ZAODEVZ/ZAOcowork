@@ -204,6 +204,11 @@ export async function updateItem(form: FormData): Promise<void> {
   if (idx < 0) return;
   const prev = doc.items[idx];
   const next = readForm(form, id, user, prev);
+  // Workers can't promote to DONE via the full-form Save either — must go
+  // through review, same as patchField/bulkSetStatus/todoProcess (security audit).
+  if (!isLead(user) && next.status === "DONE" && prev.status !== "DONE") {
+    next.status = prev.status;
+  }
   // Log status change in activity
   if (prev.status !== next.status) {
     next.activity = [
@@ -630,6 +635,10 @@ export async function claimTask(form: FormData): Promise<void> {
   const idx = doc.items.findIndex((x) => x.id === id);
   if (idx < 0) return;
   const cur = doc.items[idx];
+  // Only unowned/open or explicitly-claimable tasks can be claimed — otherwise
+  // any user could reassign a task already owned by someone else (security audit).
+  const ownerLc = String(cur.owner ?? "").trim().toLowerCase();
+  if (!(cur.claimable === true || ownerLc === "" || ownerLc === "open")) return;
   const ownerName = userLabel(user);
   const now = new Date().toISOString();
   doc.items[idx] = {

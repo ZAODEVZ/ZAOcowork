@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { buildWeeklyDigest, digestToHtml, digestToText } from "@/lib/digest";
 import { getSession } from "@/lib/auth";
 
@@ -29,7 +30,14 @@ export async function GET(req: NextRequest) {
   // Auth: either a session cookie OR a bearer matching DIGEST_CRON_TOKEN.
   const cronToken = process.env.DIGEST_CRON_TOKEN;
   const auth = req.headers.get("authorization") ?? "";
-  const bearerOk = cronToken && auth === `Bearer ${cronToken}`;
+  // Timing-safe compare so the token can't be recovered via a timing side
+  // channel on this public route (security audit).
+  let bearerOk = false;
+  if (cronToken) {
+    const provided = Buffer.from(auth);
+    const expected = Buffer.from(`Bearer ${cronToken}`);
+    bearerOk = provided.length === expected.length && timingSafeEqual(provided, expected);
+  }
 
   if (!bearerOk) {
     // /api/digest is exempt from the middleware cookie check (so the cron can
