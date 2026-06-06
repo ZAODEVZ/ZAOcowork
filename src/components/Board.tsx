@@ -206,6 +206,19 @@ export function Board({
   const [dailyOpen, setDailyOpen] = useState(false);
   const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
   const prevById = useRef<Map<string, ActionItem>>(new Map());
+  const deepLinkDone = useRef(false);
+
+  // Deep link: ?task=<id> (e.g. from a "you were mentioned" Telegram DM) opens
+  // the TaskRoom once, if the task lives in this portal's items.
+  useEffect(() => {
+    if (deepLinkDone.current || typeof window === "undefined") return;
+    const wanted = new URLSearchParams(window.location.search).get("task");
+    if (!wanted) return;
+    if (items.some((it) => it.id === wanted)) {
+      deepLinkDone.current = true;
+      setTaskRoomId(wanted);
+    }
+  }, [items]);
 
   const userLabel =
     currentUser.trim().toLowerCase() === "zaal"

@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { relativeTime } from "@/lib/types";
 import type { ActionItem } from "@/lib/types";
+import { isUserMentioned } from "@/lib/mentions";
 
-type NotifType = "assigned" | "approval_needed" | "open_task" | "claimed";
+type NotifType = "assigned" | "approval_needed" | "open_task" | "claimed" | "mentioned";
 
 interface Notification {
   id: string;
@@ -19,6 +20,7 @@ interface Snapshot {
   assignedIds: string[];
   openIds: string[];
   pendingUpdateIds: string[];
+  mentionCommentIds?: string[];
 }
 
 const TYPE_DOT: Record<NotifType, string> = {
@@ -26,6 +28,7 @@ const TYPE_DOT: Record<NotifType, string> = {
   approval_needed: "bg-amber-400",
   open_task: "bg-emerald-400",
   claimed: "bg-purple-400",
+  mentioned: "bg-pink-400",
 };
 
 function genId(): string {
@@ -86,8 +89,20 @@ export function NotificationBell({
       }
     }
 
+    // Comments that @mention me, posted by someone else
+    const mentionCommentIds: string[] = [];
+    for (const it of items) {
+      for (const c of it.comments || []) {
+        if (String(c.userId).toLowerCase() === userKey) continue;
+        if (isUserMentioned(c.content, userKey)) mentionCommentIds.push(c.id);
+      }
+    }
+
     // Persist updated snapshot
-    window.localStorage.setItem(snapKey, JSON.stringify({ assignedIds, openIds, pendingUpdateIds }));
+    window.localStorage.setItem(
+      snapKey,
+      JSON.stringify({ assignedIds, openIds, pendingUpdateIds, mentionCommentIds }),
+    );
 
     // No previous snapshot = first ever visit, initialize only
     if (!snap) return;
@@ -98,7 +113,24 @@ export function NotificationBell({
     const prevAssigned = new Set(snap.assignedIds);
     const prevOpen = new Set(snap.openIds);
     const prevPending = new Set(snap.pendingUpdateIds);
+    const prevMentions = new Set(snap.mentionCommentIds ?? []);
     const curOpenSet = new Set(openIds);
+
+    // New comments that @mention me
+    for (const id of mentionCommentIds) {
+      if (prevMentions.has(id)) continue;
+      for (const it of items) {
+        const c = (it.comments || []).find((x) => x.id === id);
+        if (c) {
+          newNotifs.push({
+            id: genId(), type: "mentioned", itemId: it.id,
+            message: `${c.displayName} mentioned you: ${it.title}`,
+            read: false, createdAt: now,
+          });
+          break;
+        }
+      }
+    }
 
     // Tasks newly assigned to me
     for (const id of assignedIds) {
@@ -264,7 +296,7 @@ export function NotificationBell({
                 <div className="text-2xl mb-2">🔔</div>
                 <p className="text-sm text-white/40">No notifications yet</p>
                 <p className="text-[11px] text-white/25 mt-1">
-                  You&apos;ll see task assignments, open tasks, and review requests here.
+                  You&apos;ll see task assignments, @mentions, open tasks, and review requests here.
                 </p>
               </div>
             ) : (

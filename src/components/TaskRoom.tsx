@@ -21,6 +21,31 @@ import {
   relativeTime,
 } from "@/lib/types";
 import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem } from "@/app/actions";
+import { MENTIONABLE_USERS } from "@/lib/mentions";
+
+const KNOWN_HANDLES = new Set(MENTIONABLE_USERS.flatMap((u) => u.aliases));
+
+// Render comment text with known @mentions highlighted. Unknown @handles are
+// left as plain text. Preserves the surrounding whitespace-pre-wrap layout.
+function renderCommentBody(text: string): React.ReactNode {
+  const re = /(^|[^\w@])(@[a-zA-Z0-9_]+)/g;
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  let key = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (!KNOWN_HANDLES.has(m[2].slice(1).toLowerCase())) continue;
+    const start = m.index + m[1].length;
+    if (start > last) parts.push(text.slice(last, start));
+    parts.push(
+      <span key={key++} className="text-blue-300 font-medium">{m[2]}</span>,
+    );
+    last = start + m[2].length;
+  }
+  if (parts.length === 0) return text;
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TODO: "TO DO",
@@ -479,7 +504,7 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
                       {" · "}
                       {relativeTime(c.createdAt)}
                     </div>
-                    <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{c.content}</p>
+                    <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{renderCommentBody(c.content)}</p>
                   </div>
                 </div>
               );
@@ -733,7 +758,7 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
                 {" · "}
                 {relativeTime(c.createdAt)}
               </div>
-              <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{c.content}</p>
+              <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{renderCommentBody(c.content)}</p>
             </div>
           </div>
         ))}
@@ -750,7 +775,7 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
               handleSend();
             }
           }}
-          placeholder={`Write a comment… (${/Mac/.test(navigator?.platform ?? "") ? "⌘" : "Ctrl"}+Enter to send)`}
+          placeholder={`Write a comment… @mention to notify (${/Mac/.test(navigator?.platform ?? "") ? "⌘" : "Ctrl"}+Enter to send)`}
           rows={3}
           className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/80 placeholder-white/25 resize-none focus:outline-none"
         />

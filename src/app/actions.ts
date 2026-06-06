@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { destroySession, requireSession, isLead, userLabel } from "@/lib/auth";
+import { destroySession, requireSession, isLead, userLabel, type SessionUser } from "@/lib/auth";
 import {
   getActions,
   saveActions,
@@ -23,6 +23,13 @@ import {
   CATEGORIES,
   TASK_TYPES,
 } from "@/lib/data";
+import { resolveMentions } from "@/lib/mentions";
+import {
+  sendTelegramDM,
+  telegramIdForOwnerValue,
+  escapeHtml,
+  appBaseUrl,
+} from "@/lib/telegram-dm";
 
 function asStatus(v: unknown): ActionStatus {
   return STATUSES.includes(v as ActionStatus) ? (v as ActionStatus) : "TODO";
@@ -48,6 +55,39 @@ function asTaskType(v: unknown): TaskType | undefined {
 
 function displayName(user: string): string {
   return user.charAt(0).toUpperCase() + user.slice(1);
+}
+
+// Fire a "you were mentioned" Telegram DM to each @mentioned user who has a
+// telegram_id in the roster. Skips the comment author. Best-effort: a Telegram
+// outage or missing TELEGRAM_BOT_TOKEN must never block the comment save.
+async function dispatchMentionDMs(
+  item: ActionItem,
+  commentText: string,
+  actor: string,
+): Promise<void> {
+  const mentioned = resolveMentions(commentText);
+  if (mentioned.length === 0) return;
+  const actorKey = actor.trim().toLowerCase();
+  const actorName = userLabel(actor as SessionUser);
+  const base = appBaseUrl();
+  const url = base ? `${base}/?task=${encodeURIComponent(item.id)}` : "";
+  const excerpt = commentText.length > 180 ? `${commentText.slice(0, 177)}…` : commentText;
+
+  await Promise.all(
+    mentioned.map(async (u) => {
+      if (u.key === actorKey) return; // don't DM yourself
+      const tgId = telegramIdForOwnerValue(u.ownerValue);
+      if (tgId == null) return; // no telegram_id on file → skip silently
+      const lines = [
+        `👋 <b>${escapeHtml(actorName)}</b> mentioned you in a comment on`,
+        `<b>#${escapeHtml(item.id)}</b> — ${escapeHtml(item.title)}`,
+        ``,
+        `"${escapeHtml(excerpt)}"`,
+      ];
+      if (url) lines.push(``, `👉 <a href="${url}">Open task</a>`);
+      await sendTelegramDM(tgId, lines.join("\n"));
+    }),
+  );
 }
 
 function makeActivity(
@@ -271,6 +311,7 @@ export async function addComment(form: FormData): Promise<void> {
     ],
   };
   await saveActions(doc, user, `comment on #${id}`);
+  await dispatchMentionDMs(doc.items[idx], content, user);
   revalidateAll();
 }
 
