@@ -177,5 +177,77 @@ export async function POST(req: NextRequest) {
     await saveActions(doc, actor, `github: pr_${action} touched ${touched} task${touched === 1 ? "" : "s"}`);
   }
 
+  // Auto-close tasks linked by legacy_id/legacy_source when PR merges (reverse mapping).
+  // These are tasks auto-created from PR content and tagged with legacy_id="pr-test-<N>" or
+  // legacy_source="pr-auto:<N>". When the PR merges, we close them automatically.
+  if (pr.merged) {
+    const n = String(pr.number);
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+
+      if (!supabaseUrl || !supabaseServiceKey) {
+        console.error("Supabase credentials not configured for PR merge auto-close");
+      } else {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: { persistSession: false },
+        });
+
+        // Update tasks with matching legacy_id or legacy_source to 'done' status
+        const { error: updateError } = await supabase
+          .from("tasks")
+          .update({ status: "done" })
+          .or(`legacy_id.eq.pr-test-${n},legacy_source.eq.pr-auto:${n}`)
+          .neq("status", "done");
+
+        if (updateError) {
+          console.error(
+            `Failed to auto-close tasks for PR #${n} merge:`,
+            updateError
+          );
+        }
+
+        // Upsert PR state into task_source_cache for audit trail
+        const { error: cacheError } = await supabase
+          .from("task_source_cache")
+          .upsert(
+            {
+              ref_kind: "pr",
+              ref_id: n,
+              state: "merged",
+              title: pr.title,
+              url: pr.html_url,
+              fetched_at: new Date().toISOString(),
+            },
+            {
+              onConflict: "ref_kind,ref_id",
+            }
+          );
+
+        if (cacheError) {
+          console.error(
+            `Failed to update task_source_cache for PR #${n}:`,
+            cacheError
+          );
+        }
+
+        // Log the auto-close event
+        await logAudit({
+          actor: "system-autoclose",
+          entity_type: "task",
+          entity_id: `pr-${n}`,
+          entity_label: `pr-test-${n}`,
+          action: "status_change",
+          detail: `auto-closed via webhook: PR #${n} merged`,
+        });
+      }
+    } catch (err) {
+      // Log error but don't crash - GitHub will retry on 5xx, and we don't want
+      // a temporary DB hiccup to wedge the webhook.
+      console.error("Error in PR merge auto-close logic:", err);
+    }
+  }
+
   return NextResponse.json({ ok: true, touched, taskIds, action });
 }

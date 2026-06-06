@@ -24,6 +24,7 @@ import {
   relativeTime,
 } from "@/lib/types";
 import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem } from "@/app/actions";
+import { resolveSource } from "@/lib/source-resolver";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TRIAGE: "TRIAGE",
@@ -228,6 +229,81 @@ export function TaskRoom({
   );
 }
 
+function OriginBlock({ item }: { item: ActionItem }) {
+  const origin = resolveSource(item);
+
+  if (origin.kind === "none" || !origin.url) {
+    return null;
+  }
+
+  const [liveStatus, setLiveStatus] = useState<{
+    state: "open" | "closed" | "merged" | "unknown";
+    title: string | null;
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (origin.kind !== "pr" || !origin.needsLiveStatus || !origin.refId) {
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/source-status?pr=${encodeURIComponent(origin.refId)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled && data.ok && data.status) {
+          setLiveStatus(data.status);
+        }
+      })
+      .catch(() => {
+        // Silently ignore fetch errors
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [origin.kind, origin.needsLiveStatus, origin.refId]);
+
+  const stateColors: Record<"open" | "closed" | "merged" | "unknown", string> = {
+    open: "bg-sky-500/20 text-sky-200 border-sky-500/30",
+    closed: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30",
+    merged: "bg-emerald-500/20 text-emerald-200 border-emerald-500/30",
+    unknown: "hidden",
+  };
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Origin</div>
+      <div className="flex items-center gap-2">
+        <a
+          href={origin.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-blue-300 hover:text-blue-200 transition underline"
+        >
+          {origin.label}
+          <span className="ml-1 inline">↗</span>
+        </a>
+        {origin.kind === "pr" && liveStatus && (
+          <span
+            className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
+              stateColors[liveStatus.state]
+            }`}
+          >
+            {liveStatus.state}
+          </span>
+        )}
+        {origin.kind === "pr" && loading && (
+          <span className="text-[10px] text-white/45">...</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DetailsPanel({
   item,
   currentUser,
@@ -253,6 +329,7 @@ function DetailsPanel({
 
   return (
     <div className="p-5 space-y-5 flex-1">
+      <OriginBlock item={item} />
       <form action={handleSave} className="space-y-4">
         {/* Hidden sentinel so requiresApproval=false is distinguishable from not-present */}
         <input type="hidden" name="_hasRequiresApproval" value="1" />
