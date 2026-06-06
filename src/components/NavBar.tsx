@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/brands";
+import ActivityStrip from "./ActivityStrip";
 
 // NavBar's brand tabs. Phase D switched from a hardcoded BRANDS const to a
 // `brands` prop loaded server-side from the brands table. Each brand carries
@@ -62,49 +63,53 @@ export function NavBar({
   const primary = resolved.filter((b) => b.sort_order < PRIMARY_CUTOFF);
   const overflow = resolved.filter((b) => b.sort_order >= PRIMARY_CUTOFF);
 
-  // Layout note: parent is single-row flex (no wrap). The primary-tabs
+  // Layout note: parent is flex-col with header row (flex, no wrap). The primary-tabs
   // container scrolls horizontally when content overflows; the right-side
   // Assistant/Admin block stays pinned with `flex-shrink-0`. flex-wrap on
   // the parent caused the primary tabs to wrap to a hidden second row on
-  // narrow viewports (Iman bug 2026-05-26 Test 10).
+  // narrow viewports (Iman bug 2026-05-26 Test 10). ActivityStrip renders
+  // below the tabs as an unobtrusive status footer.
   return (
-    <nav className="flex items-center gap-1.5 rounded-xl bg-black/25 border border-white/10 p-1.5">
-      <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
-        <BrandTab href="/" label="General" active={onBoard && !activeBrand} color={null} />
-        {primary.map((b) => (
-          <BrandTab
-            key={b.name}
-            href={`/?brand=${encodeURIComponent(b.name)}`}
-            label={b.name}
-            active={onBoard && activeBrand === b.name}
-            color={b.color}
-          />
-        ))}
-        {overflow.length > 0 && (
-          <MoreBrandsDropdown
-            brands={overflow}
-            activeBrand={onBoard ? activeBrand : null}
-          />
-        )}
-      </div>
-      <div className="flex items-center gap-1.5 flex-shrink-0">
-        <SimpleTab
-          href="/chat"
-          label="Assistant"
-          active={onChat}
-          dot="bg-teal-400"
-          activeClass="bg-teal-500/20 text-teal-200 border-teal-500/40"
-        />
-        {showAdminTab && (
+    <nav className="flex flex-col rounded-xl bg-black/25 border border-white/10 p-1.5">
+      <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
+          <BrandTab href="/" label="General" active={onBoard && !activeBrand} color={null} />
+          {primary.map((b) => (
+            <BrandTab
+              key={b.name}
+              href={`/?brand=${encodeURIComponent(b.name)}`}
+              label={b.name}
+              active={onBoard && activeBrand === b.name}
+              color={b.color}
+            />
+          ))}
+          {overflow.length > 0 && (
+            <MoreBrandsDropdown
+              brands={overflow}
+              activeBrand={onBoard ? activeBrand : null}
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <SimpleTab
-            href="/admin"
-            label="Admin"
-            active={onAdmin}
-            dot="bg-fuchsia-400"
-            activeClass="bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40"
+            href="/chat"
+            label="Assistant"
+            active={onChat}
+            dot="bg-teal-400"
+            activeClass="bg-teal-500/20 text-teal-200 border-teal-500/40"
           />
-        )}
+          {showAdminTab && (
+            <SimpleTab
+              href="/admin"
+              label="Admin"
+              active={onAdmin}
+              dot="bg-fuchsia-400"
+              activeClass="bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40"
+            />
+          )}
+        </div>
       </div>
+      <ActivityStrip />
     </nav>
   );
 }
