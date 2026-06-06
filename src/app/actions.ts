@@ -70,7 +70,7 @@ async function dispatchMentionDMs(
   const actorKey = actor.trim().toLowerCase();
   const actorName = userLabel(actor as SessionUser);
   const base = appBaseUrl();
-  const url = base ? `${base}/?task=${encodeURIComponent(item.id)}` : "";
+  const url = base ? `${base}/todo/${encodeURIComponent(item.id)}` : "";
   const excerpt = commentText.length > 180 ? `${commentText.slice(0, 177)}…` : commentText;
 
   await Promise.all(
