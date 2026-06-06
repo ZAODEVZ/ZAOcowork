@@ -290,6 +290,11 @@ export async function patchField(form: FormData): Promise<void> {
       break;
     }
     case "archive": {
+      // Archive/unarchive is "Ask" tier (lead/admin) per doc-766 (finding #3).
+      if (!isLead(user)) {
+        const { isAdmin } = await import("@/lib/auth");
+        if (!(await isAdmin(user))) return;
+      }
       // value "1" -> archive now, "0" -> unarchive
       next.archivedAt = value === "1" ? next.updatedAt : null;
       next.activity = [
@@ -575,6 +580,9 @@ export async function todoProcess(
       doc.items.push(item);
       created++;
     } else if (action.type === "update_status") {
+      // Workers can't mark DONE directly — must go through review (mirrors
+      // patchField; doc 766 finding #3). Skip the action rather than 500.
+      if (!isLead(user) && action.newStatus === "DONE") continue;
       const idx = doc.items.findIndex((x) => x.id === action.itemId);
       if (idx >= 0) {
         const cur = doc.items[idx];
@@ -939,6 +947,9 @@ export async function bulkSetStatus(form: FormData): Promise<void> {
   const ids = idsFromForm(form);
   if (ids.length === 0) return;
   const status = asStatus(form.get("status"));
+  // Workers can't bulk-mark DONE — that must go through review (mirrors
+  // patchField; doc 766 finding #3). Other statuses stay Notify-tier.
+  if (!isLead(user) && status === "DONE") return;
   const doc = await getActions();
   const now = new Date().toISOString();
   let touched = 0;
@@ -1193,7 +1204,9 @@ export async function bulkMarkDone(form: FormData): Promise<void> {
 }
 
 export async function bulkArchive(form: FormData): Promise<void> {
-  const user = await requireSession();
+  // Archive is "Ask" tier (lead/admin) per the doc-766 permission model — was
+  // gated by requireSession only, letting any worker hide tasks (finding #3).
+  const user = await requireLeadOrAdmin();
   const ids = new Set(idsFromForm(form));
   if (ids.size === 0) return;
   const note = String(form.get("note") ?? "").trim();

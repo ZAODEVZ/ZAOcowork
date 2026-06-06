@@ -4,16 +4,24 @@ import { getSession, verifyPassword, createSession } from "@/lib/auth";
 import { PasswordInput } from "@/components/PasswordInput";
 import ZaoLogo from "../../../ZAO LOGO.jpg";
 
+// Only honor same-origin relative paths as a post-login redirect target.
+// Otherwise `/login?from=https://evil.com` (or `//evil.com`) becomes an open
+// redirect after authentication (doc 766 finding #5).
+function safeFrom(raw: string | undefined): string {
+  if (raw && raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  return "/";
+}
+
 async function loginAction(formData: FormData): Promise<void> {
   "use server";
   const password = String(formData.get("password") ?? "");
-  const from = String(formData.get("from") ?? "/");
+  const from = safeFrom(String(formData.get("from") ?? "/"));
   const user = await verifyPassword(password);
   if (!user) {
-    redirect(`/login?error=1${from ? `&from=${encodeURIComponent(from)}` : ""}`);
+    redirect(`/login?error=1&from=${encodeURIComponent(from)}`);
   }
   await createSession(user);
-  redirect(from || "/");
+  redirect(from);
 }
 
 export default async function LoginPage({
@@ -23,9 +31,9 @@ export default async function LoginPage({
 }) {
   const existing = await getSession();
   const sp = await searchParams;
-  if (existing) redirect(sp.from || "/");
+  const from = safeFrom(sp.from);
+  if (existing) redirect(from);
   const error = sp.error === "1";
-  const from = sp.from ?? "/";
   return (
     <main className="min-h-screen relative flex items-center justify-center text-white px-4 bg-[#041225] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.22),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.12),transparent_60%)]" />

@@ -743,8 +743,13 @@ function DeleteSection({ id, onDone }: { id: string; onDone: () => void }) {
         onClick={() => {
           const fd = new FormData();
           fd.set("id", id);
-          start(() => deleteItem(fd));
-          onDone();
+          // Close only after the delete actually succeeds — closing first hid
+          // failures and the task silently reappeared on next refresh (doc 766
+          // finding #11).
+          start(async () => {
+            await deleteItem(fd);
+            onDone();
+          });
         }}
         className="rounded border border-red-500/40 text-red-300 hover:bg-red-500/15 px-2 py-1 transition disabled:opacity-50"
       >

@@ -15,8 +15,15 @@ const STATUS_LABEL: Record<string, string> = {
 const OWNER_COLOR: Record<string, string> = {
   Iman: "bg-purple-500/20 text-purple-200 border-purple-500/40",
   Zaal: "bg-blue-500/20 text-blue-200 border-blue-500/40",
+  ThyRev: "bg-emerald-500/20 text-emerald-200 border-emerald-500/40",
+  Samantha: "bg-pink-500/20 text-pink-300 border-pink-500/40",
+  Tyler: "bg-orange-500/20 text-orange-300 border-orange-500/40",
+  Shawn: "bg-teal-500/20 text-teal-300 border-teal-500/40",
   Both: "bg-slate-500/20 text-slate-200 border-slate-500/40",
 };
+// Neutral fallback for any unknown owner — was reusing Both's slate, which
+// mislabeled ThyRev/Samantha/Tyler/Shawn as co-owned (doc 766 finding #10).
+const OWNER_COLOR_FALLBACK = "bg-gray-500/20 text-gray-300 border-gray-500/40";
 
 const STATUS_COLOR: Record<string, string> = {
   TODO: "bg-slate-500/20 text-slate-200 border-slate-500/40",
@@ -351,7 +358,7 @@ function ActionCard({
           ) : action.owner ? (
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded-full border font-medium ${
-                OWNER_COLOR[action.owner] || OWNER_COLOR.Both
+                OWNER_COLOR[action.owner] || OWNER_COLOR_FALLBACK
               }`}
             >
               {action.owner}

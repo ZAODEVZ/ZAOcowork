@@ -62,9 +62,14 @@ const OWNER_BADGE: Record<string, string> = {
   Iman: "bg-purple-500/20 text-purple-300 border-purple-500/40",
   ThyRev: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
   Samantha: "bg-pink-500/20 text-pink-300 border-pink-500/40",
+  Tyler: "bg-orange-500/20 text-orange-300 border-orange-500/40",
+  Shawn: "bg-teal-500/20 text-teal-300 border-teal-500/40",
   Both: "bg-slate-500/20 text-slate-200 border-slate-500/40",
   Open: "bg-amber-500/20 text-amber-300 border-amber-500/40",
 };
+// Neutral fallback for unknown owners — was reusing Both's slate, mislabeling
+// new/unlisted users as co-owned (doc 766 finding #10).
+const OWNER_BADGE_FALLBACK = "bg-gray-500/20 text-gray-300 border-gray-500/40";
 
 const CATEGORY_COLOR: Record<string, string> = {
   "ZAO Devz": "bg-cyan-500/15 text-cyan-300 border-cyan-500/30",
@@ -1495,7 +1500,7 @@ function Card({
 }) {
   const [pending, start] = useTransition();
   const age = ageDays(item.createdAt);
-  const cyc = cycleDays(item.createdAt, item.updatedAt, item.status);
+  const cyc = cycleDays(item.createdAt, item.completedAt, item.status, item.updatedAt);
   const aging = item.status !== "DONE" && age > 14;
   // Doc 763 F1: stale = WIP/BLOCKED with no activity 5+ days. Distinct from
   // aging (raw age >14) so a fresh-but-stuck task still gets flagged.
@@ -1630,7 +1635,7 @@ function Card({
           </span>
         ) : (
           <span
-            className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${OWNER_BADGE[ownerStr] || OWNER_BADGE.Both}`}
+            className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${OWNER_BADGE[ownerStr] || OWNER_BADGE_FALLBACK}`}
             title={`Owner: ${ownerStr}`}
           >
             {ownerInitial(ownerStr)}

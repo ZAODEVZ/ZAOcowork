@@ -29,7 +29,7 @@ function isChatMessage(v: unknown): v is ChatMessage {
 /** One compact line per item: `#12 [P1] Title — Owner · Category · 9d` */
 function itemLine(it: ActionItem): string {
   const age = ageDays(it.createdAt);
-  const cycle = cycleDays(it.createdAt, it.updatedAt, it.status);
+  const cycle = cycleDays(it.createdAt, it.completedAt, it.status, it.updatedAt);
   const tail =
     it.status === "DONE"
       ? cycle != null
