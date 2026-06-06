@@ -53,6 +53,18 @@ function asTaskType(v: unknown): TaskType | undefined {
 function asServiceClass(v: unknown): ServiceClass {
   return SERVICE_CLASSES.includes(v as ServiceClass) ? (v as ServiceClass) : "Standard";
 }
+// User-provided link fields (videoUrl) are rendered as <a href>. Only accept
+// https URLs so a javascript:/data: scheme can't be stored and executed on
+// click (security audit). Empty/invalid -> null.
+function safeHttpUrl(v: unknown): string | null {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  try {
+    return new URL(s).protocol === "https:" ? s : null;
+  } catch {
+    return null;
+  }
+}
 
 function displayName(user: string): string {
   return user.charAt(0).toUpperCase() + user.slice(1);
@@ -132,7 +144,7 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     prState: prev?.prState ?? null,
     // Doc 764 F5: video walkthrough URL (Loom / YouTube / Vimeo)
     videoUrl: (form.get("videoUrl") != null
-      ? String(form.get("videoUrl") ?? "").trim() || null
+      ? safeHttpUrl(form.get("videoUrl"))
       : prev?.videoUrl ?? null),
     // Doc 765 Phase I: project layer
     projectId: (form.get("projectId") != null
@@ -304,7 +316,7 @@ export async function patchField(form: FormData): Promise<void> {
       break;
     }
     case "videoUrl": {
-      next.videoUrl = value.trim() || null;
+      next.videoUrl = safeHttpUrl(value);
       next.activity = [
         ...(cur.activity || []),
         makeActivity(user, "video_url_set", next.videoUrl ?? "(cleared)", next.updatedAt),
