@@ -6,6 +6,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { resolveSource } from "@/lib/source-resolver";
 import { getPrStatuses } from "@/lib/source-status";
 import { logAudit } from "@/lib/audit";
+import { onTaskClosed } from "@/lib/dep-flow";
 
 export interface AutoCloseResult {
   closed: string[];
@@ -98,6 +99,7 @@ export async function closeMergedSources(): Promise<AutoCloseResult> {
 
     // Log the audit event
     closed.push(row.legacy_id || row.id);
+    await onTaskClosed(row.id);
     await logAudit({
       actor: "system-autoclose",
       entity_type: "task",
