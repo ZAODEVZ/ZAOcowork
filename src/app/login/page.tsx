@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import Image from "next/image";
 import { getSession, verifyPassword, createSession } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 import { PasswordInput } from "@/components/PasswordInput";
 import ZaoLogo from "../../../ZAO LOGO.jpg";
 
@@ -16,6 +18,13 @@ async function loginAction(formData: FormData): Promise<void> {
   "use server";
   const password = String(formData.get("password") ?? "");
   const from = safeFrom(String(formData.get("from") ?? "/"));
+  // Throttle per IP — the password check scrypt-scans all users, so an
+  // unthrottled form is a brute-force + CPU-DoS vector (security audit).
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  if (!rateLimit(`login:${ip}`, 8, 15 * 60_000).ok) {
+    redirect(`/login?error=rate&from=${encodeURIComponent(from)}`);
+  }
   const user = await verifyPassword(password);
   if (!user) {
     redirect(`/login?error=1&from=${encodeURIComponent(from)}`);
@@ -33,7 +42,12 @@ export default async function LoginPage({
   const sp = await searchParams;
   const from = safeFrom(sp.from);
   if (existing) redirect(from);
-  const error = sp.error === "1";
+  const errorMsg =
+    sp.error === "rate"
+      ? "Too many attempts. Wait a few minutes and try again."
+      : sp.error === "1"
+      ? "Wrong password. Try again."
+      : null;
   return (
     <main className="min-h-screen relative flex items-center justify-center text-white px-4 bg-[#041225] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.22),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.12),transparent_60%)]" />
@@ -61,9 +75,9 @@ export default async function LoginPage({
             <PasswordInput />
           </div>
         </label>
-        {error && (
+        {errorMsg && (
           <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2">
-            Wrong password. Try again.
+            {errorMsg}
           </p>
         )}
         <button

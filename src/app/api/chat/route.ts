@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { requireSession, userLabel, type SessionUser } from "@/lib/auth";
 import { getActions, ageDays, cycleDays, type ActionItem } from "@/lib/data";
+import { rateLimit } from "@/lib/rate-limit";
 
 // getActions() touches node:fs / fetch and auth touches node:crypto — keep on the
 // Node.js runtime. force-dynamic so the board snapshot is never cached.
@@ -175,6 +176,15 @@ export async function POST(req: NextRequest) {
     user = await requireSession();
   } catch {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Cap LLM spend per user (security audit: chat had no rate limit).
+  const rl = rateLimit(`chat:${user}`, 20, 60_000);
+  if (!rl.ok) {
+    return Response.json(
+      { error: "Too many requests — wait a moment and try again." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } },
+    );
   }
 
   const apiKey = process.env.MINIMAX_API_KEY;
