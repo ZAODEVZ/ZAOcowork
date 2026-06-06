@@ -26,6 +26,7 @@ import {
   type ServiceClass,
 } from "@/lib/types";
 import { BRANDS, brandColor } from "@/lib/brands";
+import { resolveSource } from "@/lib/source-resolver";
 import { patchField, claimTask } from "@/app/actions";
 import { TaskRoom } from "./TaskRoom";
 import { TodoPanel, TodoTrigger } from "./TodoPanel";
@@ -1645,6 +1646,22 @@ function Card({
             {TASK_SOURCE_LABELS[item.source]}
           </span>
         )}
+        {(() => {
+          const origin = resolveSource({ legacyId: item.legacyId, legacySource: item.legacySource });
+          if (origin.kind === "none" || !origin.url) return null;
+          return (
+            <a
+              href={origin.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-1 inline-flex items-center gap-1 text-[10px] text-sky-300/80 hover:text-sky-200"
+              title={`Origin: ${origin.label}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              ↗ {origin.label}
+            </a>
+          );
+        })()}
         {(item.brands ?? []).map((b) => (
           <span
             key={b}
