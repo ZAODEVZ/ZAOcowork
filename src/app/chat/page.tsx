@@ -51,7 +51,7 @@ export default async function ChatPage() {
           <div className="mb-4 flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-teal-400" />
             <span className="text-sm font-semibold text-white/80">Co-Works Assistant</span>
-            <span className="text-xs text-white/40">— ask about the board, powered by MiniMax</span>
+            <span className="text-xs text-white/40">— ask about the board, powered by OpenRouter</span>
           </div>
           <Chat />
         </div>
@@ -60,7 +60,7 @@ export default async function ChatPage() {
           <a href="https://github.com/songchaindao-dot/cowork-zaodevz" className="hover:text-white/60">
             source on github
           </a>
-          <span>answers reflect the live board · MiniMax can be wrong</span>
+          <span>answers reflect the live board · the assistant can be wrong</span>
         </footer>
       </div>
       <SlaGridChip />
