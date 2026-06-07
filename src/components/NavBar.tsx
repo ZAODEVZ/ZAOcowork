@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/brands";
@@ -192,21 +193,42 @@ function NavMenu({
   active: { mine: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
 }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  function toggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setCoords({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!btnRef.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    function onScroll() {
+      setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
@@ -222,10 +244,11 @@ function NavMenu({
   ];
 
   return (
-    <div className="relative flex-shrink-0" ref={ref}>
+    <div className="flex-shrink-0">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         aria-label="Menu"
         aria-expanded={open}
         className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
@@ -238,24 +261,31 @@ function NavMenu({
         <span className="hidden sm:inline">Menu</span>
         <MentionsBadge />
       </button>
-      {open && (
-        <div className="absolute top-full right-0 mt-1 z-50 min-w-[180px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5">
-          {items.map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              prefetch={false}
-              onClick={() => setOpen(false)}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${
-                it.active ? "bg-white/10 text-white" : "text-white/65 hover:text-white hover:bg-white/[0.06]"
-              }`}
-            >
-              <span className="text-sm leading-none">{it.icon}</span>
-              {it.label}
-            </Link>
-          ))}
-        </div>
-      )}
+      {mounted &&
+        open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: "fixed", top: coords.top, right: coords.right }}
+            className="z-[60] min-w-[180px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5"
+          >
+            {items.map((it) => (
+              <Link
+                key={it.href}
+                href={it.href}
+                prefetch={false}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                  it.active ? "bg-white/10 text-white" : "text-white/65 hover:text-white hover:bg-white/[0.06]"
+                }`}
+              >
+                <span className="text-sm leading-none">{it.icon}</span>
+                {it.label}
+              </Link>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -275,29 +305,50 @@ function MoreBrandsDropdown({
   }, [brands]);
   const overflowActive = activeBrand && overflowMap.has(activeBrand) ? activeBrand : null;
   const overflowActiveColor = overflowActive ? overflowMap.get(overflowActive)?.color ?? null : null;
-  const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => setMounted(true), []);
+
+  function toggle() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setCoords({ top: r.bottom + 6, right: Math.max(8, window.innerWidth - r.right) });
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!btnRef.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    function onScroll() {
+      setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", onScroll, true);
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", onScroll, true);
     };
   }, [open]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${
           overflowActive
             ? overflowActiveColor ?? "bg-white/10 text-white/70 border-white/20"
@@ -306,8 +357,14 @@ function MoreBrandsDropdown({
       >
         {overflowActive ?? "More"} <span className="opacity-60">{open ? "▴" : "▾"}</span>
       </button>
-      {open && (
-        <div className="absolute top-full right-0 mt-1 z-40 min-w-[200px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5 max-h-[60vh] overflow-y-auto">
+      {mounted &&
+        open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ position: "fixed", top: coords.top, right: coords.right }}
+            className="z-[60] min-w-[200px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5 max-h-[60vh] overflow-y-auto"
+          >
           {brands.map((b) => {
             const isActive = activeBrand === b.name;
             return (
@@ -326,8 +383,9 @@ function MoreBrandsDropdown({
               </Link>
             );
           })}
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
