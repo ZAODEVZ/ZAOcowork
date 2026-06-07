@@ -311,7 +311,16 @@ function BotDetail({ bot, isAdmin }: { bot: string; isAdmin: boolean }) {
 export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
   const [bots, setBots] = useState<BotHealth[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [open, setOpen] = useState<string | null>(null);
+  // Expanded rows are independent - multiple bots can be open at once.
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  const toggleOpen = useCallback((bot: string) => {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(bot)) next.delete(bot);
+      else next.add(bot);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -351,12 +360,12 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
               : 'bg-amber-500';
           const current = metaString(b.meta, 'current_task');
           const lastError = metaString(b.meta, 'last_error');
-          const isOpen = open === b.bot;
+          const isOpen = open.has(b.bot);
           return (
             <li key={b.bot}>
               <button
                 type="button"
-                onClick={() => setOpen(isOpen ? null : b.bot)}
+                onClick={() => toggleOpen(b.bot)}
                 aria-expanded={isOpen}
                 className="flex w-full items-center justify-between rounded px-1 py-0.5 text-left text-sm hover:bg-slate-800/50"
               >
