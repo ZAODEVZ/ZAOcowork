@@ -1,10 +1,12 @@
 import { NextRequest } from "next/server";
 import { authBot } from "@/lib/bot-auth";
+import { getSession } from "@/lib/auth";
 import { serviceClient } from "@/lib/supabase-server";
 
 // GET /api/v1/bots — status board: latest heartbeat per bot, with a computed
-// `online` flag (heartbeat within ONLINE_WINDOW). Bearer-auth (any valid bot
-// token) so the data isn't public.
+// `online` flag (heartbeat within ONLINE_WINDOW). Readable by either a valid
+// bot Bearer token (machine callers) OR a logged-in team session (so a
+// teammate's browser can render the board), matching the other board reads.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,12 @@ interface HeartbeatRow {
 }
 
 export async function GET(req: NextRequest) {
-  if (!authBot(req)) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  // Machine callers present a bot token; browsers present the session cookie.
+  const isBot = Boolean(authBot(req));
+  const session = isBot ? null : await getSession();
+  if (!isBot && !session) {
+    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { data, error } = await serviceClient()
