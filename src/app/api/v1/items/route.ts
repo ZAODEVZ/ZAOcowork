@@ -1,0 +1,73 @@
+import { NextRequest } from "next/server";
+import { authBot } from "@/lib/bot-auth";
+import {
+  getActions,
+  saveActions,
+  newId,
+  normalizeItem,
+  TASK_SOURCES,
+  type TaskSource,
+  type ActionItem,
+} from "@/lib/data";
+
+// POST /api/v1/items — create a task (bot fleet). See docs/BOT-API.md.
+// Body: { title (required), assignee?, due_date?, notes?, source? } -> { id }
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+export async function POST(req: NextRequest) {
+  const bot = authBot(req);
+  if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await req.json()) as Record<string, unknown>;
+  } catch {
+    return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const title = String(body.title ?? "").trim();
+  if (!title) return Response.json({ ok: false, error: "title is required" }, { status: 400 });
+
+  const assignee = typeof body.assignee === "string" ? body.assignee.trim() : "";
+  const source = TASK_SOURCES.includes(body.source as TaskSource)
+    ? (body.source as TaskSource)
+    : "human-bot";
+
+  const doc = await getActions();
+  const id = newId(doc.items);
+  const now = nowIso();
+
+  const item: ActionItem = normalizeItem({
+    id,
+    title,
+    owner: assignee || "Open",
+    status: "TODO",
+    due: typeof body.due_date === "string" ? body.due_date : "",
+    notes: typeof body.notes === "string" ? body.notes : "",
+    createdBy: bot,
+    createdAt: now,
+    updatedAt: now,
+    source,
+    claimable: !assignee,
+  });
+  item.activity = [
+    { id: `a-${Date.now()}`, userId: bot, displayName: bot, action: "created", detail: "via bot API", createdAt: now },
+  ];
+
+  doc.items.push(item);
+  try {
+    await saveActions(doc, bot, `bot ${bot} created #${id}: ${title.slice(0, 40)}`);
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: err instanceof Error ? err.message : "save failed" },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ ok: true, id }, { status: 201 });
+}
