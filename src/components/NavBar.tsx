@@ -56,6 +56,7 @@ export function NavBar({
   const onChat = pathname === "/chat";
   const onActivity = pathname === "/activity";
   const onMine = pathname === "/my-work";
+  const onSettings = pathname === "/settings";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
 
@@ -138,6 +139,18 @@ export function NavBar({
               activeClass="bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40"
             />
           )}
+          <Link
+            href="/settings"
+            title="Settings & features"
+            aria-label="Settings and features"
+            className={`px-2.5 py-1.5 rounded-lg text-sm border transition ${
+              onSettings
+                ? "bg-white/10 text-white border-white/20"
+                : "border-transparent text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
+            }`}
+          >
+            ⚙
+          </Link>
         </div>
       </div>
       <ActivityStrip />

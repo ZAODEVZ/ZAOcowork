@@ -1139,6 +1139,13 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
   // comment but skips pinging the @mentioned people (owner + leads still get
   // notified server-side).
   const [silent, setSilent] = useState(false);
+  // Honor the per-device default from Settings ("Notify tagged people by
+  // default" off => silent on).
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem("zao-comment-silent-default") === "1") {
+      setSilent(true);
+    }
+  }, []);
 
   function handleSend() {
     if (!content.trim()) return;
