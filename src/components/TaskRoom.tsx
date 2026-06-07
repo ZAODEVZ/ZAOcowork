@@ -23,7 +23,8 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { updateItem, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride } from "@/app/actions";
+import { updateItem, patchField, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride } from "@/app/actions";
+import { useDraft } from "@/lib/use-draft";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
 
@@ -497,13 +498,34 @@ function DetailsPanel({
 }) {
   const [pending, start] = useTransition();
   const [flash, setFlash] = useState<"saved" | null>(null);
+  // Notes autosave to localStorage so a crash/reload/background-refresh never
+  // wipes a long write-up (Jose's lost feedback). commit() drops the draft on a
+  // successful save without blanking the field.
+  const notesDraft = useDraft(`zao-draft:notes:${item.id}`, item.notes ?? "");
 
   function handleSave(fd: FormData) {
     fd.set("id", item.id);
     start(async () => {
       await updateItem(fd);
+      notesDraft.commit();
       setFlash("saved");
       setTimeout(() => setFlash(null), 2500);
+    });
+  }
+
+  // Apply a single field immediately (no "Save changes" needed). Used for the
+  // status dropdown so it can be flipped TODO->DONE in place — Jose's feedback:
+  // marking tasks done shouldn't require the master Save button. The board
+  // behind revalidates so the change shows without a manual refresh.
+  function quickPatch(field: string, value: string) {
+    const fd = new FormData();
+    fd.set("id", item.id);
+    fd.set("field", field);
+    fd.set("value", value);
+    start(async () => {
+      await patchField(fd);
+      setFlash("saved");
+      setTimeout(() => setFlash(null), 2000);
     });
   }
 
@@ -565,8 +587,14 @@ function DetailsPanel({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Status">
-            <select name="status" defaultValue={item.status} className={selectCls}>
+          <FormField label="Status (saves instantly)">
+            <select
+              name="status"
+              value={item.status}
+              onChange={(e) => quickPatch("status", e.target.value)}
+              disabled={pending}
+              className={selectCls}
+            >
               {BOARD_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {STATUS_LABEL[s]}
@@ -706,7 +734,8 @@ function DetailsPanel({
         <FormField label="Notes (Customer / Success / Measurements)">
           <textarea
             name="notes"
-            defaultValue={item.notes}
+            value={notesDraft.value}
+            onChange={(e) => notesDraft.update(e.target.value)}
             rows={5}
             className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-blue-500/50 transition"
           />
@@ -897,7 +926,9 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
 
 function SubmitUpdateBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
   const [pending, start] = useTransition();
-  const [content, setContent] = useState("");
+  const { value: content, update: setContent, clear: clearContent } = useDraft(
+    `zao-draft:update:${item.id}`,
+  );
   const [toStatus, setToStatus] = useState<ActionStatus | "">("");
 
   function handleSubmit() {
@@ -908,7 +939,7 @@ function SubmitUpdateBox({ item, currentUser }: { item: ActionItem; currentUser:
     if (toStatus) fd.set("toStatus", toStatus);
     start(async () => {
       await submitUpdate(fd);
-      setContent("");
+      clearContent();
       setToStatus("");
     });
   }
@@ -1091,7 +1122,9 @@ function UpdateCard({ update }: { update: TaskUpdate }) {
 
 function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
   const [pending, start] = useTransition();
-  const [content, setContent] = useState("");
+  const { value: content, update: setContent, clear: clearContent } = useDraft(
+    `zao-draft:comment:${item.id}`,
+  );
   // Detect the Mac modifier key client-side only. Reading `navigator` during
   // render crashes SSR (it isn't a reliable global in the Node server
   // runtime) — and TaskRoom is server-rendered whenever the page loads with
@@ -1120,7 +1153,7 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
         setError(res.error);
         return;
       }
-      setContent("");
+      clearContent();
     });
   }
 
