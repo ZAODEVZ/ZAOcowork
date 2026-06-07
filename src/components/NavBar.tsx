@@ -54,6 +54,7 @@ export function NavBar({
   const onBoard = pathname === "/";
   const onChat = pathname === "/chat";
   const onActivity = pathname === "/activity";
+  const onMine = pathname === "/my-work";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
 
@@ -93,6 +94,13 @@ export function NavBar({
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <SimpleTab
+            href="/my-work"
+            label="Mine"
+            active={onMine}
+            dot="bg-violet-400"
+            activeClass="bg-violet-500/20 text-violet-200 border-violet-500/40"
+          />
           <div className="relative flex-shrink-0">
             <SimpleTab
               href="/activity"
