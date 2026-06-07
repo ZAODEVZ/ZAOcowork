@@ -10,14 +10,15 @@ import { NavBar } from "@/components/NavBar";
 
 export const dynamic = "force-dynamic";
 
-type FeedKind = "comment" | "update";
+type FeedKind = "comment" | "update" | "event";
 interface FeedEntry {
   kind: FeedKind;
   taskId: string;
   taskTitle: string;
   author: string;
   authorId: string;
-  content: string;
+  content: string; // comment/update body, or event detail
+  action?: string; // for events
   createdAt: string;
 }
 
@@ -34,6 +35,29 @@ const AVATAR_TINT: Record<string, string> = {
 
 function tint(authorId: string): string {
   return AVATAR_TINT[authorId.trim().toLowerCase()] ?? "bg-white/10 text-white/70";
+}
+
+// Human verbs for activity events. "commented" is excluded upstream (comments
+// are their own feed entries), so it isn't mapped here.
+const ACTION_LABEL: Record<string, string> = {
+  created: "created the task",
+  status_changed: "changed status",
+  bulk_status_change: "changed status",
+  claimed: "claimed the task",
+  archived: "archived the task",
+  unarchived: "unarchived the task",
+  bulk_archived: "archived the task",
+  service_class_changed: "changed service class",
+  video_url_set: "set a video link",
+  bulk_assign_unowned: "assigned the task",
+  assigned: "assigned the task",
+};
+
+function verbFor(e: FeedEntry): string {
+  if (e.kind === "comment") return "commented";
+  if (e.kind === "update") return "posted an update";
+  const a = e.action ?? "";
+  return ACTION_LABEL[a] ?? a.replace(/_/g, " ");
 }
 
 function etDateKey(iso: string): string {
@@ -61,15 +85,7 @@ function withMentions(text: string): ReactNode {
   return parts;
 }
 
-function Chip({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
+function Chip({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
     <Link
       href={href}
@@ -93,14 +109,14 @@ export default async function ActivityPage({
   const user = await getSession();
   if (!user) redirect("/login");
   const sp = await searchParams;
-  const curType: "all" | "comment" | "update" =
-    sp.type === "comment" || sp.type === "update" ? sp.type : "all";
+  const curType: "all" | "comment" | "update" | "event" =
+    sp.type === "comment" || sp.type === "update" || sp.type === "event" ? sp.type : "all";
   const curPerson = (sp.person ?? "").trim().toLowerCase();
   const curMentions = sp.mentions === "me";
 
   const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
 
-  // Flatten every comment + update across all tasks.
+  // Flatten comments + updates + activity events across all tasks.
   const all: FeedEntry[] = [];
   for (const it of doc.items) {
     for (const c of it.comments ?? []) {
@@ -127,10 +143,22 @@ export default async function ActivityPage({
         createdAt: u.createdAt,
       });
     }
+    for (const a of it.activity ?? []) {
+      if (!a.action || a.action === "commented") continue; // comments shown above
+      all.push({
+        kind: "event",
+        taskId: it.id,
+        taskTitle: it.title,
+        author: a.displayName || a.userId || "?",
+        authorId: a.userId || "",
+        content: a.detail ?? "",
+        action: a.action,
+        createdAt: a.createdAt,
+      });
+    }
   }
   all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-  // People chips reflect the current type filter (who has this kind of activity).
   const typeScoped = all.filter((e) => curType === "all" || e.kind === curType);
   const authorMap = new Map<string, string>();
   for (const e of typeScoped) {
@@ -139,7 +167,6 @@ export default async function ActivityPage({
   }
   const people = [...authorMap.entries()].sort((a, b) => a[1].localeCompare(b[1]));
 
-  // Apply person + "my mentions" filters.
   const meAliases = [userLabel(user), user];
   const filtered = typeScoped.filter((e) => {
     if (curPerson && e.authorId.trim().toLowerCase() !== curPerson) return false;
@@ -153,9 +180,8 @@ export default async function ActivityPage({
   });
   const recent = filtered.slice(0, 150);
 
-  // Build hrefs that merge current filters with an override.
   const hrefFor = (o: {
-    type?: "all" | "comment" | "update";
+    type?: "all" | "comment" | "update" | "event";
     person?: string;
     mentions?: boolean;
   }): string => {
@@ -170,7 +196,6 @@ export default async function ActivityPage({
     return s ? `/activity?${s}` : "/activity";
   };
 
-  // Day grouping (ET), newest first.
   const todayKey = etDateKey(new Date().toISOString());
   const yesterdayKey = etDateKey(new Date(Date.now() - 86_400_000).toISOString());
   const dayLabel = (key: string): string => {
@@ -227,9 +252,7 @@ export default async function ActivityPage({
           <div className="mb-4 flex items-baseline gap-2">
             <span className="h-2 w-2 rounded-full bg-sky-400" />
             <h2 className="text-sm font-semibold text-white/85">Recent activity</h2>
-            <span className="text-xs text-white/35">
-              {filtered.length} shown
-            </span>
+            <span className="text-xs text-white/35">{filtered.length} shown</span>
           </div>
 
           {/* Filters */}
@@ -238,12 +261,9 @@ export default async function ActivityPage({
               <Chip href={hrefFor({ type: "all" })} label="All" active={curType === "all"} />
               <Chip href={hrefFor({ type: "comment" })} label="Comments" active={curType === "comment"} />
               <Chip href={hrefFor({ type: "update" })} label="Updates" active={curType === "update"} />
+              <Chip href={hrefFor({ type: "event" })} label="Events" active={curType === "event"} />
               <span className="mx-1 h-4 w-px bg-white/10" />
-              <Chip
-                href={hrefFor({ mentions: !curMentions })}
-                label="✦ My mentions"
-                active={curMentions}
-              />
+              <Chip href={hrefFor({ mentions: !curMentions })} label="✦ My mentions" active={curMentions} />
             </div>
             {people.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
@@ -261,9 +281,7 @@ export default async function ActivityPage({
           </div>
 
           {recent.length === 0 ? (
-            <p className="text-sm text-white/40 py-10 text-center">
-              Nothing matches these filters.
-            </p>
+            <p className="text-sm text-white/40 py-10 text-center">Nothing matches these filters.</p>
           ) : (
             <div className="space-y-6">
               {groups.map((g) => (
@@ -287,9 +305,7 @@ export default async function ActivityPage({
                           <div className="flex-1 min-w-0">
                             <div className="flex items-baseline gap-1.5 text-[12px]">
                               <span className="font-semibold text-white/90 truncate">{e.author}</span>
-                              <span className="text-white/40">
-                                {e.kind === "update" ? "posted an update" : "commented"}
-                              </span>
+                              <span className="text-white/40">{verbFor(e)}</span>
                               <span className="text-white/30 ml-auto flex-shrink-0 pl-2">
                                 {relativeTime(e.createdAt)}
                               </span>
@@ -297,9 +313,17 @@ export default async function ActivityPage({
                             <div className="mt-0.5 text-[11px] text-white/45 truncate">
                               <span className="text-white/55">#{e.taskId}</span> · {e.taskTitle}
                             </div>
-                            <p className="mt-1 text-sm text-white/80 whitespace-pre-wrap break-words line-clamp-3">
-                              {withMentions(e.content)}
-                            </p>
+                            {e.content && (
+                              <p
+                                className={`mt-1 whitespace-pre-wrap break-words ${
+                                  e.kind === "event"
+                                    ? "text-[12px] text-white/55 line-clamp-2"
+                                    : "text-sm text-white/80 line-clamp-3"
+                                }`}
+                              >
+                                {withMentions(e.content)}
+                              </p>
+                            )}
                           </div>
                         </Link>
                       </li>

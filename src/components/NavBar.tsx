@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/brands";
 import ActivityStrip from "./ActivityStrip";
+import { MentionsBadge } from "./MentionsBadge";
 
 // NavBar's brand tabs. Phase D switched from a hardcoded BRANDS const to a
 // `brands` prop loaded server-side from the brands table. Each brand carries
@@ -92,13 +93,16 @@ export function NavBar({
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <SimpleTab
-            href="/activity"
-            label="Activity"
-            active={onActivity}
-            dot="bg-sky-400"
-            activeClass="bg-sky-500/20 text-sky-200 border-sky-500/40"
-          />
+          <div className="relative flex-shrink-0">
+            <SimpleTab
+              href="/activity"
+              label="Activity"
+              active={onActivity}
+              dot="bg-sky-400"
+              activeClass="bg-sky-500/20 text-sky-200 border-sky-500/40"
+            />
+            <MentionsBadge />
+          </div>
           <SimpleTab
             href="/chat"
             label="Assistant"
