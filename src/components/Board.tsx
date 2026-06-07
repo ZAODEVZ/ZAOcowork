@@ -340,9 +340,19 @@ export function Board({
   const todayKey = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    const id = window.setInterval(() => router.refresh(), 120_000);
+    const id = window.setInterval(() => {
+      // Don't auto-refresh while someone is typing or has a task panel open —
+      // a refresh can wipe in-progress text (Jose's lost feedback). Resume once
+      // they're idle and back on the board.
+      const el = document.activeElement as HTMLElement | null;
+      const typing =
+        !!el &&
+        (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+      if (typing || taskRoomId) return;
+      router.refresh();
+    }, 120_000);
     return () => window.clearInterval(id);
-  }, [router]);
+  }, [router, taskRoomId]);
 
   useEffect(() => {
     const key = `zao-cowork-welcome-v1:${storageUserKey}`;
