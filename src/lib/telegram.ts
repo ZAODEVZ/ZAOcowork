@@ -63,3 +63,37 @@ export async function sendGroupMessage(html: string): Promise<TelegramSendResult
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
+
+/**
+ * DM a single user by their numeric Telegram id. Best-effort — never throws.
+ * Requires the user to have started the bot first (Telegram won't let a bot
+ * open a conversation), otherwise the API returns 403 and we log + move on.
+ */
+export async function sendDirectMessage(
+  tgId: number,
+  html: string,
+): Promise<TelegramSendResult> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return { ok: false, error: "telegram not configured" };
+  try {
+    const res = await fetch(`${API}/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        chat_id: tgId,
+        text: html,
+        parse_mode: "HTML",
+        disable_web_page_preview: true,
+      }),
+    });
+    const data = (await res.json()) as { ok: boolean; result?: { message_id: number }; description?: string };
+    if (!data.ok) {
+      console.error(`[telegram] DM to ${tgId} failed: ${data.description || res.status}`);
+      return { ok: false, error: data.description || `HTTP ${res.status}` };
+    }
+    return { ok: true, messageId: data.result?.message_id };
+  } catch (err) {
+    console.error(`[telegram] DM to ${tgId} error`, err);
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
