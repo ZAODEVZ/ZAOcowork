@@ -292,6 +292,32 @@ const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
       "Tasks sort by urgency/importance first, then priority, then age.",
     ],
   },
+  {
+    title: "Everything lives in the ☰ Menu",
+    lines: [
+      "Top-right ☰ Menu holds My Work (your tasks + @mentions), Activity (every comment & update across all tasks), the AI Assistant, and Settings.",
+      "A red dot on the menu means someone @mentioned you.",
+    ],
+  },
+  {
+    title: "Search anywhere — ⌘K",
+    lines: [
+      "Press ⌘K (or just /) from any screen to jump straight to a task by title, #id, or owner.",
+    ],
+  },
+  {
+    title: "Saved views & instant edits",
+    lines: [
+      "Save any filter combo as a View for one-click reuse.",
+      "Change a task's status from the dropdown and it saves instantly — and comments, updates, and notes autosave as you type, so nothing gets lost.",
+    ],
+  },
+  {
+    title: "Settings & all features",
+    lines: [
+      "Open ☰ Menu → Settings any time to see every feature explained and set your preferences (AI model, notifications).",
+    ],
+  },
 ];
 
 export function Board({
@@ -468,7 +494,7 @@ export function Board({
   }, [router, taskRoomId]);
 
   useEffect(() => {
-    const key = `zao-cowork-welcome-v1:${storageUserKey}`;
+    const key = `zao-cowork-welcome-v2:${storageUserKey}`;
     if (typeof window === "undefined") return;
     if (window.localStorage.getItem(key) === "1") return;
     setWelcomeOpen(true);
@@ -636,11 +662,11 @@ export function Board({
         <WelcomeModal
           userLabel={userLabel}
           onClose={() => {
-            window.localStorage.setItem(`zao-cowork-welcome-v1:${storageUserKey}`, "1");
+            window.localStorage.setItem(`zao-cowork-welcome-v2:${storageUserKey}`, "1");
             setWelcomeOpen(false);
           }}
           onTour={() => {
-            window.localStorage.setItem(`zao-cowork-welcome-v1:${storageUserKey}`, "1");
+            window.localStorage.setItem(`zao-cowork-welcome-v2:${storageUserKey}`, "1");
             setWelcomeOpen(false);
             setTourStep(0);
             setTourOpen(true);
