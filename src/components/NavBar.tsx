@@ -106,51 +106,16 @@ export function NavBar({
           >
             ⌕
           </button>
-          <SimpleTab
-            href="/my-work"
-            label="Mine"
-            active={onMine}
-            dot="bg-violet-400"
-            activeClass="bg-violet-500/20 text-violet-200 border-violet-500/40"
+          <NavMenu
+            showAdmin={showAdminTab}
+            active={{
+              mine: onMine,
+              activity: onActivity,
+              chat: onChat,
+              admin: onAdmin,
+              settings: onSettings,
+            }}
           />
-          <div className="relative flex-shrink-0">
-            <SimpleTab
-              href="/activity"
-              label="Activity"
-              active={onActivity}
-              dot="bg-sky-400"
-              activeClass="bg-sky-500/20 text-sky-200 border-sky-500/40"
-            />
-            <MentionsBadge />
-          </div>
-          <SimpleTab
-            href="/chat"
-            label="Assistant"
-            active={onChat}
-            dot="bg-teal-400"
-            activeClass="bg-teal-500/20 text-teal-200 border-teal-500/40"
-          />
-          {showAdminTab && (
-            <SimpleTab
-              href="/admin"
-              label="Admin"
-              active={onAdmin}
-              dot="bg-fuchsia-400"
-              activeClass="bg-fuchsia-500/20 text-fuchsia-200 border-fuchsia-500/40"
-            />
-          )}
-          <Link
-            href="/settings"
-            title="Settings & features"
-            aria-label="Settings and features"
-            className={`px-2.5 py-1.5 rounded-lg text-sm border transition ${
-              onSettings
-                ? "bg-white/10 text-white border-white/20"
-                : "border-transparent text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
-            }`}
-          >
-            ⚙
-          </Link>
         </div>
       </div>
       <ActivityStrip />
@@ -212,6 +177,84 @@ function SimpleTab({
       <span className={`h-1.5 w-1.5 rounded-full ${active ? dot : "bg-white/20"}`} />
       {label}
     </Link>
+  );
+}
+
+// Collapses the secondary destinations (My Work / Activity / Assistant / Admin /
+// Settings) into one ☰ menu so the top bar stays uncluttered — just brand tabs,
+// quick search, and this. The mention badge surfaces on the trigger so you still
+// see pings while it's collapsed.
+function NavMenu({
+  showAdmin,
+  active,
+}: {
+  showAdmin: boolean;
+  active: { mine: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const anyActive =
+    active.mine || active.activity || active.chat || active.admin || active.settings;
+
+  const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean }> = [
+    { href: "/my-work", label: "My Work", icon: "🙋", active: active.mine },
+    { href: "/activity", label: "Activity", icon: "📰", active: active.activity, badge: true },
+    { href: "/chat", label: "Assistant", icon: "🤖", active: active.chat },
+    ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
+    { href: "/settings", label: "Settings", icon: "⚙", active: active.settings },
+  ];
+
+  return (
+    <div className="relative flex-shrink-0" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Menu"
+        aria-expanded={open}
+        className={`relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
+          open || anyActive
+            ? "bg-white/10 text-white border-white/20"
+            : "border-transparent text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
+        }`}
+      >
+        <span className="text-sm leading-none">☰</span>
+        <span className="hidden sm:inline">Menu</span>
+        <MentionsBadge />
+      </button>
+      {open && (
+        <div className="absolute top-full right-0 mt-1 z-50 min-w-[180px] rounded-xl bg-[#0a1226] border border-white/15 shadow-2xl shadow-black/40 p-1.5">
+          {items.map((it) => (
+            <Link
+              key={it.href}
+              href={it.href}
+              prefetch={false}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition ${
+                it.active ? "bg-white/10 text-white" : "text-white/65 hover:text-white hover:bg-white/[0.06]"
+              }`}
+            >
+              <span className="text-sm leading-none">{it.icon}</span>
+              {it.label}
+              {it.badge && active.activity === false && (
+                <span className="relative ml-auto h-3 w-3">
+                  <MentionsBadge />
+                </span>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
