@@ -29,6 +29,7 @@ export function BulkOpsPanel({ unownedCount }: { unownedCount: number }) {
     }
     const fd = new FormData();
     fd.set("owner", owner);
+    setResult(null);
     start(async () => {
       try {
         const r = await bulkAssignUnowned(fd);
@@ -82,7 +83,13 @@ export function BulkOpsPanel({ unownedCount }: { unownedCount: number }) {
       />
 
       {result && (
-        <div className="rounded-xl border border-emerald-400/40 bg-emerald-500/10 px-4 py-2 text-sm text-emerald-200">
+        <div
+          className={`rounded-xl border px-4 py-2 text-sm ${
+            result.startsWith("Failed")
+              ? "border-red-400/40 bg-red-500/10 text-red-200"
+              : "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+          }`}
+        >
           {result}
         </div>
       )}
