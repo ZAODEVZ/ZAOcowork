@@ -92,7 +92,7 @@ export async function listBrands(opts?: { activeOnly?: boolean }): Promise<Brand
     let q = db().from("brands").select(SELECT_COLUMNS).order("sort_order", { ascending: true });
     if (opts?.activeOnly) q = q.eq("active", true);
     const { data, error } = await q;
-    if (error || !data) return opts?.activeOnly ? FALLBACK_BRANDS : FALLBACK_BRANDS;
+    if (error || !data) return opts?.activeOnly ? FALLBACK_BRANDS.filter((b) => b.active) : FALLBACK_BRANDS;
     return data as BrandRow[];
   } catch {
     return FALLBACK_BRANDS;

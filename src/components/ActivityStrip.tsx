@@ -11,16 +11,16 @@ export default function ActivityStrip() {
   const [activity, setActivity] = useState<ActivityData | null>(null);
 
   useEffect(() => {
-    fetch("/api/repo-activity")
+    const ctrl = new AbortController();
+    fetch("/api/repo-activity", { signal: ctrl.signal })
       .then((r) => r.json())
       .then((data) => {
-        if (data.ok) {
-          setActivity(data);
-        }
+        if (data.ok) setActivity(data);
       })
       .catch(() => {
-        // Silently fail - no activity shown
+        // Silently fail / aborted on unmount - no activity shown
       });
+    return () => ctrl.abort();
   }, []);
 
   if (!activity || (activity.openIssues == null && activity.mergedToday == null)) {

@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
+  try {
+    await requireSession();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
   const token = process.env.GITHUB_TOKEN;
   const repo = "bettercallzaal/ZAOOS";
 

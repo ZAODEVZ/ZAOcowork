@@ -92,7 +92,9 @@ function simulate(history: number[], backlog: number): number[] {
 
 function percentile(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
-  const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
+  // Nearest-rank: ceil(p/100 * N) - 1, clamped. Was floor(p/100 * N), which
+  // skewed every percentile one rank high.
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
   return sorted[idx];
 }
 

@@ -348,7 +348,11 @@ export async function patchField(form: FormData): Promise<void> {
 
 export async function deleteItem(form: FormData): Promise<void> {
   const user = await requireSession();
-  if (!isLead(user)) return;
+  // Block tier: leads OR DB-promoted admins (isLead-only locked out admins).
+  if (!isLead(user)) {
+    const { isAdmin } = await import("@/lib/auth");
+    if (!(await isAdmin(user))) return;
+  }
   const id = String(form.get("id") ?? "");
   if (!id) return;
   const doc = await getActions();
@@ -471,7 +475,12 @@ export async function submitUpdate(form: FormData): Promise<void> {
 
 export async function reviewUpdate(form: FormData): Promise<void> {
   const user = await requireSession();
-  if (!isLead(user)) return;
+  // Ask tier: leads OR DB-promoted admins (was isLead-only, so admins silently
+  // couldn't approve/reject).
+  if (!isLead(user)) {
+    const { isAdmin } = await import("@/lib/auth");
+    if (!(await isAdmin(user))) return;
+  }
   const id = String(form.get("id") ?? "");
   const updateId = String(form.get("updateId") ?? "");
   const decisionRaw = String(form.get("decision") ?? "");
@@ -1313,7 +1322,8 @@ export async function bulkMoveToTriage(form: FormData): Promise<void> {
 // the supplied owner in one shot. The admin UI passes `owner=Zaal` by default
 // but any roster name works.
 export async function bulkAssignUnowned(form: FormData): Promise<{ assigned: number }> {
-  const user = await requireSession();
+  // Admin-panel mass reassignment — gate to lead/admin (was requireSession).
+  const user = await requireLeadOrAdmin();
   const owner = String(form.get("owner") ?? "").trim();
   if (!owner) return { assigned: 0 };
   const doc = await getActions();
@@ -1342,7 +1352,12 @@ export async function bulkAssignUnowned(form: FormData): Promise<{ assigned: num
 
 export async function setTaskPublicOverride(form: FormData): Promise<{ ok: boolean }> {
   const user = await requireSession();
-  if (!user) return { ok: false };
+  // Public visibility is lead/admin only — was requireSession-only, so any
+  // worker could expose/hide tasks on the public /shipped layer.
+  if (!isLead(user)) {
+    const { isAdmin } = await import("@/lib/auth");
+    if (!(await isAdmin(user))) return { ok: false };
+  }
 
   const taskId = String(form.get("taskId") ?? "").trim();
   const raw = String(form.get("value") ?? "").trim();

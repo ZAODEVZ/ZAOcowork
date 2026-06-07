@@ -106,7 +106,10 @@ export async function buildWeeklyDigest(): Promise<Digest> {
 
   // Aging > 14d among active rows
   const aging = items.filter((it) => it.status !== "DONE" && ageDays(it.createdAt) > 14);
-  const agingNew = aging.filter((it) => new Date(it.createdAt).getTime() >= prevWeekStartMs).length;
+  // "Became aging this week" = crossed the 14d line in the last 7d, i.e. age
+  // 14-21d. The old `createdAt >= now-14d` was mutually exclusive with aging
+  // (>14d old) so it was always 0.
+  const agingNew = aging.filter((it) => ageDays(it.createdAt) <= 21).length;
 
   // Stale: no activity 5+d on active row
   const stale = items.filter((it) => {
