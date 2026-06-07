@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CHAT_MODELS, DEFAULT_CHAT_MODEL } from "@/lib/chat-models";
 
 const MODEL_KEY = "zao-chat-model-v1";
@@ -21,9 +21,14 @@ export function SettingsPanel() {
     setNotifyTagged(window.localStorage.getItem(SILENT_KEY) !== "1");
   }, []);
 
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+  }, []);
   function flash(label: string) {
     setSaved(label);
-    setTimeout(() => setSaved(null), 1500);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setSaved(null), 1500);
   }
 
   function changeModel(id: string) {

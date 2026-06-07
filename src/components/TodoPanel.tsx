@@ -71,6 +71,17 @@ export function TodoPanel({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
+  // Lock background scroll while the modal is open (mobile would otherwise
+  // scroll the board behind the overlay).
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
   function reset() {
     setPhase("input");
     setText("");
@@ -306,7 +317,11 @@ function PreviewPhase({
       {/* Action list */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {actions.map((action, i) => (
-          <ActionCard key={i} action={action} onRemove={() => onRemove(i)} />
+          <ActionCard
+            key={action.type === "create" ? `create:${action.title}` : `${action.type}:${action.itemId}`}
+            action={action}
+            onRemove={() => onRemove(i)}
+          />
         ))}
       </div>
 

@@ -199,8 +199,15 @@ function NavMenu({
     function onDoc(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   const anyActive =
@@ -245,11 +252,6 @@ function NavMenu({
             >
               <span className="text-sm leading-none">{it.icon}</span>
               {it.label}
-              {it.badge && active.activity === false && (
-                <span className="relative ml-auto h-3 w-3">
-                  <MentionsBadge />
-                </span>
-              )}
             </Link>
           ))}
         </div>
@@ -280,8 +282,15 @@ function MoreBrandsDropdown({
     function onDoc(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
   return (

@@ -143,6 +143,15 @@ function parseDueDate(raw: string): Date | null {
   return d;
 }
 
+// Urgency/importance sort bucket. Module-scope (pure, no deps) so it's a stable
+// reference and doesn't invalidate the byStatus useMemo every render.
+function tagBucket(it: ActionItem): number {
+  if (it.important && it.urgent) return 0;
+  if (it.urgent) return 1;
+  if (it.important) return 2;
+  return 3;
+}
+
 // Saved views: one-click filter presets + user-saved combos. Built-ins cover the
 // common asks; custom views snapshot the current filter bar to localStorage.
 type SavedView = { name: string; filters: Partial<Filters> };
@@ -557,13 +566,6 @@ export function Board({
     prevById.current = next;
   }, [items, storageUserKey]);
 
-  const tagBucket = (it: ActionItem): number => {
-    if (it.important && it.urgent) return 0;
-    if (it.urgent) return 1;
-    if (it.important) return 2;
-    return 3;
-  };
-
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return items.filter((it) => {
@@ -631,7 +633,7 @@ export function Board({
       });
     }
     return map;
-  }, [filtered, tagBucket]);
+  }, [filtered]);
 
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const claimableCount = items.filter((it) => it.claimable).length;
