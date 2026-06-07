@@ -93,37 +93,51 @@ export async function getDependencyCounts(): Promise<
   return out;
 }
 
-export async function wouldCreateCycle(
+/**
+ * Pure cycle check: would adding blocker->blocked create a loop? BFS over the
+ * full edge list (blocked_id -> its blockers). Extracted from the DB layer so
+ * it's unit-testable and so the query is a single round-trip (was one query per
+ * visited node — O(N) round-trips, timeout risk on deep chains).
+ */
+export function dependencyCycleExists(
+  edges: Array<{ blocker_id: string; blocked_id: string }>,
   blockerId: string,
-  blockedId: string
-): Promise<boolean> {
-  const client = db();
+  blockedId: string,
+): boolean {
+  const blockersOf = new Map<string, string[]>();
+  for (const e of edges) {
+    const arr = blockersOf.get(e.blocked_id) ?? [];
+    arr.push(e.blocker_id);
+    blockersOf.set(e.blocked_id, arr);
+  }
   const visited = new Set<string>();
   const queue: string[] = [blockerId];
-
   while (queue.length > 0) {
     const cur = queue.shift()!;
     if (visited.has(cur)) continue;
     visited.add(cur);
-
     if (cur === blockedId) return true;
-
-    // Find all tasks that block cur
-    const { data } = await client
-      .from("task_dependencies")
-      .select("blocker_id")
-      .eq("blocked_id", cur);
-
-    if (data) {
-      for (const row of data) {
-        if (!visited.has(row.blocker_id)) {
-          queue.push(row.blocker_id);
-        }
-      }
+    for (const b of blockersOf.get(cur) ?? []) {
+      if (!visited.has(b)) queue.push(b);
     }
   }
-
   return false;
+}
+
+export async function wouldCreateCycle(
+  blockerId: string,
+  blockedId: string,
+): Promise<boolean> {
+  // One round-trip: load the whole (small) edge set, then BFS in memory.
+  const { data, error } = await db()
+    .from("task_dependencies")
+    .select("blocker_id, blocked_id");
+  if (error || !data) return false;
+  return dependencyCycleExists(
+    data as Array<{ blocker_id: string; blocked_id: string }>,
+    blockerId,
+    blockedId,
+  );
 }
 
 export async function addDependency(
