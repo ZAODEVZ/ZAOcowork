@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/brands";
 import ActivityStrip from "./ActivityStrip";
 import { MentionsBadge } from "./MentionsBadge";
+import { CommandPalette } from "./CommandPalette";
 
 // NavBar's brand tabs. Phase D switched from a hardcoded BRANDS const to a
 // `brands` prop loaded server-side from the brands table. Each brand carries
@@ -73,6 +74,7 @@ export function NavBar({
   // narrow viewports (Iman bug 2026-05-26 Test 10). ActivityStrip renders
   // below the tabs as an unobtrusive status footer.
   return (
+    <>
     <nav className="flex flex-col rounded-xl bg-black/25 border border-white/10 p-1.5">
       <div className="flex items-center gap-1.5">
         <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
@@ -94,6 +96,15 @@ export function NavBar({
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("zao:open-search"))}
+            title="Search tasks (⌘K or /)"
+            aria-label="Search tasks"
+            className="px-2.5 py-1.5 rounded-lg text-xs border border-transparent text-white/55 hover:text-white/85 hover:bg-white/[0.06] transition"
+          >
+            ⌕
+          </button>
           <SimpleTab
             href="/my-work"
             label="Mine"
@@ -131,6 +142,8 @@ export function NavBar({
       </div>
       <ActivityStrip />
     </nav>
+    <CommandPalette />
+    </>
   );
 }
 
