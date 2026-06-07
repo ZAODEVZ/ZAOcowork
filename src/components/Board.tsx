@@ -143,6 +143,119 @@ function parseDueDate(raw: string): Date | null {
   return d;
 }
 
+// Saved views: one-click filter presets + user-saved combos. Built-ins cover the
+// common asks; custom views snapshot the current filter bar to localStorage.
+type SavedView = { name: string; filters: Partial<Filters> };
+
+const VIEW_PRESETS: SavedView[] = [
+  { name: "My tasks", filters: { mineOnly: true } },
+  { name: "Everyone", filters: { mineOnly: false } },
+  { name: "My P1s", filters: { mineOnly: true, priority: "P1" } },
+  { name: "All P1s", filters: { mineOnly: false, priority: "P1" } },
+  { name: "Aging", filters: { mineOnly: false, agingOnly: true } },
+];
+
+function viewMatches(current: Filters, view: Partial<Filters>): boolean {
+  const target: Filters = { ...EMPTY_FILTERS, ...view };
+  return JSON.stringify(current) === JSON.stringify(target);
+}
+
+function SavedViews({
+  filters,
+  onApply,
+  userKey,
+}: {
+  filters: Filters;
+  onApply: (f: Filters) => void;
+  userKey: string;
+}) {
+  const storageKey = `cowork-board-views:${userKey || "anon"}`;
+  const [custom, setCustom] = useState<SavedView[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) setCustom(JSON.parse(raw));
+    } catch {
+      /* ignore corrupt */
+    }
+  }, [storageKey]);
+
+  function persist(next: SavedView[]) {
+    setCustom(next);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(storageKey, JSON.stringify(next));
+    }
+  }
+
+  function saveCurrent() {
+    const name = window.prompt("Name this view (e.g. 'Site P1s')")?.trim();
+    if (!name) return;
+    const next = [...custom.filter((v) => v.name !== name), { name, filters: { ...filters } }];
+    persist(next);
+  }
+
+  function remove(name: string) {
+    persist(custom.filter((v) => v.name !== name));
+  }
+
+  const chip = (active: boolean) =>
+    `px-2.5 py-1 rounded-lg text-[11px] font-medium border transition whitespace-nowrap ${
+      active
+        ? "bg-blue-500/20 text-blue-200 border-blue-500/40"
+        : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
+    }`;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-widest text-white/30 mr-0.5">Views</span>
+      {VIEW_PRESETS.map((v) => (
+        <button
+          key={v.name}
+          type="button"
+          onClick={() => onApply({ ...EMPTY_FILTERS, ...v.filters })}
+          className={chip(viewMatches(filters, v.filters))}
+        >
+          {v.name}
+        </button>
+      ))}
+      {custom.map((v) => {
+        const active = JSON.stringify(filters) === JSON.stringify({ ...EMPTY_FILTERS, ...v.filters });
+        return (
+          <span key={v.name} className="inline-flex items-center">
+            <button
+              type="button"
+              onClick={() => onApply({ ...EMPTY_FILTERS, ...v.filters })}
+              className={chip(active)}
+              title="Apply saved view"
+            >
+              ★ {v.name}
+            </button>
+            <button
+              type="button"
+              onClick={() => remove(v.name)}
+              title="Delete view"
+              className="ml-0.5 text-white/30 hover:text-red-300 text-xs px-1"
+            >
+              ×
+            </button>
+          </span>
+        );
+      })}
+      <button
+        type="button"
+        onClick={saveCurrent}
+        className="px-2.5 py-1 rounded-lg text-[11px] border border-dashed border-white/15 text-white/45 hover:text-white/80 hover:border-white/30 transition"
+        title="Save the current filters as a view"
+      >
+        ＋ Save view
+      </button>
+    </div>
+  );
+}
+
+
 const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
   {
     title: "Welcome to The Zao Co-Works",
@@ -585,6 +698,8 @@ export function Board({
         selectMode={selectMode}
         onToggleSelectMode={() => setSelectMode((v) => !v)}
       />
+
+      <SavedViews filters={filters} onApply={setFilters} userKey={currentUser} />
 
       <PortfolioRollup items={items} />
 
