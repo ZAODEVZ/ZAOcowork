@@ -1,0 +1,40 @@
+# db-push — apply Supabase migrations from git on merge to main.
+# Install: copy this file to .github/workflows/db-push.yml via the GitHub web UI
+# (the automation token lacks the `workflow` scope). Add repo secrets
+# SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD. No-ops until they're set.
+# See docs/MIGRATIONS.md.
+name: db-push
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+  workflow_dispatch: {}
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard — secrets present
+        id: guard
+        run: |
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ] || [ -z "${{ secrets.SUPABASE_DB_PASSWORD }}" ]; then
+            echo "Supabase secrets not set — skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Checkout
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/checkout@v4
+      - name: Setup Supabase CLI
+        if: steps.guard.outputs.skip != 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Push migrations
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref etwvzrmlxeobinrlytza
+          supabase db push
