@@ -1,0 +1,72 @@
+# db-backup
+# Nightly pg_dump of the Supabase DB, committed (gzipped) to the `db-backups`
+# branch. Independent of Supabase's own backups so we always hold our own copies.
+#
+# SETUP: add repo secret SUPABASE_DB_URL = the Postgres connection URI from
+# Supabase → Project Settings → Database → Connection string (URI, includes the
+# password). The job is a no-op until that secret is set.
+#
+# RESTORE: see docs/DATABASE.md.
+name: db-backup
+on:
+  schedule:
+    - cron: "0 9 * * *" # daily ~09:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard — secret present
+        id: guard
+        run: |
+          if [ -z "${{ secrets.SUPABASE_DB_URL }}" ]; then
+            echo "SUPABASE_DB_URL not set — skipping backup."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout (db-backups branch)
+        if: steps.guard.outputs.skip != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Postgres 16 client
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+
+      - name: Dump, prune, commit
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Switch to (or create) the dedicated backups branch.
+          if git ls-remote --exit-code --heads origin db-backups >/dev/null 2>&1; then
+            git fetch origin db-backups
+            git checkout -B db-backups origin/db-backups
+          else
+            git checkout -B db-backups
+          fi
+
+          mkdir -p backups
+          STAMP="$(date -u +%F)"
+          /usr/lib/postgresql/16/bin/pg_dump "$SUPABASE_DB_URL" --no-owner --no-privileges \
+            | gzip > "backups/cowork-${STAMP}.sql.gz"
+
+          # Keep ~30 days of dailies.
+          find backups -name 'cowork-*.sql.gz' -mtime +30 -delete || true
+
+          git add backups
+          git commit -m "db backup ${STAMP}" || { echo "no changes"; exit 0; }
+          git push origin db-backups
