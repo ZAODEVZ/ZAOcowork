@@ -143,6 +143,15 @@ function parseDueDate(raw: string): Date | null {
   return d;
 }
 
+// Urgency/importance sort bucket. Module-scope (pure, no deps) so it's a stable
+// reference and doesn't invalidate the byStatus useMemo every render.
+function tagBucket(it: ActionItem): number {
+  if (it.important && it.urgent) return 0;
+  if (it.urgent) return 1;
+  if (it.important) return 2;
+  return 3;
+}
+
 // Saved views: one-click filter presets + user-saved combos. Built-ins cover the
 // common asks; custom views snapshot the current filter bar to localStorage.
 type SavedView = { name: string; filters: Partial<Filters> };
@@ -355,19 +364,28 @@ export function Board({
   // visits restore the last filter state from localStorage so the board picks
   // up where you left off (per-user key so teammates do not share state).
   const filterStorageKey = `cowork-board-filters:${currentUser || "anon"}`;
-  const [filters, setFilters] = useState<Filters>(() => {
-    if (typeof window === "undefined") return { ...EMPTY_FILTERS, mineOnly: true };
+  // First render uses the SSR-safe default so server + client match (no
+  // hydration mismatch). Saved filters are hydrated after mount.
+  const [filters, setFilters] = useState<Filters>(() => ({ ...EMPTY_FILTERS, mineOnly: true }));
+  useEffect(() => {
     try {
       const raw = window.localStorage.getItem(filterStorageKey);
-      if (!raw) return { ...EMPTY_FILTERS, mineOnly: true };
+      if (!raw) return;
       const parsed = JSON.parse(raw) as Partial<Filters> & { brand?: string };
-      return { ...EMPTY_FILTERS, ...migrateFilters(parsed) };
+      setFilters({ ...EMPTY_FILTERS, ...migrateFilters(parsed) });
     } catch {
-      return { ...EMPTY_FILTERS, mineOnly: true };
+      /* ignore corrupt/blocked storage */
     }
-  });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStorageKey]);
+  // Skip the first persist so the mount-time default doesn't overwrite saved
+  // filters before they hydrate.
+  const skipFirstPersist = useRef(true);
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (skipFirstPersist.current) {
+      skipFirstPersist.current = false;
+      return;
+    }
     try {
       window.localStorage.setItem(filterStorageKey, JSON.stringify(filters));
     } catch {
@@ -557,13 +575,6 @@ export function Board({
     prevById.current = next;
   }, [items, storageUserKey]);
 
-  const tagBucket = (it: ActionItem): number => {
-    if (it.important && it.urgent) return 0;
-    if (it.urgent) return 1;
-    if (it.important) return 2;
-    return 3;
-  };
-
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return items.filter((it) => {
@@ -631,7 +642,7 @@ export function Board({
       });
     }
     return map;
-  }, [filtered, tagBucket]);
+  }, [filtered]);
 
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const claimableCount = items.filter((it) => it.claimable).length;

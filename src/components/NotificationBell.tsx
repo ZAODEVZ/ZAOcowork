@@ -73,6 +73,14 @@ export function NotificationBell({
     }
   }, [notifsKey]);
 
+  // Escape closes the dropdown (keyboard users).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   // Diff items against snapshot and generate new notifications
   useEffect(() => {
     if (typeof window === "undefined") return;

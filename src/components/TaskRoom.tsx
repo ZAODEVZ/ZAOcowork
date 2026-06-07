@@ -413,10 +413,9 @@ function DependenciesBlock({ item }: { item: ActionItem }) {
 function OriginBlock({ item }: { item: ActionItem }) {
   const origin = resolveSource(item);
 
-  if (origin.kind === "none" || !origin.url) {
-    return null;
-  }
-
+  // Hooks must run unconditionally (Rules of Hooks) — declare them BEFORE any
+  // early return, or React crashes ("rendered more hooks…") if a task gains an
+  // origin while the panel is open.
   const [liveStatus, setLiveStatus] = useState<{
     state: "open" | "closed" | "merged" | "unknown";
     title: string | null;
@@ -447,6 +446,10 @@ function OriginBlock({ item }: { item: ActionItem }) {
       cancelled = true;
     };
   }, [origin.kind, origin.needsLiveStatus, origin.refId]);
+
+  if (origin.kind === "none" || !origin.url) {
+    return null;
+  }
 
   const stateColors: Record<"open" | "closed" | "merged" | "unknown", string> = {
     open: "bg-sky-500/20 text-sky-200 border-sky-500/30",
@@ -498,6 +501,11 @@ function DetailsPanel({
 }) {
   const [pending, start] = useTransition();
   const [flash, setFlash] = useState<"saved" | null>(null);
+  // Optimistic status so the dropdown doesn't snap back to the old value while
+  // the patch is in flight (revalidate can take a second or two). Re-syncs to
+  // the server value once `item` refreshes (or on a blocked/failed change).
+  const [statusValue, setStatusValue] = useState<ActionStatus>(item.status);
+  useEffect(() => setStatusValue(item.status), [item.status]);
   // Notes autosave to localStorage so a crash/reload/background-refresh never
   // wipes a long write-up (Jose's lost feedback). commit() drops the draft on a
   // successful save without blanking the field.
@@ -590,8 +598,11 @@ function DetailsPanel({
           <FormField label="Status (saves instantly)">
             <select
               name="status"
-              value={item.status}
-              onChange={(e) => quickPatch("status", e.target.value)}
+              value={statusValue}
+              onChange={(e) => {
+                setStatusValue(e.target.value as ActionStatus);
+                quickPatch("status", e.target.value);
+              }}
               disabled={pending}
               className={selectCls}
             >

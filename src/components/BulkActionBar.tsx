@@ -36,14 +36,19 @@ export function BulkActionBar({
   function run() {
     const ids = selectedIds;
     if (ids.length === 0) return;
+    // Confirm BEFORE entering the transition — a window.confirm inside start()
+    // that the user cancels leaves `pending` stuck true (buttons disabled).
+    if (
+      action === "delete" &&
+      !window.confirm(`Permanently delete ${ids.length} task${ids.length === 1 ? "" : "s"}? This cannot be undone.`)
+    ) {
+      return;
+    }
     const fd = new FormData();
     for (const id of ids) fd.append("ids", id);
     start(async () => {
       try {
         if (action === "delete") {
-          if (!window.confirm(`Permanently delete ${ids.length} task${ids.length === 1 ? "" : "s"}? This cannot be undone.`)) {
-            return;
-          }
           await bulkDelete(fd);
         } else if (action === "owner") {
           if (!value) return;
