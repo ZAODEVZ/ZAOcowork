@@ -34,6 +34,7 @@ export function CleanupPanel({
   const [tab, setTab] = useState<Bucket>("stale");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [note, setNote] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const items = buckets[tab];
@@ -66,13 +67,24 @@ export function CleanupPanel({
     const fd = new FormData();
     for (const id of selected) fd.append("ids", id);
     if (note.trim()) fd.set("note", note.trim());
+    setError(null);
     start(async () => {
-      if (action === "done") await bulkMarkDone(fd);
-      else if (action === "archive") await bulkArchive(fd);
-      else await bulkMoveToTriage(fd);
-      setSelected(new Set());
-      setNote("");
-      router.refresh();
+      try {
+        if (action === "done") await bulkMarkDone(fd);
+        else if (action === "archive") await bulkArchive(fd);
+        else await bulkMoveToTriage(fd);
+        // Only clear on success — a failed run keeps the selection + note so
+        // the user can retry without re-checking every row.
+        setSelected(new Set());
+        setNote("");
+        router.refresh();
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? `Couldn't ${labels[action]}: ${err.message}`
+            : `Couldn't ${labels[action]}. Selection kept — try again.`
+        );
+      }
     });
   }
 
@@ -143,6 +155,11 @@ export function CleanupPanel({
       {/* Sticky action footer */}
       {selected.size > 0 && (
         <div className="sticky bottom-4 z-30 rounded-2xl bg-[#0a1226] border border-fuchsia-500/40 shadow-2xl shadow-black/40 p-3 md:p-4">
+          {error && (
+            <div className="mb-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              {error}
+            </div>
+          )}
           <div className="flex flex-col md:flex-row md:items-end gap-3">
             <div className="flex-1 min-w-0">
               <label className="block">

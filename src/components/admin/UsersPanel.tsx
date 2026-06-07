@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { TeamMember, TeamRole } from "@/lib/team";
 import {
   addUserAction,
@@ -110,27 +110,45 @@ function AddUserForm() {
 function UserRow({ member }: { member: TeamMember; actorLabel: string }) {
   const founder = isFounder(member);
   const [editingPwd, setEditingPwd] = useState(false);
+  const [role, setRole] = useState<TeamRole>(member.role);
+  const [roleSaving, startRole] = useTransition();
+
+  // Keep local optimistic value in sync if the server-rendered role changes
+  // (e.g. after a refresh or another admin's edit lands).
+  useEffect(() => setRole(member.role), [member.role]);
+
+  function changeRole(next: TeamRole) {
+    const prev = role;
+    setRole(next); // optimistic
+    const fd = new FormData();
+    fd.set("id", member.id);
+    fd.set("role", next);
+    startRole(async () => {
+      try {
+        await setRoleAction(fd);
+      } catch {
+        setRole(prev); // revert on failure
+      }
+    });
+  }
+
   return (
     <tr className="border-b border-white/5 last:border-b-0 hover:bg-white/[0.03]">
       <td className="px-3 py-2 text-white/90">{member.name}</td>
       <td className="px-3 py-2 text-white/60 font-mono text-xs">{member.legacy_owner ?? "-"}</td>
       <td className="px-3 py-2">
-        <form action={setRoleAction} className="inline">
-          <input type="hidden" name="id" value={member.id} />
-          <select
-            name="role"
-            defaultValue={member.role}
-            onChange={(e) => (e.currentTarget.form as HTMLFormElement).requestSubmit()}
-            disabled={founder && member.role === "admin"}
-            className="rounded-md bg-[#0b1220] border border-white/10 px-2 py-1 text-xs text-white/85 disabled:opacity-60"
-          >
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </form>
+        <select
+          value={role}
+          onChange={(e) => changeRole(e.target.value as TeamRole)}
+          disabled={roleSaving || (founder && member.role === "admin")}
+          className="rounded-md bg-[#0b1220] border border-white/10 px-2 py-1 text-xs text-white/85 disabled:opacity-60"
+        >
+          {ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
       </td>
       <td className="px-3 py-2 text-xs text-white/60">
         {editingPwd ? (

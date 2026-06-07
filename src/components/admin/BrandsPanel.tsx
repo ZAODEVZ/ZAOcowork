@@ -130,6 +130,7 @@ function AddBrandForm({ disabled }: { disabled: boolean }) {
 
 function BrandRowView({ brand, migrationApplied }: { brand: BrandRow; migrationApplied: boolean }) {
   const [editing, setEditing] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
   const isConst = brand.id.startsWith("const-");
   const editable = migrationApplied && !isConst;
 
@@ -139,8 +140,15 @@ function BrandRowView({ brand, migrationApplied }: { brand: BrandRow; migrationA
         <td colSpan={6} className="px-3 py-3">
           <form
             action={async (fd) => {
-              await updateBrandAction(fd);
-              setEditing(false);
+              setEditError(null);
+              try {
+                await updateBrandAction(fd);
+                setEditing(false);
+              } catch (err) {
+                setEditError(
+                  err instanceof Error ? err.message : "Couldn't save changes."
+                );
+              }
             }}
             className="grid grid-cols-1 md:grid-cols-6 gap-2 items-end"
           >
@@ -178,12 +186,20 @@ function BrandRowView({ brand, migrationApplied }: { brand: BrandRow; migrationA
               </button>
               <button
                 type="button"
-                onClick={() => setEditing(false)}
+                onClick={() => {
+                  setEditError(null);
+                  setEditing(false);
+                }}
                 className="text-xs text-white/55 hover:text-white/85"
               >
                 cancel
               </button>
             </div>
+            {editError && (
+              <div className="md:col-span-6 rounded-md border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-xs text-red-200">
+                {editError}
+              </div>
+            )}
           </form>
         </td>
       </tr>
