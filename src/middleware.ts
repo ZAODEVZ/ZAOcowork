@@ -11,7 +11,8 @@ const PUBLIC_PATHS = new Set(["/", "/login"]);
 // /api/v1/*: bot fleet endpoints, each bearer-authed in the handler (per-bot
 // tokens via COWORK_BOT_TOKENS) — bypass the cookie redirect. Covers auto-close,
 // items, and bots/heartbeat.
-const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/shipped", "/api/v1"];
+// /api/my-digest: per-person digest, Bearer DIGEST_CRON_TOKEN or session.
+const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
