@@ -16,7 +16,7 @@
 // correlate reactions/replies to mark recipients "seen".
 
 import { listTeamMembers, type TeamMember } from "./team";
-import { sendGroupMessage, escapeHtml, type TelegramSendResult } from "./telegram";
+import { sendGroupMessage, sendDirectMessage, escapeHtml, type TelegramSendResult } from "./telegram";
 import { matchMentions } from "./mentions";
 import type { ActionItem } from "./types";
 
@@ -64,7 +64,9 @@ export async function notifyComment(args: NotifyCommentArgs): Promise<TelegramSe
     recipients.set(m.id, m);
   };
 
-  // @mentions (skipped when silent)
+  // @mentions (skipped when silent). Track them separately so we can also send
+  // each a personal DM, not just a group tag.
+  const mentionedMembers: TeamMember[] = [];
   if (!silent) {
     const mentionedKeys = matchMentions(
       commentText,
@@ -74,7 +76,12 @@ export async function notifyComment(args: NotifyCommentArgs): Promise<TelegramSe
       })),
     );
     const byId = new Map(members.map((m) => [m.id, m]));
-    for (const k of mentionedKeys) add(byId.get(k));
+    for (const k of mentionedKeys) {
+      const m = byId.get(k);
+      if (!m) continue;
+      add(m);
+      if ((m.legacy_owner ?? m.name).toLowerCase() !== actorKey) mentionedMembers.push(m);
+    }
   }
 
   // task owner
@@ -111,5 +118,27 @@ export async function notifyComment(args: NotifyCommentArgs): Promise<TelegramSe
     `👉 <a href="${url}">Open task</a>`,
   ].join("\n");
 
-  return sendGroupMessage(html);
+  const groupResult = await sendGroupMessage(html);
+
+  // Also DM each @mentioned teammate who has a telegram_id, so they get a
+  // personal ping rather than only a group tag. Fire-and-forget; a DM failure
+  // (e.g. they never started the bot) must never block the comment save.
+  if (!silent && mentionedMembers.length > 0) {
+    const dmHtml = [
+      `👋 <b>${escapeHtml(actorName)}</b> mentioned you in a comment on`,
+      `<b>#${escapeHtml(item.id)}</b> — ${escapeHtml(item.title)}`,
+      "",
+      `"${escapeHtml(excerpt)}"`,
+      `👉 <a href="${url}">Open task</a>`,
+    ].join("\n");
+    for (const m of mentionedMembers) {
+      if (m.telegram_id) {
+        sendDirectMessage(m.telegram_id, dmHtml).catch((e) =>
+          console.error(`[notify] DM to ${m.telegram_id} failed`, e),
+        );
+      }
+    }
+  }
+
+  return groupResult;
 }
