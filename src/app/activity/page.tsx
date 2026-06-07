@@ -291,7 +291,7 @@ export default async function ActivityPage({
                   </h3>
                   <ul className="space-y-1">
                     {g.items.map((e, i) => (
-                      <li key={`${e.taskId}-${e.kind}-${i}`}>
+                      <li key={`${e.kind}-${e.taskId}-${e.createdAt}`}>
                         <Link
                           href={`/todo/${encodeURIComponent(e.taskId)}`}
                           prefetch={false}

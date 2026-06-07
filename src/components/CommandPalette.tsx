@@ -28,6 +28,12 @@ export function CommandPalette() {
   const [results, setResults] = useState<Hit[]>([]);
   const [sel, setSel] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const selRef = useRef<HTMLButtonElement | null>(null);
+
+  // Keep the keyboard-selected result scrolled into view.
+  useEffect(() => {
+    selRef.current?.scrollIntoView({ block: "nearest" });
+  }, [sel]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -140,6 +146,7 @@ export function CommandPalette() {
           {results.map((hit, i) => (
             <li key={hit.id}>
               <button
+                ref={i === sel ? selRef : undefined}
                 onMouseEnter={() => setSel(i)}
                 onClick={() => go(hit)}
                 className={`w-full text-left flex items-center gap-3 px-4 py-2.5 transition ${

@@ -172,7 +172,7 @@ export default async function MyWorkPage() {
           <Section title="Pending your review" count={pending.length} accent="bg-amber-400">
             <ul className="space-y-1">
               {pending.map((p, i) => (
-                <li key={`${p.it.id}-${i}`}>
+                <li key={`${p.it.id}-${p.at}`}>
                   <Link
                     href={`/todo/${encodeURIComponent(p.it.id)}`}
                     prefetch={false}
@@ -192,7 +192,7 @@ export default async function MyWorkPage() {
         <Section title="Your @mentions" count={recentMentions.length} accent="bg-sky-400">
           <ul className="space-y-1">
             {recentMentions.map((m, i) => (
-              <li key={`${m.it.id}-${i}`}>
+              <li key={`${m.it.id}-${m.at}`}>
                 <Link
                   href={`/todo/${encodeURIComponent(m.it.id)}`}
                   prefetch={false}

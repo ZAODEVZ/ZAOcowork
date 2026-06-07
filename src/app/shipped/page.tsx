@@ -37,9 +37,9 @@ export default async function ShippedPage() {
                     {group.projectName}
                   </h2>
                   <ul className="space-y-3">
-                    {group.items.map((item, idx) => (
+                    {group.items.map((item) => (
                       <li
-                        key={`${group.projectName}-${idx}`}
+                        key={`${group.projectName}-${item.title}-${item.completedAt ?? ""}`}
                         className="flex flex-col sm:flex-row sm:items-baseline gap-2 text-slate-200"
                       >
                         <span className="flex-1">{item.title}</span>

@@ -141,8 +141,8 @@ export function InsightsPanel({ items }: { items: ActionItem[] }) {
             Throughput · completed / day (14d)
           </h4>
           <div className="flex items-end gap-1 h-24">
-            {throughput.map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full" title={`${d.label}: ${d.count} done`}>
+            {throughput.map((d) => (
+              <div key={d.label} className="flex-1 flex flex-col items-center justify-end h-full" title={`${d.label}: ${d.count} done`}>
                 <div
                   className="w-full rounded-t bg-sky-500/60 min-h-[2px] transition-all"
                   style={{ height: `${(d.count / maxThroughput) * 100}%` }}
