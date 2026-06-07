@@ -97,17 +97,22 @@ export async function closeMergedSources(): Promise<AutoCloseResult> {
       continue;
     }
 
-    // Log the audit event
-    closed.push(row.legacy_id || row.id);
-    await onTaskClosed(row.id);
-    await logAudit({
-      actor: "system-autoclose",
-      entity_type: "task",
-      entity_id: row.id,
-      entity_label: row.legacy_id || row.id,
-      action: "status_change",
-      detail: `auto-closed: PR #${prNumber} merged`,
-    });
+    // Dep-flow + audit are best-effort per task; a failure on one shouldn't
+    // abort the batch or mark a task closed that didn't fully process.
+    try {
+      await onTaskClosed(row.id);
+      await logAudit({
+        actor: "system-autoclose",
+        entity_type: "task",
+        entity_id: row.id,
+        entity_label: row.legacy_id || row.id,
+        action: "status_change",
+        detail: `auto-closed: PR #${prNumber} merged`,
+      });
+      closed.push(row.legacy_id || row.id);
+    } catch (err) {
+      console.error(`auto-close post-step failed for ${row.id}:`, err);
+    }
   }
 
   return { closed, checked: prTasks.length };

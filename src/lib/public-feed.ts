@@ -61,8 +61,11 @@ export async function getPublicShipped(limitPerGroup = 50): Promise<ShippedGroup
         | undefined;
 
       const isPublicByOverride = r.public_override === true;
+      // Inherit (null) shows only inside a public project. Use a strict null
+      // check so a missing column (undefined, pre-migration) is NOT treated as
+      // public — default-deny.
       const isPublicByProject =
-        r.public_override !== false &&
+        (r.public_override === true || r.public_override === null) &&
         projectData?.is_public === true;
 
       if (isPublicByOverride || isPublicByProject) {
