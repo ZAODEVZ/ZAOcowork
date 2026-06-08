@@ -25,17 +25,22 @@ export async function GET(req: NextRequest) {
   let unread = 0;
   let latestAt: string | null = null;
 
+  // Count a mention from either a comment or an update body (people @mention in
+  // both), excluding the user's own posts. Kept in sync with the My Work and
+  // Activity "My mentions" views so the badge number matches what's listed.
+  const tally = (content: string, authorId: string, createdAt: string) => {
+    if (!content) return;
+    if ((authorId ?? "").toLowerCase() === me) return; // not your own
+    if (matchMentions(content, [{ key: "me", aliases }]).length === 0) return;
+    total++;
+    if (!latestAt || createdAt > latestAt) latestAt = createdAt;
+    if (!since || createdAt > since) unread++;
+  };
+
   const doc = await getActions();
   for (const it of doc.items) {
-    for (const c of it.comments ?? []) {
-      if (!c.content) continue;
-      if ((c.userId ?? "").toLowerCase() === me) continue; // not your own
-      if (matchMentions(c.content, [{ key: "me", aliases }]).length === 0) continue;
-      total++;
-      if (!latestAt || c.createdAt > latestAt) latestAt = c.createdAt;
-      if (since && c.createdAt > since) unread++;
-      else if (!since) unread++;
-    }
+    for (const c of it.comments ?? []) tally(c.content, c.userId ?? "", c.createdAt);
+    for (const u of it.updates ?? []) tally(u.content, u.submittedBy ?? "", u.createdAt);
   }
 
   return Response.json({ total, unread, latestAt });

@@ -6,6 +6,7 @@ import { getActions, ageDays, relativeTime, type ActionItem } from "@/lib/data";
 import { matchMentions } from "@/lib/mentions";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
+import { BackButton } from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -108,13 +109,24 @@ export default async function MyWorkPage() {
     (it) => it.status !== "DONE" && (it.claimable || String(it.owner).toLowerCase() === "open"),
   );
 
-  // Comments that @mention me (not my own), newest first.
-  const mentions: Array<{ it: ActionItem; who: string; content: string; at: string }> = [];
+  // Comments AND updates that @mention me (not my own), newest first.
+  const mentions: Array<{
+    it: ActionItem;
+    who: string;
+    content: string;
+    at: string;
+    kind: "comment" | "update";
+  }> = [];
   for (const it of items) {
     for (const c of it.comments ?? []) {
       if (!c.content || (c.userId ?? "").toLowerCase() === me) continue;
       if (matchMentions(c.content, [{ key: "me", aliases }]).length === 0) continue;
-      mentions.push({ it, who: c.displayName || c.userId || "?", content: c.content, at: c.createdAt });
+      mentions.push({ it, who: c.displayName || c.userId || "?", content: c.content, at: c.createdAt, kind: "comment" });
+    }
+    for (const u of it.updates ?? []) {
+      if (!u.content || (u.submittedBy ?? "").toLowerCase() === me) continue;
+      if (matchMentions(u.content, [{ key: "me", aliases }]).length === 0) continue;
+      mentions.push({ it, who: u.displayName || u.submittedBy || "?", content: u.content, at: u.createdAt, kind: "update" });
     }
   }
   mentions.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
@@ -142,6 +154,7 @@ export default async function MyWorkPage() {
     <main className="min-h-screen relative text-white px-4 bg-[#0a0a1f] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.14),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(59,130,246,0.10),transparent_60%)]" />
       <div className="relative max-w-3xl mx-auto py-6 space-y-4">
+        <BackButton fallback="/" label="Back to board" />
         <header className="flex flex-col gap-3 rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/10 px-5 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -199,7 +212,8 @@ export default async function MyWorkPage() {
                   className="block rounded-xl px-2.5 py-2 -mx-1 hover:bg-white/[0.05] transition"
                 >
                   <div className="text-[11px] text-white/40">
-                    <span className="text-white/70 font-medium">{m.who}</span> on{" "}
+                    <span className="text-white/70 font-medium">{m.who}</span>{" "}
+                    {m.kind === "update" ? "mentioned you in an update" : "mentioned you"} on{" "}
                     <span className="text-white/55">#{m.it.id}</span> · {relativeTime(m.at)}
                   </div>
                   <div className="text-sm text-white/80 line-clamp-2 whitespace-pre-wrap break-words">
