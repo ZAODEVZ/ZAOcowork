@@ -85,7 +85,19 @@ function withMentions(text: string): ReactNode {
   return parts;
 }
 
-function Chip({ href, label, active }: { href: string; label: string; active: boolean }) {
+function Chip({
+  href,
+  label,
+  active,
+  count,
+  dim,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+  count?: number;
+  dim?: boolean;
+}) {
   return (
     <Link
       href={href}
@@ -94,9 +106,14 @@ function Chip({ href, label, active }: { href: string; label: string; active: bo
         active
           ? "bg-sky-500/20 text-sky-200 border-sky-500/40"
           : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/[0.06]"
-      }`}
+      } ${dim ? "opacity-40" : ""}`}
     >
       {label}
+      {typeof count === "number" && (
+        <span className={`ml-1.5 tabular-nums ${active ? "text-sky-100/75" : "text-white/35"}`}>
+          {count}
+        </span>
+      )}
     </Link>
   );
 }
@@ -160,12 +177,34 @@ export default async function ActivityPage({
   all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const typeScoped = all.filter((e) => curType === "all" || e.kind === curType);
+
+  // Roster is derived from EVERY entry (not the type-scoped subset) so the
+  // person chips are stable — switching type or mentions never makes someone
+  // vanish while their person= filter silently stays in the URL (the old bug
+  // that made "no Jose updates" look like missing data).
   const authorMap = new Map<string, string>();
-  for (const e of typeScoped) {
+  for (const e of all) {
     const id = e.authorId.trim().toLowerCase();
     if (id && !authorMap.has(id)) authorMap.set(id, e.author);
   }
   const people = [...authorMap.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+
+  // Counts to show where activity actually is. Type counts are over everything
+  // (stable totals), so e.g. "Updates 12" stays visible even when My-mentions
+  // is hiding them from the list below.
+  const typeCounts = {
+    all: all.length,
+    comment: all.filter((e) => e.kind === "comment").length,
+    update: all.filter((e) => e.kind === "update").length,
+    event: all.filter((e) => e.kind === "event").length,
+  };
+  // Per-person count within the current type scope (ignores person/mentions),
+  // so a chip reading "0" tells you that person has nothing of this type.
+  const personCount = new Map<string, number>();
+  for (const e of typeScoped) {
+    const id = e.authorId.trim().toLowerCase();
+    if (id) personCount.set(id, (personCount.get(id) ?? 0) + 1);
+  }
 
   const meAliases = [userLabel(user), user];
   const filtered = typeScoped.filter((e) => {
@@ -179,6 +218,19 @@ export default async function ActivityPage({
     return true;
   });
   const recent = filtered.slice(0, 150);
+  const anyFilter = curType !== "all" || !!curPerson || curMentions;
+
+  // Plain-English description of the active filters, so it's never a mystery
+  // why the list is short (this is what made My-mentions easy to forget).
+  const TYPE_NOUN: Record<"comment" | "update" | "event", string> = {
+    comment: "comments",
+    update: "updates",
+    event: "events",
+  };
+  const summaryParts: string[] = [];
+  if (curType !== "all") summaryParts.push(TYPE_NOUN[curType]);
+  if (curMentions) summaryParts.push("mentioning you");
+  if (curPerson) summaryParts.push(`by ${authorMap.get(curPerson) ?? curPerson}`);
 
   const hrefFor = (o: {
     type?: "all" | "comment" | "update" | "event";
@@ -252,36 +304,66 @@ export default async function ActivityPage({
           <div className="mb-4 flex items-baseline gap-2">
             <span className="h-2 w-2 rounded-full bg-sky-400" />
             <h2 className="text-sm font-semibold text-white/85">Recent activity</h2>
-            <span className="text-xs text-white/35">{filtered.length} shown</span>
+            <span className="text-xs text-white/35">
+              {anyFilter ? `${recent.length} of ${all.length}` : recent.length} shown
+            </span>
           </div>
 
           {/* Filters */}
           <div className="mb-5 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              <Chip href={hrefFor({ type: "all" })} label="All" active={curType === "all"} />
-              <Chip href={hrefFor({ type: "comment" })} label="Comments" active={curType === "comment"} />
-              <Chip href={hrefFor({ type: "update" })} label="Updates" active={curType === "update"} />
-              <Chip href={hrefFor({ type: "event" })} label="Events" active={curType === "event"} />
+              <Chip href={hrefFor({ type: "all" })} label="All" active={curType === "all"} count={typeCounts.all} />
+              <Chip href={hrefFor({ type: "comment" })} label="Comments" active={curType === "comment"} count={typeCounts.comment} />
+              <Chip href={hrefFor({ type: "update" })} label="Updates" active={curType === "update"} count={typeCounts.update} />
+              <Chip href={hrefFor({ type: "event" })} label="Events" active={curType === "event"} count={typeCounts.event} />
               <span className="mx-1 h-4 w-px bg-white/10" />
               <Chip href={hrefFor({ mentions: !curMentions })} label="✦ My mentions" active={curMentions} />
             </div>
             {people.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
-                <Chip href={hrefFor({ person: "" })} label="Everyone" active={!curPerson} />
-                {people.map(([id, name]) => (
-                  <Chip
-                    key={id}
-                    href={hrefFor({ person: curPerson === id ? "" : id })}
-                    label={name}
-                    active={curPerson === id}
-                  />
-                ))}
+                <Chip href={hrefFor({ person: "" })} label="Everyone" active={!curPerson} count={typeScoped.length} />
+                {people.map(([id, name]) => {
+                  const n = personCount.get(id) ?? 0;
+                  return (
+                    <Chip
+                      key={id}
+                      href={hrefFor({ person: curPerson === id ? "" : id })}
+                      label={name}
+                      active={curPerson === id}
+                      count={n}
+                      dim={n === 0 && curPerson !== id}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {anyFilter && (
+              <div className="flex items-center gap-2 pt-0.5 text-[11px] text-white/45">
+                <span>Showing {summaryParts.join(" · ")}</span>
+                <Link
+                  href="/activity"
+                  prefetch={false}
+                  className="rounded-md border border-white/15 px-2 py-0.5 text-white/70 hover:bg-white/[0.06] hover:text-white transition"
+                >
+                  Clear filters
+                </Link>
               </div>
             )}
           </div>
 
           {recent.length === 0 ? (
-            <p className="text-sm text-white/40 py-10 text-center">Nothing matches these filters.</p>
+            <div className="py-10 text-center space-y-3">
+              <p className="text-sm text-white/40">Nothing matches these filters.</p>
+              {anyFilter && (
+                <Link
+                  href="/activity"
+                  prefetch={false}
+                  className="inline-block rounded-md border border-white/15 px-3 py-1 text-xs text-white/70 hover:bg-white/[0.06] hover:text-white transition"
+                >
+                  Clear filters
+                </Link>
+              )}
+            </div>
           ) : (
             <div className="space-y-6">
               {groups.map((g) => (
