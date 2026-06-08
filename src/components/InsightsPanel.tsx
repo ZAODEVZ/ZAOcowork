@@ -2,7 +2,23 @@
 
 import { useMemo } from "react";
 import type { ActionItem } from "@/lib/types";
-import { ageDays } from "@/lib/types";
+import { ageDays, cycleDays } from "@/lib/types";
+
+// Nearest-rank percentile (matches forecast.ts). p in 0..100.
+function percentileOf(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1));
+  return sorted[idx];
+}
+
+// Cycle-time histogram bands (days, created -> completed).
+const CYCLE_BANDS: { label: string; max: number }[] = [
+  { label: "0–2d", max: 2 },
+  { label: "3–5d", max: 5 },
+  { label: "6–10d", max: 10 },
+  { label: "11–20d", max: 20 },
+  { label: "20d+", max: Infinity },
+];
 
 // InsightsPanel (research roadmap C): a lightweight, dependency-free ops
 // dashboard. Pure SVG/CSS — no charting library — so it adds no bundle weight
@@ -62,6 +78,49 @@ export function InsightsPanel({ items }: { items: ActionItem[] }) {
     }
     return days;
   }, [items]);
+
+  // 3. Cycle time: created -> completed for items finished in the last 60 days.
+  //    Median + p90 are the headline flow metrics; the histogram shows spread.
+  const cycle = useMemo(() => {
+    const cutoff = Date.now() - 60 * 24 * 60 * 60 * 1000;
+    const samples: number[] = [];
+    for (const it of items) {
+      if (it.status !== "DONE") continue;
+      const done = new Date(it.completedAt || it.updatedAt || "").getTime();
+      if (!Number.isFinite(done) || done < cutoff) continue;
+      const d = cycleDays(it.createdAt, it.completedAt ?? "", it.status, it.updatedAt);
+      if (d !== null) samples.push(d);
+    }
+    samples.sort((a, b) => a - b);
+    const hist = CYCLE_BANDS.map((b) => ({ label: b.label, count: 0 }));
+    for (const d of samples) {
+      const i = CYCLE_BANDS.findIndex((b) => d <= b.max);
+      hist[i === -1 ? hist.length - 1 : i].count += 1;
+    }
+    return {
+      n: samples.length,
+      median: percentileOf(samples, 50),
+      p90: percentileOf(samples, 90),
+      hist,
+    };
+  }, [items]);
+  const maxCycleBand = Math.max(1, ...cycle.hist.map((b) => b.count));
+
+  // 4. WIP per owner: active (non-DONE) load per teammate. Surfaces who's
+  //    overloaded vs idle, and how much work has no owner at all.
+  const wip = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const it of active) {
+      if (it.status === "DONE") continue;
+      const o = String(it.owner ?? "").trim();
+      const key = !o || o === "Open" ? "Unowned" : o;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .map(([owner, count]) => ({ owner, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [active]);
+  const maxWip = Math.max(1, ...wip.map((w) => w.count));
 
   const maxThroughput = Math.max(1, ...throughput.map((d) => d.count));
   const done7d = throughput.slice(7).reduce((n, d) => n + d.count, 0);
@@ -154,6 +213,69 @@ export function InsightsPanel({ items }: { items: ActionItem[] }) {
             <span>{throughput[0]?.label}</span>
             <span>today</span>
           </div>
+        </section>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-5">
+        {/* Cycle time */}
+        <section>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-[11px] uppercase tracking-wider text-white/45 font-semibold">
+              Cycle time · created → done (60d)
+            </h4>
+            {cycle.n > 0 && (
+              <span className="text-[10px] text-white/50">
+                median <span className="text-white/80 font-semibold">{cycle.median}d</span>
+                <span className="mx-1 text-white/25">·</span>
+                p90 <span className="text-white/80 font-semibold">{cycle.p90}d</span>
+              </span>
+            )}
+          </div>
+          {cycle.n === 0 ? (
+            <div className="text-[11px] text-white/35 py-6 text-center">
+              No items completed in the last 60 days.
+            </div>
+          ) : (
+            <div className="flex items-end gap-2 h-24">
+              {cycle.hist.map((b) => (
+                <div key={b.label} className="flex-1 flex flex-col items-center justify-end h-full" title={`${b.label}: ${b.count}`}>
+                  <span className="text-[9px] text-white/50 mb-0.5">{b.count || ""}</span>
+                  <div
+                    className="w-full rounded-t bg-violet-500/55 min-h-[2px] transition-all"
+                    style={{ height: `${(b.count / maxCycleBand) * 100}%` }}
+                  />
+                  <span className="mt-1 text-[9px] text-white/35">{b.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* WIP per owner */}
+        <section>
+          <h4 className="text-[11px] uppercase tracking-wider text-white/45 mb-2 font-semibold">
+            Open work by owner
+          </h4>
+          {wip.length === 0 ? (
+            <div className="text-[11px] text-white/35 py-6 text-center">No open work.</div>
+          ) : (
+            <div className="space-y-1.5">
+              {wip.map((w) => (
+                <div key={w.owner} className="flex items-center gap-2">
+                  <span className={`w-20 shrink-0 text-[11px] truncate ${w.owner === "Unowned" ? "text-amber-300/80" : "text-white/60"}`}>
+                    {w.owner}
+                  </span>
+                  <div className="flex-1 h-3 rounded-full bg-white/[0.05] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${w.owner === "Unowned" ? "bg-amber-500/60" : "bg-sky-500/55"}`}
+                      style={{ width: `${(w.count / maxWip) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-6 shrink-0 text-right text-[11px] text-white/55">{w.count}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>
