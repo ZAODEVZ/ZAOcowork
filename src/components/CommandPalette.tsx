@@ -52,6 +52,11 @@ export function CommandPalette() {
         (target.tagName === "INPUT" ||
           target.tagName === "TEXTAREA" ||
           target.isContentEditable);
+      // On the board, QuickAdd owns ⌘K (it has both add + find). When it's
+      // mounted, yield so we don't stack two modals. "/" stays ours everywhere.
+      const quickAddMounted =
+        (window as unknown as { __zaoQuickAddCount?: number }).__zaoQuickAddCount;
+      if (meta && quickAddMounted) return;
       if (meta || (e.key === "/" && !typing && !open)) {
         e.preventDefault();
         setOpen(true);

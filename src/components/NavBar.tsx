@@ -8,6 +8,7 @@ import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/bra
 import ActivityStrip from "./ActivityStrip";
 import { MentionsBadge } from "./MentionsBadge";
 import { CommandPalette } from "./CommandPalette";
+import { KeyboardHelp } from "./KeyboardHelp";
 
 // NavBar's brand tabs. Phase D switched from a hardcoded BRANDS const to a
 // `brands` prop loaded server-side from the brands table. Each brand carries
@@ -122,6 +123,7 @@ export function NavBar({
       <ActivityStrip />
     </nav>
     <CommandPalette />
+    <KeyboardHelp />
     </>
   );
 }

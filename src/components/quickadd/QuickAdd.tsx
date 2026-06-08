@@ -44,6 +44,17 @@ export function QuickAdd({
   const [searchQuery, setSearchQuery] = useState("");
   const [highlighted, setHighlighted] = useState(0);
 
+  // Tell the global CommandPalette that a QuickAdd is on the page so it yields
+  // ⌘K to us (otherwise both modals open at once). Ref-counted to survive
+  // overlapping mounts/remounts.
+  useEffect(() => {
+    const w = window as unknown as { __zaoQuickAddCount?: number };
+    w.__zaoQuickAddCount = (w.__zaoQuickAddCount ?? 0) + 1;
+    return () => {
+      w.__zaoQuickAddCount = Math.max(0, (w.__zaoQuickAddCount ?? 1) - 1);
+    };
+  }, []);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const isMod = e.metaKey || e.ctrlKey;
