@@ -344,6 +344,42 @@ function dueUrgency(due: string | undefined, status: string): "overdue" | "soon"
   return "none";
 }
 
+// CSV export of the currently-filtered items. Kept dependency-free: builds the
+// text in-browser and downloads via a Blob URL. RFC-4180 quoting (wrap in
+// quotes, double any embedded quotes) so titles/notes with commas survive.
+const CSV_COLUMNS: { header: string; get: (it: ActionItem) => string }[] = [
+  { header: "id", get: (it) => String(it.id ?? "") },
+  { header: "title", get: (it) => it.title ?? "" },
+  { header: "status", get: (it) => it.status ?? "" },
+  { header: "owner", get: (it) => String(it.owner ?? "") },
+  { header: "priority", get: (it) => it.priority ?? "" },
+  { header: "category", get: (it) => it.category ?? "" },
+  { header: "brands", get: (it) => (it.brands ?? []).join("; ") },
+  { header: "due", get: (it) => it.due ?? "" },
+  { header: "createdAt", get: (it) => it.createdAt ?? "" },
+  { header: "updatedAt", get: (it) => it.updatedAt ?? "" },
+  { header: "completedAt", get: (it) => it.completedAt ?? "" },
+];
+
+function csvCell(v: string): string {
+  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+function exportItemsCsv(items: ActionItem[]) {
+  const header = CSV_COLUMNS.map((c) => c.header).join(",");
+  const rows = items.map((it) => CSV_COLUMNS.map((c) => csvCell(c.get(it))).join(","));
+  const csv = [header, ...rows].join("\r\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `zao-tasks-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function Board({
   items,
   currentUser,
@@ -780,6 +816,14 @@ export function Board({
             aria-pressed={showInsights}
           >
             📊 Insights
+          </button>
+          <button
+            onClick={() => exportItemsCsv(filtered)}
+            disabled={filtered.length === 0}
+            title={`Export ${filtered.length} shown task${filtered.length === 1 ? "" : "s"} as CSV`}
+            className="px-2.5 py-1 text-xs font-medium rounded-md border bg-zao-ink border-white/10 text-white/55 hover:text-white/85 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            ⤓ Export
           </button>
           {/* Group-by selector — only meaningful in table view */}
           {view === "table" && (
