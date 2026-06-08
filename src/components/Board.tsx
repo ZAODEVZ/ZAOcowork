@@ -329,6 +329,21 @@ const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
   },
 ];
 
+// Due-date urgency for the card's "due" badge. Makes a date preattentive:
+// overdue reads red, due within 2 days reads amber, otherwise neutral.
+// DONE tasks never flag — a shipped task's due date is history.
+function dueUrgency(due: string | undefined, status: string): "overdue" | "soon" | "none" {
+  if (!due || status === "DONE") return "none";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const d = new Date(`${due}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "none";
+  const diffDays = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+  if (diffDays < 0) return "overdue";
+  if (diffDays <= 2) return "soon";
+  return "none";
+}
+
 export function Board({
   items,
   currentUser,
@@ -1869,11 +1884,23 @@ function Card({
         >
           {item.phase}
         </span>
-        {item.due && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] border border-white/10 text-white/60">
-            due {item.due}
-          </span>
-        )}
+        {item.due && (() => {
+          const u = dueUrgency(item.due, item.status);
+          const cls =
+            u === "overdue"
+              ? "border-red-500/50 text-red-200 bg-red-500/15 font-semibold"
+              : u === "soon"
+              ? "border-amber-500/50 text-amber-200 bg-amber-500/10"
+              : "border-white/10 text-white/60";
+          return (
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] border ${cls}`}
+              title={u === "overdue" ? "Overdue" : u === "soon" ? "Due soon" : `Due ${item.due}`}
+            >
+              {u === "overdue" ? "⚠ " : ""}due {item.due}
+            </span>
+          );
+        })()}
         {aging && (
           <span className="px-1.5 py-0.5 rounded text-[10px] border border-red-500/40 text-red-300 bg-red-500/10">
             {age}d old
