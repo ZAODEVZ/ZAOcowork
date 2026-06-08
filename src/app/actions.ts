@@ -256,8 +256,8 @@ export async function patchField(form: FormData): Promise<void> {
     case "status": {
       const prevStatus = cur.status;
       const newStatus = asStatus(value);
-      // Workers cannot directly mark DONE — must go through review
-      if (!isLead(user) && newStatus === "DONE") return;
+      // Anyone can move a task to DONE directly — approval is opt-in per task,
+      // not a role gate. (Leads/admins retain delete + optional review.)
       next.status = newStatus;
       if (cur.status !== "DONE" && next.status === "DONE") {
         next.completedAt = next.updatedAt;
@@ -422,8 +422,11 @@ export async function submitUpdate(form: FormData): Promise<void> {
   if (idx < 0) return;
   const now = new Date().toISOString();
   const item = doc.items[idx];
-  // Workers always require approval regardless of item setting
-  const requiresApproval = !isLead(user) ? true : (item.requiresApproval ?? false);
+  // Approval is opt-in per task, not forced by role. Submissions apply
+  // directly unless the task itself is flagged requiresApproval — leads/admins
+  // can still delete or flag a task for review, but nobody has to approve
+  // every submission.
+  const requiresApproval = item.requiresApproval ?? false;
   const toStatusRaw = form.get("toStatus");
   const toStatus =
     toStatusRaw && STATUSES.includes(toStatusRaw as ActionStatus)

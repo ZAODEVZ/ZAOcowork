@@ -78,10 +78,10 @@ The system prompt is built server-side only; any client-supplied `system` role i
 `src/lib/auth.ts` — no NextAuth. Passwords checked against env vars, then an HMAC-signed `iman-session` cookie is set (`user.expiry.sig` format). Middleware checks cookie presence; `requireSession()` verifies the HMAC before any mutation.
 
 **Two roles:**
-- **Leads** (`zaal`, `iman`) — full permissions: approve/reject updates, delete tasks, mark tasks DONE directly, review ThyRev's submissions.
-- **Workers** (`thyrev`) — can create tasks, submit updates, claim tasks, change status to TODO/WIP/BLOCKED. Cannot mark DONE directly (always goes to pending review). Cannot delete or review.
+- **Leads** (`zaal`, `iman`) — full permissions: delete tasks, review (approve/reject) updates on tasks explicitly flagged `requiresApproval`, plus everything workers can do.
+- **Workers** (`thyrev`) — create tasks, submit updates, claim tasks, change status freely **including DONE**. Cannot delete or review.
 
-`isLead(user)` in `auth.ts` gates lead-only actions. Enforced in: `submitUpdate` (workers always get `reviewStatus: "pending"`), `patchField` (DONE blocked for workers), `reviewUpdate`, `deleteItem`.
+Approval is **opt-in per task**, not forced by role: submissions apply directly unless the task itself has `requiresApproval: true`. `isLead(user)` in `auth.ts` still gates lead-only actions — `reviewUpdate`, `deleteItem` — so leads/admins keep delete + optional review, but nobody has to approve every submission.
 
 ### Three portals
 
@@ -136,7 +136,7 @@ Parser logic: splits text into lines, detects task-like lines (list markers + ac
 
 ### Approval workflow
 
-Any task can have `requiresApproval: true`. Workers (`thyrev`) always get forced approval regardless. When an update requires approval, `reviewStatus: "pending"` — status doesn't change until a lead approves via `reviewUpdate`. Review queue surfaces in `TaskRoom` (LogPanel) and the column header badge.
+Approval is opt-in: a task only needs review when it's explicitly flagged `requiresApproval: true` (regardless of who submits — there's no role-based forced approval). When an update requires approval, `reviewStatus: "pending"` — status doesn't change until a lead approves via `reviewUpdate`. Otherwise updates apply immediately. Review queue surfaces in `TaskRoom` (LogPanel) and the column header badge.
 
 ## UI conventions
 
