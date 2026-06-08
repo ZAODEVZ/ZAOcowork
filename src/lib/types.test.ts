@@ -1,5 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { cycleDays, ageDays } from "./types";
+import { cycleDays, ageDays, effectiveAssignees, isAssignedTo } from "./types";
+
+describe("effectiveAssignees / isAssignedTo (the 'is this mine?' rule)", () => {
+  it("uses the explicit assignees list when present", () => {
+    expect(effectiveAssignees({ owner: "Zaal", assignees: ["dcoop", "tyler"] })).toEqual([
+      "dcoop",
+      "tyler",
+    ]);
+  });
+  it("maps legacy 'Both' to Zaal + Iman ONLY (not everyone)", () => {
+    expect(effectiveAssignees({ owner: "Both" })).toEqual(["zaal", "iman"]);
+  });
+  it("a brand-new person does NOT inherit Both tasks (the 82-todo bug)", () => {
+    expect(isAssignedTo({ owner: "Both" }, "dcoop")).toBe(false);
+    expect(isAssignedTo({ owner: "Both" }, "zaal")).toBe(true);
+  });
+  it("treats Open / blank as nobody", () => {
+    expect(effectiveAssignees({ owner: "Open" })).toEqual([]);
+    expect(effectiveAssignees({ owner: "" })).toEqual([]);
+  });
+  it("single owner resolves to that one person, case-insensitive", () => {
+    expect(isAssignedTo({ owner: "Tyler" }, "tyler")).toBe(true);
+    expect(isAssignedTo({ owner: "Tyler" }, "TYLER")).toBe(true);
+    expect(isAssignedTo({ owner: "Tyler" }, "iman")).toBe(false);
+  });
+  it("explicit assignees override the legacy owner field", () => {
+    // owner derived as 'Both' for a 2-person task, but only the listed people match.
+    expect(isAssignedTo({ owner: "Both", assignees: ["dcoop"] }, "zaal")).toBe(false);
+    expect(isAssignedTo({ owner: "Both", assignees: ["dcoop"] }, "dcoop")).toBe(true);
+  });
+});
 
 describe("cycleDays (uses completedAt, not updatedAt)", () => {
   it("returns null for non-DONE tasks", () => {

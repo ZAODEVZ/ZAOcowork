@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { relativeTime } from "@/lib/types";
+import { relativeTime, isAssignedTo } from "@/lib/types";
 import type { ActionItem } from "@/lib/types";
 
 type NotifType =
@@ -93,7 +93,7 @@ export function NotificationBell({
 
     // Compute current state
     const assignedIds = items
-      .filter((it) => it.status !== "DONE" && String(it.owner).toLowerCase() === userKey)
+      .filter((it) => it.status !== "DONE" && isAssignedTo(it, userKey))
       .map((it) => it.id);
 
     const openIds = items
@@ -113,7 +113,7 @@ export function NotificationBell({
     // We watch these for new comments + @mentions of me.
     const mentionToken = `@${userKey}`;
     const isMine = (it: ActionItem) =>
-      String(it.owner).toLowerCase() === userKey ||
+      isAssignedTo(it, userKey) ||
       (it.comments || []).some((c) => (c.userId || "").toLowerCase() === userKey) ||
       (it.updates || []).some((u) => (u.submittedBy || "").toLowerCase() === userKey);
 

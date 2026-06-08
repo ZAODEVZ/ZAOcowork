@@ -91,6 +91,31 @@ export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Ca
 export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Tyler" | "Shawn" | "Open";
 export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Tyler", "Shawn", "Open"];
 
+// Resolve the set of people (lowercase login slugs) effectively assigned to a
+// task. The explicit `assignees` list wins when present; otherwise we derive it
+// from the legacy `owner` field. Crucially, "Both" maps to ZAAL + IMAN only —
+// NOT "whoever is logged in" (the old `owner === "both"` checks made every new
+// teammate inherit all ~80 Both tasks). "Open"/blank = nobody.
+export function effectiveAssignees(it: { owner?: Owner | string; assignees?: string[] }): string[] {
+  if (it.assignees && it.assignees.length > 0) {
+    return it.assignees.map((a) => String(a).trim().toLowerCase()).filter(Boolean);
+  }
+  const o = String(it.owner ?? "").trim().toLowerCase();
+  if (o === "both") return ["zaal", "iman"];
+  if (!o || o === "open") return [];
+  return [o];
+}
+
+// Is `userSlug` one of the task's effective assignees? The single source of
+// truth for "is this mine?" across My Work, the board My-Tasks filter, counts,
+// and the personal digest.
+export function isAssignedTo(
+  it: { owner?: Owner | string; assignees?: string[] },
+  userSlug: string,
+): boolean {
+  return effectiveAssignees(it).includes(String(userSlug).trim().toLowerCase());
+}
+
 export interface Comment {
   id: string;
   userId: string;
@@ -132,6 +157,10 @@ export type ActionItem = {
   title: string;
   createdBy: string;
   owner: Owner | string;
+  // Multi-assignee: lowercase login slugs of everyone assigned (the per-todo
+  // people checkboxes). When present it's the source of truth for "who owns
+  // this"; `owner` is kept derived for back-compat (badges, legacy filters).
+  assignees?: string[];
   status: ActionStatus;
   category: Category | string;
   priority: Priority;

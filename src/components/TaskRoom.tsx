@@ -12,6 +12,7 @@ import type {
   TaskType,
 } from "@/lib/types";
 import {
+  effectiveAssignees,
   BOARD_STATUSES,
   PRIORITIES,
   PHASES,
@@ -23,7 +24,7 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { updateItem, patchField, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride } from "@/app/actions";
+import { updateItem, patchField, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction } from "@/app/actions";
 import { useDraft } from "@/lib/use-draft";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
@@ -632,6 +633,41 @@ function DetailsPanel({
   // the server value once `item` refreshes (or on a blocked/failed change).
   const [statusValue, setStatusValue] = useState<ActionStatus>(item.status);
   useEffect(() => setStatusValue(item.status), [item.status]);
+
+  // Multi-assignee: live roster for the people checkboxes (active team_members),
+  // with the hardcoded OWNERS as a fallback before the fetch lands. Optimistic
+  // local selection so a tap doesn't wait on the round-trip.
+  const [people, setPeople] = useState<Array<{ slug: string; name: string }>>(
+    OWNERS.filter((o) => o !== "Both" && o !== "Open").map((o) => ({ slug: o.toLowerCase(), name: o })),
+  );
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/team")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { people?: Array<{ slug: string; name: string }> } | null) => {
+        if (!cancelled && d?.people && d.people.length > 0) setPeople(d.people);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const [assigneeList, setAssigneeList] = useState<string[]>(effectiveAssignees(item));
+  useEffect(() => setAssigneeList(effectiveAssignees(item)), [item]);
+  function toggleAssignee(slug: string) {
+    const next = assigneeList.includes(slug)
+      ? assigneeList.filter((s) => s !== slug)
+      : [...assigneeList, slug];
+    setAssigneeList(next);
+    const fd = new FormData();
+    fd.set("id", item.id);
+    for (const s of next) fd.append("assignees", s);
+    start(async () => {
+      await setAssigneesAction(fd);
+      setFlash("saved");
+      setTimeout(() => setFlash(null), 2000);
+    });
+  }
   // Notes autosave to localStorage so a crash/reload/background-refresh never
   // wipes a long write-up (Jose's lost feedback). commit() drops the draft on a
   // successful save without blanking the field.
@@ -776,14 +812,34 @@ function DetailsPanel({
             </FormField>
           )}
 
-          <FormField label="Owner">
-            <select name="owner" defaultValue={String(item.owner)} className={selectCls}>
-              {OWNERS.map((o) => (
-                <option key={o} value={o}>
-                  {o}
-                </option>
-              ))}
-            </select>
+          <FormField label="Assignees (saves instantly)">
+            <div className="flex flex-wrap gap-1.5">
+              {people.map((m) => {
+                const checked = assigneeList.includes(m.slug);
+                return (
+                  <button
+                    key={m.slug}
+                    type="button"
+                    disabled={pending}
+                    aria-pressed={checked}
+                    onClick={() => toggleAssignee(m.slug)}
+                    className={`px-2.5 py-1 rounded-lg text-xs border transition disabled:opacity-50 ${
+                      checked
+                        ? "bg-blue-500/20 border-blue-500/50 text-blue-100"
+                        : "bg-[#0b1220] border-white/10 text-white/60 hover:text-white/85 hover:border-white/20"
+                    }`}
+                  >
+                    <span className="mr-1" aria-hidden="true">{checked ? "☑" : "☐"}</span>
+                    {m.name}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-1.5 text-[11px] text-white/35">
+              {assigneeList.length === 0
+                ? "Unassigned — shows as open to claim."
+                : `Assigned to ${assigneeList.map((s) => people.find((p) => p.slug === s)?.name ?? s).join(", ")}`}
+            </p>
           </FormField>
 
           <FormField label="DMAIC Phase">

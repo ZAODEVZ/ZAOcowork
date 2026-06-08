@@ -5,7 +5,7 @@ import { logout } from "./actions";
 import { Board } from "@/components/Board";
 import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
-import { CATEGORIES } from "@/lib/types";
+import { CATEGORIES, isAssignedTo } from "@/lib/types";
 import { listActiveBrands } from "@/lib/brands-db";
 import { listActiveProjects } from "@/lib/projects";
 import { computeForecast } from "@/lib/forecast";
@@ -79,16 +79,12 @@ export default async function Page({
   const active = scoped.filter((x) => !x.archivedAt && x.status !== "TRIAGE");
 
   const open = active.filter((x) => x.status !== "DONE");
-  const openMine = open.filter(
-    (x) => String(x.owner).toLowerCase() === user || String(x.owner) === "Both",
-  ).length;
+  const openMine = open.filter((x) => isAssignedTo(x, user)).length;
   const openUnowned = open.filter((x) => {
     const o = String(x.owner ?? "").trim();
     return !o || o === "Open";
   }).length;
-  const wipMine = active.filter(
-    (x) => x.status === "WIP" && (String(x.owner).toLowerCase() === user || String(x.owner) === "Both"),
-  ).length;
+  const wipMine = active.filter((x) => x.status === "WIP" && isAssignedTo(x, user)).length;
   const blocked = active.filter((x) => x.status === "BLOCKED").length;
   const aging = active.filter(
     (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,

@@ -7,6 +7,7 @@ import { getActions, ageDays, relativeTime } from "@/lib/data";
 import { matchMentions } from "@/lib/mentions";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
+import { BackButton } from "@/components/BackButton";
 
 export const dynamic = "force-dynamic";
 
@@ -207,13 +208,16 @@ export default async function ActivityPage({
   }
 
   const meAliases = [userLabel(user), user];
+  const meId = user.trim().toLowerCase();
   const filtered = typeScoped.filter((e) => {
     if (curPerson && e.authorId.trim().toLowerCase() !== curPerson) return false;
-    if (
-      curMentions &&
-      matchMentions(e.content, [{ key: "me", aliases: meAliases }]).length === 0
-    ) {
-      return false;
+    if (curMentions) {
+      // Your mentions = posts by *other* people that @mention you. Excluding
+      // your own keeps this in sync with the nav badge + My Work list.
+      if (e.authorId.trim().toLowerCase() === meId) return false;
+      if (matchMentions(e.content, [{ key: "me", aliases: meAliases }]).length === 0) {
+        return false;
+      }
     }
     return true;
   });
@@ -278,6 +282,7 @@ export default async function ActivityPage({
     <main className="min-h-screen relative text-white px-4 bg-[#03141f] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.14),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.10),transparent_60%)]" />
       <div className="relative max-w-3xl mx-auto py-6 space-y-4">
+        <BackButton fallback="/" label="Back to board" />
         <header className="flex flex-col gap-3 rounded-2xl bg-white/[0.06] backdrop-blur-xl border border-white/10 px-5 py-4">
           <div className="flex items-center justify-between gap-3">
             <div>
