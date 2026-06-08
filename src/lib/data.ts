@@ -334,11 +334,26 @@ export async function getActions(): Promise<ActionDoc> {
   // scoped to legacy_source='cowork-actions.json' which hid meeting-captured
   // and bug-fix tasks from the board. Now they all show; writes target the
   // row by UUID (dbId), so cross-source tasks are fully editable.
-  const { data, error } = await db()
-    .from("tasks")
-    .select(TASK_COLUMNS);
-  if (error) throw new Error(`tasks read failed: ${error.message}`);
-  let items = ((data ?? []) as unknown as TaskRow[])
+  //
+  // Paginate explicitly: PostgREST caps a select at 1000 rows by default, so a
+  // plain .select() silently truncated the board once it passed 1000 tasks —
+  // dropping whole tasks (and all their comments/updates/activity) from every
+  // view, which is why some users' posts went missing from the activity feed.
+  // We page by the UUID primary key (stable total order) until a short page.
+  const PAGE = 1000;
+  const rows: TaskRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await db()
+      .from("tasks")
+      .select(TASK_COLUMNS)
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) throw new Error(`tasks read failed: ${error.message}`);
+    const batch = (data ?? []) as unknown as TaskRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  let items = rows
     .map((row) => normalizeItem(rowToItem(row, team)))
     .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
   // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +

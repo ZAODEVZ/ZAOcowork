@@ -47,6 +47,13 @@ After baselining, push the migration that isn't live yet:
   ```sql
   select tablename, rowsecurity from pg_tables where schemaname='public' order by tablename;
   ```
+- **`014_renumber_legacy_ids.sql`** — gives every task a clean numeric id by
+  renumbering rows whose `legacy_id` is non-numeric (meeting captures, UUID
+  fallbacks). Data-only (DML). Verify with:
+  ```sql
+  select count(*) from tasks where legacy_id is null or legacy_id !~ '^[0-9]+$'; -- expect 0
+  ```
+  Note: old slug links (e.g. `?task=meeting-…`) stop resolving once applied.
 
 ## Optional: auto-apply on merge (CI)
 
