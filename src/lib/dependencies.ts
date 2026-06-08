@@ -2,8 +2,28 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export interface DepRef {
   id: string;
+  // App-facing id (legacy #N when present, else the UUID). Used to open the
+  // task's room — the board keys TaskRoom on this, not the DB primary key.
+  appId: string;
   title: string;
   status: string;
+}
+
+// Raw shape from the joined select before we derive appId.
+interface DepRow {
+  id: string;
+  legacy_id: string | null;
+  title: string;
+  status: string;
+}
+
+function toDepRef(row: DepRow): DepRef {
+  return {
+    id: row.id,
+    appId: row.legacy_id ?? row.id,
+    title: row.title,
+    status: row.status,
+  };
 }
 
 export interface AddDepResult {
@@ -40,22 +60,24 @@ export async function getDependencies(
   // blockedBy: tasks that block this task (blocker_id -> task)
   const { data: blockedByRows } = await client
     .from("task_dependencies")
-    .select("blocker:blocker_id(id,title,status)")
+    .select("blocker:blocker_id(id,legacy_id,title,status)")
     .eq("blocked_id", taskId);
 
   // blocks: tasks that this task blocks (blocked_id -> task)
   const { data: blocksRows } = await client
     .from("task_dependencies")
-    .select("blocked:blocked_id(id,title,status)")
+    .select("blocked:blocked_id(id,legacy_id,title,status)")
     .eq("blocker_id", taskId);
 
   const blockedBy = (blockedByRows ?? [])
-    .map((row) => row.blocker as unknown as DepRef)
-    .filter(Boolean);
+    .map((row) => row.blocker as unknown as DepRow)
+    .filter(Boolean)
+    .map(toDepRef);
 
   const blocks = (blocksRows ?? [])
-    .map((row) => row.blocked as unknown as DepRef)
-    .filter(Boolean);
+    .map((row) => row.blocked as unknown as DepRow)
+    .filter(Boolean)
+    .map(toDepRef);
 
   return { blockedBy, blocks };
 }

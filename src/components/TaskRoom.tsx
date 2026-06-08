@@ -85,6 +85,8 @@ export function TaskRoom({
   currentUser,
   onClose,
   projects,
+  onOpenTask,
+  allItems,
 }: {
   item: ActionItem;
   currentUser: string;
@@ -92,6 +94,11 @@ export function TaskRoom({
   // Doc 765 Phase I: optional project list passed down from Board. If
   // missing or empty, the picker hides so old call sites keep working.
   projects?: Array<{ id: string; slug: string; name: string }>;
+  // Open another task's room (used to jump to a related/dependency task).
+  // Optional so existing call sites keep working.
+  onOpenTask?: (appId: string) => void;
+  // Full board item set, used to suggest related tasks. Optional.
+  allItems?: ActionItem[];
 }) {
   const [panel, setPanel] = useState<"details" | "log">("details");
   const [mounted, setMounted] = useState(false);
@@ -215,7 +222,7 @@ export function TaskRoom({
           <div
             className={`${panel === "details" ? "flex" : "hidden"} lg:flex flex-col w-full lg:w-[42%] xl:w-[40%] border-r border-white/10 overflow-y-auto`}
           >
-            <DetailsPanel item={item} currentUser={currentUser} onClose={onClose} projects={projects} />
+            <DetailsPanel item={item} currentUser={currentUser} onClose={onClose} projects={projects} onOpenTask={onOpenTask} allItems={allItems} />
           </div>
 
           {/* Right: Operational log */}
@@ -231,7 +238,13 @@ export function TaskRoom({
   );
 }
 
-function DependenciesBlock({ item }: { item: ActionItem }) {
+function DependenciesBlock({
+  item,
+  onOpenTask,
+}: {
+  item: ActionItem;
+  onOpenTask?: (appId: string) => void;
+}) {
   const taskId = item.dbId;
   const [deps, setDeps] = useState<{ blockedBy: DepRef[]; blocks: DepRef[] } | null>(null);
   const [allTasks, setAllTasks] = useState<Array<{ id: string; title: string }> | null>(null);
@@ -246,6 +259,10 @@ function DependenciesBlock({ item }: { item: ActionItem }) {
 
   useEffect(() => {
     let cancelled = false;
+    // Clear stale deps when switching tasks so the previous task's links
+    // don't linger while the new fetch is in flight.
+    setDeps(null);
+    setShowPicker(false);
     async function fetchDeps() {
       try {
         const res = await fetch(`/api/dependencies?taskId=${encodeURIComponent(id)}`);
@@ -332,11 +349,21 @@ function DependenciesBlock({ item }: { item: ActionItem }) {
                 key={d.id}
                 className="flex items-center justify-between gap-2 text-xs text-white/70 bg-red-500/10 border border-red-500/20 rounded px-2 py-1"
               >
-                <span>{d.title}</span>
+                {onOpenTask ? (
+                  <button
+                    onClick={() => onOpenTask(d.appId)}
+                    className="flex-1 min-w-0 truncate text-left hover:text-white hover:underline decoration-white/30"
+                    title={`Open: ${d.title}`}
+                  >
+                    {d.title} <span className="text-white/35">↗</span>
+                  </button>
+                ) : (
+                  <span className="flex-1 min-w-0 truncate">{d.title}</span>
+                )}
                 <button
                   onClick={() => handleRemove(d.id, taskId)}
                   disabled={pending}
-                  className="text-red-400/60 hover:text-red-300 disabled:opacity-50"
+                  className="text-red-400/60 hover:text-red-300 disabled:opacity-50 flex-shrink-0"
                   aria-label="Remove blocker"
                 >
                   x
@@ -356,11 +383,21 @@ function DependenciesBlock({ item }: { item: ActionItem }) {
                 key={d.id}
                 className="flex items-center justify-between gap-2 text-xs text-white/70 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1"
               >
-                <span>{d.title}</span>
+                {onOpenTask ? (
+                  <button
+                    onClick={() => onOpenTask(d.appId)}
+                    className="flex-1 min-w-0 truncate text-left hover:text-white hover:underline decoration-white/30"
+                    title={`Open: ${d.title}`}
+                  >
+                    {d.title} <span className="text-white/35">↗</span>
+                  </button>
+                ) : (
+                  <span className="flex-1 min-w-0 truncate">{d.title}</span>
+                )}
                 <button
                   onClick={() => handleRemove(taskId, d.id)}
                   disabled={pending}
-                  className="text-amber-400/60 hover:text-amber-300 disabled:opacity-50"
+                  className="text-amber-400/60 hover:text-amber-300 disabled:opacity-50 flex-shrink-0"
                   aria-label="Remove blocked task"
                 >
                   x
@@ -405,6 +442,91 @@ function DependenciesBlock({ item }: { item: ActionItem }) {
             + add blocker
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+// RelatedBlock: auto-suggested tasks that share a brand, owner, or category
+// with the current one — relationships you never had to wire up by hand.
+// Computed from the board's loaded items (so everything shown is openable),
+// scored brand > owner > category, freshest first, capped. Excludes the task
+// itself and archived/TRIAGE.
+const STATUS_DOT: Record<string, string> = {
+  TRIAGE: "bg-fuchsia-400",
+  TODO: "bg-slate-400",
+  WIP: "bg-amber-400",
+  BLOCKED: "bg-red-400",
+  DONE: "bg-emerald-400",
+};
+
+function RelatedBlock({
+  item,
+  allItems,
+  onOpenTask,
+}: {
+  item: ActionItem;
+  allItems: ActionItem[];
+  onOpenTask: (appId: string) => void;
+}) {
+  const related = (() => {
+    const myBrands = new Set((item.brands ?? []).filter(Boolean));
+    const myOwner = String(item.owner ?? "").trim().toLowerCase();
+    const ownerReal = myOwner && myOwner !== "open" && myOwner !== "both";
+
+    const scored = allItems
+      .filter((t) => t.id !== item.id && !t.archivedAt && t.status !== "TRIAGE")
+      .map((t) => {
+        const reasons: string[] = [];
+        let score = 0;
+        for (const b of t.brands ?? []) {
+          if (myBrands.has(b)) {
+            score += 3;
+            reasons.push(b);
+          }
+        }
+        if (ownerReal && String(t.owner ?? "").trim().toLowerCase() === myOwner) {
+          score += 2;
+          reasons.push(String(t.owner));
+        }
+        if (t.category && item.category && t.category === item.category) {
+          score += 1;
+          reasons.push(String(t.category));
+        }
+        // De-prioritize already-done tasks so live work surfaces first.
+        if (t.status === "DONE") score -= 2;
+        return { t, score, reason: reasons[0] ?? "" };
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return new Date(b.t.updatedAt).getTime() - new Date(a.t.updatedAt).getTime();
+      })
+      .slice(0, 6);
+    return scored;
+  })();
+
+  if (related.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Related tasks</div>
+      <div className="space-y-1">
+        {related.map(({ t, reason }) => (
+          <button
+            key={t.id}
+            onClick={() => onOpenTask(t.id)}
+            className="w-full flex items-center gap-2 text-left text-xs text-white/70 rounded px-2 py-1 hover:bg-white/[0.06] hover:text-white transition"
+            title={`Open: ${t.title}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${STATUS_DOT[t.status] ?? "bg-white/30"}`} />
+            <span className="flex-1 min-w-0 truncate">{t.title}</span>
+            {reason && (
+              <span className="flex-shrink-0 text-[9px] text-white/35 truncate max-w-[40%]">{reason}</span>
+            )}
+            <span className="flex-shrink-0 text-white/30">↗</span>
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -493,11 +615,15 @@ function DetailsPanel({
   currentUser,
   onClose,
   projects,
+  onOpenTask,
+  allItems,
 }: {
   item: ActionItem;
   currentUser: string;
   onClose: () => void;
   projects?: Array<{ id: string; slug: string; name: string }>;
+  onOpenTask?: (appId: string) => void;
+  allItems?: ActionItem[];
 }) {
   const [pending, start] = useTransition();
   const [flash, setFlash] = useState<"saved" | null>(null);
@@ -553,7 +679,10 @@ function DetailsPanel({
   return (
     <div className="p-5 space-y-5 flex-1">
       <OriginBlock item={item} />
-      <DependenciesBlock item={item} />
+      <DependenciesBlock item={item} onOpenTask={onOpenTask} />
+      {onOpenTask && allItems && allItems.length > 0 && (
+        <RelatedBlock item={item} allItems={allItems} onOpenTask={onOpenTask} />
+      )}
       {item.dbId && (
         <div className="rounded-lg bg-white/[0.04] border border-white/10 p-3">
           <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Public visibility</div>

@@ -879,6 +879,8 @@ export function Board({
           currentUser={currentUser}
           onClose={() => setTaskRoomId(null)}
           projects={projects}
+          onOpenTask={setTaskRoomId}
+          allItems={items}
         />
       )}
 
