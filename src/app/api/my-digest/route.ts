@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { getSession } from "@/lib/auth";
 import { getActions, ageDays, type ActionItem } from "@/lib/data";
+import { isAssignedTo } from "@/lib/types";
 import { listTeamMembers, type TeamMember } from "@/lib/team";
 import { matchMentions } from "@/lib/mentions";
 
@@ -30,8 +31,7 @@ function buildFor(member: TeamMember, items: ActionItem[]): PersonalDigest {
   const assigned = items
     .filter((it) => {
       if (it.status === "DONE" || it.archivedAt) return false;
-      const o = String(it.owner).toLowerCase();
-      return o === me || o === "both";
+      return isAssignedTo(it, me);
     })
     .sort((a, b) => ageDays(b.createdAt) - ageDays(a.createdAt))
     .map((it) => ({

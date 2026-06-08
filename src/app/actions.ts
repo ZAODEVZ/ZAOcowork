@@ -686,6 +686,53 @@ export async function claimTask(form: FormData): Promise<void> {
   revalidateAll();
 }
 
+// Set the people assigned to a task (the per-todo people checkboxes). Stores
+// the lowercase login slugs in `assignees`, and keeps the legacy single `owner`
+// field derived so badges / legacy filters / the parser keep working:
+//   0 selected -> "Open", 1 -> that person, 2+ -> "Both" (multi marker).
+// effectiveAssignees() always prefers the explicit list, so matching is exact
+// regardless of the derived owner.
+function ownerFromAssignees(slugs: string[]): string {
+  if (slugs.length === 0) return "Open";
+  if (slugs.length === 1) return userLabel(slugs[0]);
+  return "Both";
+}
+
+export async function setAssignees(form: FormData): Promise<void> {
+  const user = await requireSession();
+  const id = String(form.get("id") ?? "");
+  if (!id) return;
+  const slugs = Array.from(
+    new Set(
+      form
+        .getAll("assignees")
+        .map((v) => String(v).trim().toLowerCase())
+        .filter(Boolean),
+    ),
+  );
+  const doc = await getActions();
+  const idx = doc.items.findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  const cur = doc.items[idx];
+  const now = new Date().toISOString();
+  const owner = ownerFromAssignees(slugs);
+  const label = slugs.length === 0 ? "no one" : slugs.map((s) => userLabel(s)).join(", ");
+  doc.items[idx] = {
+    ...cur,
+    assignees: slugs,
+    owner,
+    // A claimed/assigned task is no longer up for grabs.
+    claimable: slugs.length === 0 ? cur.claimable : false,
+    updatedAt: now,
+    activity: [
+      ...(cur.activity || []),
+      makeActivity(user, "assigned", `Assigned to ${label}`, now),
+    ],
+  };
+  await saveActions(doc, user, `set assignees #${id}: ${label}`);
+  revalidateAll();
+}
+
 // ============================================================================
 // AI proposals (doc 764 F7)
 // ============================================================================

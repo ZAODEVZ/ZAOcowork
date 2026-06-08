@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
 import { getActions, ageDays, relativeTime, type ActionItem } from "@/lib/data";
+import { isAssignedTo } from "@/lib/types";
 import { matchMentions } from "@/lib/mentions";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
@@ -92,8 +93,7 @@ export default async function MyWorkPage() {
   const assigned = items
     .filter((it) => {
       if (it.status === "DONE") return false;
-      const o = String(it.owner).toLowerCase();
-      return o === me || o === "both";
+      return isAssignedTo(it, me);
     })
     .sort((a, b) => {
       const s = (STATUS_RANK[a.status] ?? 9) - (STATUS_RANK[b.status] ?? 9);
