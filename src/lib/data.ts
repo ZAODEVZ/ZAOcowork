@@ -191,6 +191,7 @@ export function normalizeItem(
   if (raw.requiresApproval !== undefined) base.requiresApproval = raw.requiresApproval;
   if (raw.assignedTo !== undefined) base.assignedTo = raw.assignedTo;
   if (raw.claimable !== undefined) base.claimable = raw.claimable;
+  if (Array.isArray(raw.assignees)) base.assignees = raw.assignees.map(String);
   if (raw.comments !== undefined) base.comments = raw.comments;
   if (raw.updates !== undefined) base.updates = raw.updates;
   if (raw.activity !== undefined) base.activity = raw.activity;
@@ -243,6 +244,7 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (typeof meta.requiresApproval === "boolean") item.requiresApproval = meta.requiresApproval;
   if (typeof meta.assignedTo === "string") item.assignedTo = meta.assignedTo;
   if (typeof meta.claimable === "boolean") item.claimable = meta.claimable;
+  if (Array.isArray(meta.assignees)) item.assignees = (meta.assignees as unknown[]).map(String);
   if (Array.isArray(meta.comments)) item.comments = meta.comments as Comment[];
   if (Array.isArray(meta.updates)) item.updates = meta.updates as TaskUpdate[];
   if (Array.isArray(meta.activity)) item.activity = meta.activity as ActivityEvent[];
@@ -276,6 +278,7 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   if (item.requiresApproval !== undefined) meta.requiresApproval = item.requiresApproval;
   if (item.assignedTo !== undefined) meta.assignedTo = item.assignedTo;
   if (item.claimable !== undefined) meta.claimable = item.claimable;
+  if (item.assignees !== undefined) meta.assignees = item.assignees;
   if (item.comments !== undefined) meta.comments = item.comments;
   if (item.updates !== undefined) meta.updates = item.updates;
   if (item.activity !== undefined) meta.activity = item.activity;

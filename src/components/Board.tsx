@@ -19,6 +19,7 @@ import {
   ageDays,
   cycleDays,
   isStale,
+  isAssignedTo,
   type ActionItem,
   type ActionStatus,
   type Owner,
@@ -577,8 +578,7 @@ export function Board({
     const mine = storageUserKey;
     const openMine = items.filter((it) => {
       if (it.status === "DONE") return false;
-      const o = String(it.owner).toLowerCase();
-      return o === mine || o === "both";
+      return isAssignedTo(it, mine);
     });
     const overdueMine = openMine.filter((it) => {
       const due = parseDueDate(it.due);
@@ -633,7 +633,10 @@ export function Board({
         const hay = `${it.title} ${it.notes} ${it.category} ${it.owner}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
-      if (filters.owner && it.owner !== filters.owner) return false;
+      // Match the raw owner (covers Both/Open) OR membership in the assignee
+      // set (covers multi-assignee + people who share a Both/derived task).
+      if (filters.owner && it.owner !== filters.owner && !isAssignedTo(it, filters.owner))
+        return false;
       if (filters.category && it.category !== filters.category) return false;
       if (filters.priority && it.priority !== filters.priority) return false;
       if (filters.phase && it.phase !== filters.phase) return false;
@@ -650,10 +653,9 @@ export function Board({
         if (it.projectId !== urlProjectId) return false;
       }
       if (filters.mineOnly) {
-        const mine = currentUser.toLowerCase();
         const o = String(it.owner).toLowerCase();
         const isOpenTask = it.claimable || o === "open";
-        if (o !== mine && o !== "both" && !isOpenTask) return false;
+        if (!isAssignedTo(it, currentUser) && !isOpenTask) return false;
       }
       if (filters.agingOnly && it.status !== "DONE") {
         if (ageDays(it.createdAt) <= 14) return false;
@@ -1730,6 +1732,10 @@ function Card({
   const stale = isStale(item);
   const serviceClass = item.serviceClass ?? "Standard";
   const ownerStr = String(item.owner);
+  // Explicit multi-assignee list (lowercase slugs). When present it drives the
+  // card's people badge instead of the single derived owner (so a 3-person task
+  // doesn't misleadingly read "Z+I").
+  const assigneeSlugs = item.assignees ?? [];
   const commentCount = (item.comments || []).length;
   const pendingReviews = (item.updates || []).filter((u) => u.reviewStatus === "pending").length;
 
@@ -1855,6 +1861,23 @@ function Card({
         {(item.claimable || ownerStr.toLowerCase() === "open") ? (
           <span className="px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border border-amber-500/50 bg-amber-500/15 text-amber-300 font-bold">
             CLAIM
+          </span>
+        ) : assigneeSlugs.length > 0 ? (
+          <span
+            className="flex items-center gap-0.5"
+            title={`Assigned: ${assigneeSlugs.map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}`}
+          >
+            {assigneeSlugs.slice(0, 3).map((s) => (
+              <span
+                key={s}
+                className="px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border border-white/15 bg-white/5 text-white/75"
+              >
+                {s.slice(0, 2).toUpperCase()}
+              </span>
+            ))}
+            {assigneeSlugs.length > 3 && (
+              <span className="text-[10px] text-white/40">+{assigneeSlugs.length - 3}</span>
+            )}
           </span>
         ) : (
           <span
@@ -2207,8 +2230,7 @@ function DailyReminderModal({
   const active = items.filter((it) => !it.archivedAt && it.status !== "TRIAGE");
   const openMine = active.filter((it) => {
     if (it.status === "DONE") return false;
-    const o = String(it.owner).toLowerCase();
-    return o === mine || o === "both";
+    return isAssignedTo(it, mine);
   });
   const openAll = active.filter((it) => it.status !== "DONE");
   const openUnowned = active.filter((it) => {
