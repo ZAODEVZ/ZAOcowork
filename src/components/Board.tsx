@@ -1991,7 +1991,7 @@ function Card({
           className="flex-1 text-[11px] rounded bg-[#0b1220] border border-white/10 px-1.5 py-1 text-white/80"
           disabled={pending}
         >
-          {BOARD_STATUSES.filter((s) => !(isWorker && s === "DONE")).map((s) => (
+          {BOARD_STATUSES.map((s) => (
             <option key={s} value={s}>
               {STATUS_LABEL[s]}
             </option>
