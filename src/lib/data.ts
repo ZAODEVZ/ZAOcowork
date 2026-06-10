@@ -367,6 +367,23 @@ export async function getActions(): Promise<ActionDoc> {
   return { updatedAt: nowIso(), items, before: structuredClone(items) };
 }
 
+/**
+ * Write the DB-assigned identity back onto an in-memory item after an INSERT.
+ * App/bot creates insert with legacy_id = NULL and let the `tasks_slug_guard`
+ * trigger (migration 015) assign the number from `tasks_legacy_id_seq` — a
+ * race-free sequence, unlike the old `newId()` = max+1 over a stale read which
+ * let two concurrent creates collide on legacy_id. We mirror rowToItem's
+ * `legacy_id ?? id` rule so the app-facing id matches what a later read would
+ * produce (and falls back to the UUID if the trigger is somehow absent).
+ */
+export function assignPersistedId(
+  item: ActionItem,
+  row: { id: string; legacy_id: string | null },
+): void {
+  item.dbId = row.id;
+  item.id = row.legacy_id ?? row.id;
+}
+
 async function applyDiff(
   before: ActionItem[],
   after: ActionItem[],
@@ -419,11 +436,20 @@ async function applyDiff(
     .map((i) => i.dbId)
     .filter((v): v is string => Boolean(v));
 
-  if (inserts.length) {
-    const { error } = await db()
+  // Insert new rows with legacy_id = NULL so the DB trigger owns id assignment
+  // (race-free via tasks_legacy_id_seq), reading the assigned id/UUID back onto
+  // each item. Per-row (not batch) keeps each returned row unambiguously
+  // correlated to its source item without relying on RETURNING order.
+  for (const item of inserts) {
+    const row = itemToRow(item, team);
+    row.legacy_id = null;
+    const { data, error } = await db()
       .from("tasks")
-      .insert(inserts.map((i) => itemToRow(i, team)));
-    if (error) throw new Error(`task insert failed: ${error.message}`);
+      .insert(row)
+      .select("id, legacy_id")
+      .single();
+    if (error) throw new Error(`task insert failed (${item.id}): ${error.message}`);
+    assignPersistedId(item, data as { id: string; legacy_id: string | null });
   }
   for (const item of updates) {
     if (!item.dbId) {
