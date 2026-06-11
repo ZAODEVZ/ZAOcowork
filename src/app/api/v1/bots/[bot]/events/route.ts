@@ -21,7 +21,7 @@ interface EventRow {
 }
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ bot: string }> }) {
-  const isBot = Boolean(authBot(req));
+  const isBot = Boolean(await authBot(req));
   const session = isBot ? null : await getSession();
   if (!isBot && !session) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });

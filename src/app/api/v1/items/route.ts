@@ -9,6 +9,7 @@ import {
   type TaskSource,
   type ActionItem,
 } from "@/lib/data";
+import { readJsonObject, reqString, apiError } from "@/lib/api-validate";
 
 // POST /api/v1/items — create a task (bot fleet). See docs/BOT-API.md.
 // Body: { title (required), assignee?, due_date?, notes?, source? } -> { id }
@@ -20,18 +21,17 @@ function nowIso() {
 }
 
 export async function POST(req: NextRequest) {
-  const bot = authBot(req);
+  const bot = await authBot(req);
   if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   let body: Record<string, unknown>;
+  let title: string;
   try {
-    body = (await req.json()) as Record<string, unknown>;
-  } catch {
-    return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    body = await readJsonObject(req);
+    title = reqString(body.title, "title", 500);
+  } catch (e) {
+    return apiError(e);
   }
-
-  const title = String(body.title ?? "").trim();
-  if (!title) return Response.json({ ok: false, error: "title is required" }, { status: 400 });
 
   const assignee = typeof body.assignee === "string" ? body.assignee.trim() : "";
   const source = TASK_SOURCES.includes(body.source as TaskSource)

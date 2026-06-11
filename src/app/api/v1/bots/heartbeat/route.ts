@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { authBot } from "@/lib/bot-auth";
 import { serviceClient } from "@/lib/supabase-server";
+import { readJsonObject, optObject, apiError } from "@/lib/api-validate";
 
 // POST /api/v1/bots/heartbeat — a bot reports it's alive. The bot identity comes
 // from the bearer token (not the body), so a token can only heartbeat as itself.
@@ -11,18 +12,19 @@ export const dynamic = "force-dynamic";
 const STATUSES = new Set(["up", "degraded", "down"]);
 
 export async function POST(req: NextRequest) {
-  const bot = authBot(req);
+  const bot = await authBot(req);
   if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
-  let body: Record<string, unknown> = {};
+  let body: Record<string, unknown>;
+  let meta: Record<string, unknown>;
   try {
-    body = (await req.json()) as Record<string, unknown>;
-  } catch {
-    /* empty body is fine — defaults to 'up' */
+    body = await readJsonObject(req); // {} for an empty body — heartbeat may be bodyless
+    meta = optObject(body.meta, "meta") ?? {};
+  } catch (e) {
+    return apiError(e);
   }
 
   const status = STATUSES.has(String(body.status)) ? String(body.status) : "up";
-  const meta = body.meta && typeof body.meta === "object" ? body.meta : {};
   const now = new Date().toISOString();
 
   try {
