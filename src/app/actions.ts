@@ -375,9 +375,8 @@ export async function addComment(form: FormData): Promise<{ error?: string }> {
     // "1" = don't ping the people tagged in this comment (owner/leads still
     // get notified). Default (absent/"0") = notify.
     const silent = String(form.get("silent") ?? "") === "1";
-    const doc = await getActions();
-    const idx = doc.items.findIndex((x) => x.id === id);
-    if (idx < 0) return { error: `Task #${id} not found.` };
+    const item = await getItem(id);
+    if (!item) return { error: `Task #${id} not found.` };
     const now = new Date().toISOString();
     const comment: Comment = {
       id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -386,17 +385,19 @@ export async function addComment(form: FormData): Promise<{ error?: string }> {
       content,
       createdAt: now,
     };
-    const item = doc.items[idx];
-    doc.items[idx] = {
-      ...item,
-      updatedAt: now,
-      comments: [...(item.comments || []), comment],
-      activity: [
-        ...(item.activity || []),
-        makeActivity(user, "commented", content.slice(0, 60), now),
-      ],
-    };
-    await saveActions(doc, user, `comment on #${id}`);
+    await saveItem(
+      {
+        ...item,
+        updatedAt: now,
+        comments: [...(item.comments || []), comment],
+        activity: [
+          ...(item.activity || []),
+          makeActivity(user, "commented", content.slice(0, 60), now),
+        ],
+      },
+      user,
+      `comment on #${id}`,
+    );
     revalidateAll();
     // Best-effort Telegram group ping. Pass the item state BEFORE this comment
     // for "prior commenters" targeting. Never let a notify failure surface to
@@ -419,11 +420,9 @@ export async function submitUpdate(form: FormData): Promise<void> {
   const id = String(form.get("id") ?? "");
   const content = String(form.get("content") ?? "").trim();
   if (!id || !content) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
+  const item = await getItem(id);
+  if (!item) return;
   const now = new Date().toISOString();
-  const item = doc.items[idx];
   // Approval is opt-in per task, not forced by role. Submissions apply
   // directly unless the task itself is flagged requiresApproval — leads/admins
   // can still delete or flag a task for review, but nobody has to approve
@@ -458,19 +457,22 @@ export async function submitUpdate(form: FormData): Promise<void> {
     }
   }
   const activityDetail = `${requiresApproval ? "submitted for review" : "submitted update"}${toStatus ? ` → ${toStatus}` : ""}`;
-  doc.items[idx] = {
-    ...item,
-    status: nextStatus,
-    completedAt,
-    completedBy,
-    updatedAt: now,
-    updates: [...(item.updates || []), update],
-    activity: [
-      ...(item.activity || []),
-      makeActivity(user, "update_submitted", activityDetail, now),
-    ],
-  };
-  await saveActions(doc, user, `update #${id}`);
+  await saveItem(
+    {
+      ...item,
+      status: nextStatus,
+      completedAt,
+      completedBy,
+      updatedAt: now,
+      updates: [...(item.updates || []), update],
+      activity: [
+        ...(item.activity || []),
+        makeActivity(user, "update_submitted", activityDetail, now),
+      ],
+    },
+    user,
+    `update #${id}`,
+  );
   // Unblock dependent tasks when update approves a DONE transition
   if (!requiresApproval && toStatus === "DONE" && item.status !== "DONE") {
     await onTaskClosed(id);
@@ -494,11 +496,9 @@ export async function reviewUpdate(form: FormData): Promise<void> {
     ? decisionRaw
     : "rejected") as ReviewStatus;
   if (!id || !updateId) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
+  const item = await getItem(id);
+  if (!item) return;
   const now = new Date().toISOString();
-  const item = doc.items[idx];
   const updates = (item.updates || []).map((u) => {
     if (u.id !== updateId) return u;
     return {
@@ -523,24 +523,27 @@ export async function reviewUpdate(form: FormData): Promise<void> {
       completedBy = "";
     }
   }
-  doc.items[idx] = {
-    ...item,
-    status: nextStatus,
-    completedAt,
-    completedBy,
-    updatedAt: now,
-    updates,
-    activity: [
-      ...(item.activity || []),
-      makeActivity(
-        user,
-        `review_${decision}`,
-        reviewNotes || decision,
-        now,
-      ),
-    ],
-  };
-  await saveActions(doc, user, `review #${id}`);
+  await saveItem(
+    {
+      ...item,
+      status: nextStatus,
+      completedAt,
+      completedBy,
+      updatedAt: now,
+      updates,
+      activity: [
+        ...(item.activity || []),
+        makeActivity(
+          user,
+          `review_${decision}`,
+          reviewNotes || decision,
+          now,
+        ),
+      ],
+    },
+    user,
+    `review #${id}`,
+  );
   // Unblock dependent tasks when review approves a DONE transition
   if (decision === "approved" && reviewed?.toStatus === "DONE" && item.status !== "DONE") {
     await onTaskClosed(id);
@@ -671,23 +674,24 @@ export async function claimTask(form: FormData): Promise<void> {
   const user = await requireSession();
   const id = String(form.get("id") ?? "");
   if (!id) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const cur = doc.items[idx];
+  const cur = await getItem(id);
+  if (!cur) return;
   const ownerName = userLabel(user);
   const now = new Date().toISOString();
-  doc.items[idx] = {
-    ...cur,
-    owner: ownerName,
-    claimable: false,
-    updatedAt: now,
-    activity: [
-      ...(cur.activity || []),
-      makeActivity(user, "claimed", `Claimed by ${ownerName}`, now),
-    ],
-  };
-  await saveActions(doc, user, `claim #${id} by ${user}`);
+  await saveItem(
+    {
+      ...cur,
+      owner: ownerName,
+      claimable: false,
+      updatedAt: now,
+      activity: [
+        ...(cur.activity || []),
+        makeActivity(user, "claimed", `Claimed by ${ownerName}`, now),
+      ],
+    },
+    user,
+    `claim #${id} by ${user}`,
+  );
   revalidateAll();
 }
 
@@ -715,26 +719,27 @@ export async function setAssignees(form: FormData): Promise<void> {
         .filter(Boolean),
     ),
   );
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const cur = doc.items[idx];
+  const cur = await getItem(id);
+  if (!cur) return;
   const now = new Date().toISOString();
   const owner = ownerFromAssignees(slugs);
   const label = slugs.length === 0 ? "no one" : slugs.map((s) => userLabel(s)).join(", ");
-  doc.items[idx] = {
-    ...cur,
-    assignees: slugs,
-    owner,
-    // A claimed/assigned task is no longer up for grabs.
-    claimable: slugs.length === 0 ? cur.claimable : false,
-    updatedAt: now,
-    activity: [
-      ...(cur.activity || []),
-      makeActivity(user, "assigned", `Assigned to ${label}`, now),
-    ],
-  };
-  await saveActions(doc, user, `set assignees #${id}: ${label}`);
+  await saveItem(
+    {
+      ...cur,
+      assignees: slugs,
+      owner,
+      // A claimed/assigned task is no longer up for grabs.
+      claimable: slugs.length === 0 ? cur.claimable : false,
+      updatedAt: now,
+      activity: [
+        ...(cur.activity || []),
+        makeActivity(user, "assigned", `Assigned to ${label}`, now),
+      ],
+    },
+    user,
+    `set assignees #${id}: ${label}`,
+  );
   revalidateAll();
 }
 

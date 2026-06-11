@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { authBot } from "@/lib/bot-auth";
 import { getItem, saveItem, type ActionStatus } from "@/lib/data";
+import { readJsonObject, apiError } from "@/lib/api-validate";
 
 // PATCH /api/v1/items/:id — update a task by its legacy id (the #N). See
 // docs/BOT-API.md. Body: { status?, assignee?, due_date?, notes? }
@@ -24,15 +25,15 @@ function normalizeStatus(v: unknown): ActionStatus | null {
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const bot = authBot(req);
+  const bot = await authBot(req);
   if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;
   let body: Record<string, unknown>;
   try {
-    body = (await req.json()) as Record<string, unknown>;
-  } catch {
-    return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
+    body = await readJsonObject(req);
+  } catch (e) {
+    return apiError(e);
   }
 
   // Single-row read/write — getItem resolves by legacy_id (#N) or UUID.

@@ -3,6 +3,7 @@
 // getActions / saveActions / newId / normalizeItem keep their signatures so
 // route handlers and server components are unchanged.
 
+import { cache } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   ActionDoc,
@@ -328,9 +329,15 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
   };
 }
 
-export async function getActions(): Promise<ActionDoc> {
+// The expensive part of getActions — the full paginated table read + archive
+// pass — memoized per request via React cache(). Multiple getActions() calls in
+// one render (a page + its child widgets all load the board) previously each ran
+// the whole thing; now the DB work happens once and callers share the result.
+// Returns the canonical items; getActions() hands each caller an independent
+// deep copy so one caller's in-memory mutations can't leak through the cache.
+const loadBoard = cache(async (): Promise<ActionItem[]> => {
   const team = await teamMaps();
-  // Read EVERY task regardless of legacy_source. Pre-this-PR the read was
+  // Read EVERY task regardless of legacy_source. Pre-unification the read was
   // scoped to legacy_source='cowork-actions.json' which hid meeting-captured
   // and bug-fix tasks from the board. Now they all show; writes target the
   // row by UUID (dbId), so cross-source tasks are fully editable.
@@ -353,13 +360,18 @@ export async function getActions(): Promise<ActionDoc> {
     rows.push(...batch);
     if (batch.length < PAGE) break;
   }
-  let items = rows
+  const items = rows
     .map((row) => normalizeItem(rowToItem(row, team)))
     .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
   // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +
-  // returns the items with archivedAt populated so the UI hides them
-  // on this same render rather than waiting for the next read.
-  items = await autoArchive(items);
+  // returns the items with archivedAt populated so the UI hides them on this
+  // same render. Inside the cached load so it runs once per request, not per
+  // getActions() call.
+  return autoArchive(items);
+});
+
+export async function getActions(): Promise<ActionDoc> {
+  const items = structuredClone(await loadBoard());
   // Snapshot the items as the caller sees them. saveActions diffs against THIS
   // (the read-time state) rather than re-reading at write time, so a task another
   // request created in the meantime isn't seen as "deleted" and clobbered

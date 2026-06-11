@@ -21,7 +21,7 @@ interface HeartbeatRow {
 
 export async function GET(req: NextRequest) {
   // Machine callers present a bot token; browsers present the session cookie.
-  const isBot = Boolean(authBot(req));
+  const isBot = Boolean(await authBot(req));
   const session = isBot ? null : await getSession();
   if (!isBot && !session) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
