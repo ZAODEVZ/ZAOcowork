@@ -30,7 +30,7 @@ interface CommandRow {
 
 // ---- GET: a bot (or the fleet-agent) pulls + claims its pending commands -------
 export async function GET(req: NextRequest) {
-  const caller = authBot(req);
+  const caller = await authBot(req);
   if (!caller) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const sp = req.nextUrl.searchParams;

@@ -13,7 +13,7 @@ const MAX_MESSAGE = 2000;
 const MAX_KIND = 64;
 
 export async function POST(req: NextRequest) {
-  const bot = authBot(req);
+  const bot = await authBot(req);
   if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   let body: Record<string, unknown>;

@@ -25,7 +25,7 @@ function normalizeStatus(v: unknown): ActionStatus | null {
 }
 
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const bot = authBot(req);
+  const bot = await authBot(req);
   if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;

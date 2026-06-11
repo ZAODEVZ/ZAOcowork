@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 const STATUSES = new Set(["up", "degraded", "down"]);
 
 export async function POST(req: NextRequest) {
-  const bot = authBot(req);
+  const bot = await authBot(req);
   if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   let body: Record<string, unknown>;
