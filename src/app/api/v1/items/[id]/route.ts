@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { authBot } from "@/lib/bot-auth";
-import { getActions, saveActions, type ActionStatus } from "@/lib/data";
+import { getItem, saveItem, type ActionStatus } from "@/lib/data";
 
 // PATCH /api/v1/items/:id — update a task by its legacy id (the #N). See
 // docs/BOT-API.md. Body: { status?, assignee?, due_date?, notes? }
@@ -35,11 +35,10 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id || x.dbId === id);
-  if (idx < 0) return Response.json({ ok: false, error: `no task #${id}` }, { status: 404 });
+  // Single-row read/write — getItem resolves by legacy_id (#N) or UUID.
+  const cur = await getItem(id);
+  if (!cur) return Response.json({ ok: false, error: `no task #${id}` }, { status: 404 });
 
-  const cur = doc.items[idx];
   const now = new Date().toISOString();
   const next = { ...cur, updatedAt: now };
   const changes: string[] = [];
@@ -81,10 +80,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
     ...(cur.activity || []),
     { id: `a-${Date.now()}`, userId: bot, displayName: bot, action: "updated", detail: `via bot API: ${changes.join(", ")}`, createdAt: now },
   ];
-  doc.items[idx] = next;
-
   try {
-    await saveActions(doc, bot, `bot ${bot} patched #${cur.id}: ${changes.join(", ")}`);
+    await saveItem(next, bot, `bot ${bot} patched #${cur.id}: ${changes.join(", ")}`);
   } catch (err) {
     return Response.json(
       { ok: false, error: err instanceof Error ? err.message : "save failed" },

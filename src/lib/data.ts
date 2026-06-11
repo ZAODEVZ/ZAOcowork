@@ -367,6 +367,54 @@ export async function getActions(): Promise<ActionDoc> {
   return { updatedAt: nowIso(), items, before: structuredClone(items) };
 }
 
+/** A legacy_id is always numeric; this distinguishes it from a UUID primary key. */
+export function looksLikeUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+/**
+ * Read a single task by its app-facing id (legacy_id, the #N) or its UUID.
+ * The targeted alternative to getActions() for the hot "patch one field on one
+ * task" path, which otherwise loads the entire table just to find one row.
+ * Querying the uuid `id` column with a non-uuid value errors in Postgres, so we
+ * route by shape: UUID → `id`, otherwise → `legacy_id`.
+ */
+export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
+  const team = await teamMaps();
+  const { data, error } = await db()
+    .from("tasks")
+    .select(TASK_COLUMNS)
+    .eq(looksLikeUuid(idOrDbId) ? "id" : "legacy_id", idOrDbId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`task read failed (${idOrDbId}): ${error.message}`);
+  if (!data) return null;
+  return normalizeItem(rowToItem(data as unknown as TaskRow, team));
+}
+
+/**
+ * Targeted update of a single already-persisted task (must have a dbId). Writes
+ * just that row by UUID — no full-table read or diff. Identity/source columns
+ * are never rewritten (mirrors applyDiff's update branch). Pair with getItem()
+ * for read-modify-write of one task without paying for the whole board.
+ */
+export async function saveItem(
+  item: ActionItem,
+  _actor: string,
+  _summary: string,
+): Promise<void> {
+  if (!item.dbId) throw new Error(`saveItem: item ${item.id} has no dbId`);
+  const team = await teamMaps();
+  const row = itemToRow(item, team);
+  delete row.legacy_source;
+  delete row.legacy_id;
+  delete row.kind;
+  delete row.project;
+  delete row.created_at;
+  const { error } = await db().from("tasks").update(row).eq("id", item.dbId);
+  if (error) throw new Error(`task update failed (${item.id}): ${error.message}`);
+}
+
 /**
  * Write the DB-assigned identity back onto an in-memory item after an INSERT.
  * App/bot creates insert with legacy_id = NULL and let the `tasks_slug_guard`

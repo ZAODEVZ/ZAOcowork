@@ -9,6 +9,8 @@ import { addDependency, removeDependency } from "@/lib/dependencies";
 import {
   getActions,
   saveActions,
+  getItem,
+  saveItem,
   newId,
   normalizeItem,
   type ActionItem,
@@ -242,10 +244,9 @@ export async function patchField(form: FormData): Promise<void> {
   const field = String(form.get("field") ?? "");
   const value = String(form.get("value") ?? "");
   if (!id || !field) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const cur = doc.items[idx];
+  // Single-row read/write — no full-table load just to patch one field.
+  const cur = await getItem(id);
+  if (!cur) return;
   const next: ActionItem = { ...cur, updatedAt: new Date().toISOString() };
   switch (field) {
     case "title":
@@ -339,8 +340,7 @@ export async function patchField(form: FormData): Promise<void> {
       return;
   }
   const shouldUnblockAfterSave = field === "status" && cur.status !== "DONE" && next.status === "DONE";
-  doc.items[idx] = next;
-  await saveActions(doc, user, `${field} #${id}`);
+  await saveItem(next, user, `${field} #${id}`);
   // Unblock dependent tasks when status changes to DONE
   if (shouldUnblockAfterSave) {
     await onTaskClosed(id);
