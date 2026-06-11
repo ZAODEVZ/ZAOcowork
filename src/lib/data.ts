@@ -3,6 +3,7 @@
 // getActions / saveActions / newId / normalizeItem keep their signatures so
 // route handlers and server components are unchanged.
 
+import { cache } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type {
   ActionDoc,
@@ -328,9 +329,15 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
   };
 }
 
-export async function getActions(): Promise<ActionDoc> {
+// The expensive part of getActions — the full paginated table read + archive
+// pass — memoized per request via React cache(). Multiple getActions() calls in
+// one render (a page + its child widgets all load the board) previously each ran
+// the whole thing; now the DB work happens once and callers share the result.
+// Returns the canonical items; getActions() hands each caller an independent
+// deep copy so one caller's in-memory mutations can't leak through the cache.
+const loadBoard = cache(async (): Promise<ActionItem[]> => {
   const team = await teamMaps();
-  // Read EVERY task regardless of legacy_source. Pre-this-PR the read was
+  // Read EVERY task regardless of legacy_source. Pre-unification the read was
   // scoped to legacy_source='cowork-actions.json' which hid meeting-captured
   // and bug-fix tasks from the board. Now they all show; writes target the
   // row by UUID (dbId), so cross-source tasks are fully editable.
@@ -353,18 +360,71 @@ export async function getActions(): Promise<ActionDoc> {
     rows.push(...batch);
     if (batch.length < PAGE) break;
   }
-  let items = rows
+  const items = rows
     .map((row) => normalizeItem(rowToItem(row, team)))
     .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
   // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +
-  // returns the items with archivedAt populated so the UI hides them
-  // on this same render rather than waiting for the next read.
-  items = await autoArchive(items);
+  // returns the items with archivedAt populated so the UI hides them on this
+  // same render. Inside the cached load so it runs once per request, not per
+  // getActions() call.
+  return autoArchive(items);
+});
+
+export async function getActions(): Promise<ActionDoc> {
+  const items = structuredClone(await loadBoard());
   // Snapshot the items as the caller sees them. saveActions diffs against THIS
   // (the read-time state) rather than re-reading at write time, so a task another
   // request created in the meantime isn't seen as "deleted" and clobbered
   // (doc 766 finding #1, the concurrent-save data-loss bug).
   return { updatedAt: nowIso(), items, before: structuredClone(items) };
+}
+
+/** A legacy_id is always numeric; this distinguishes it from a UUID primary key. */
+export function looksLikeUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
+/**
+ * Read a single task by its app-facing id (legacy_id, the #N) or its UUID.
+ * The targeted alternative to getActions() for the hot "patch one field on one
+ * task" path, which otherwise loads the entire table just to find one row.
+ * Querying the uuid `id` column with a non-uuid value errors in Postgres, so we
+ * route by shape: UUID → `id`, otherwise → `legacy_id`.
+ */
+export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
+  const team = await teamMaps();
+  const { data, error } = await db()
+    .from("tasks")
+    .select(TASK_COLUMNS)
+    .eq(looksLikeUuid(idOrDbId) ? "id" : "legacy_id", idOrDbId)
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`task read failed (${idOrDbId}): ${error.message}`);
+  if (!data) return null;
+  return normalizeItem(rowToItem(data as unknown as TaskRow, team));
+}
+
+/**
+ * Targeted update of a single already-persisted task (must have a dbId). Writes
+ * just that row by UUID — no full-table read or diff. Identity/source columns
+ * are never rewritten (mirrors applyDiff's update branch). Pair with getItem()
+ * for read-modify-write of one task without paying for the whole board.
+ */
+export async function saveItem(
+  item: ActionItem,
+  _actor: string,
+  _summary: string,
+): Promise<void> {
+  if (!item.dbId) throw new Error(`saveItem: item ${item.id} has no dbId`);
+  const team = await teamMaps();
+  const row = itemToRow(item, team);
+  delete row.legacy_source;
+  delete row.legacy_id;
+  delete row.kind;
+  delete row.project;
+  delete row.created_at;
+  const { error } = await db().from("tasks").update(row).eq("id", item.dbId);
+  if (error) throw new Error(`task update failed (${item.id}): ${error.message}`);
 }
 
 /**

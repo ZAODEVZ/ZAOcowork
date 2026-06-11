@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { authBot } from "@/lib/bot-auth";
 import { getSession, isAdmin } from "@/lib/auth";
 import { serviceClient } from "@/lib/supabase-server";
+import { readJsonObject, optObject, apiError } from "@/lib/api-validate";
 
 // /api/v1/bots/commands — the control-plane command queue (doc 800 Phase 2-4).
 //
@@ -29,7 +30,7 @@ interface CommandRow {
 
 // ---- GET: a bot (or the fleet-agent) pulls + claims its pending commands -------
 export async function GET(req: NextRequest) {
-  const caller = authBot(req);
+  const caller = await authBot(req);
   if (!caller) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const sp = req.nextUrl.searchParams;
@@ -84,16 +85,17 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
-  let body: Record<string, unknown> = {};
+  let body: Record<string, unknown>;
+  let args: Record<string, unknown>;
   try {
-    body = (await req.json()) as Record<string, unknown>;
-  } catch {
-    return Response.json({ ok: false, error: "invalid JSON body" }, { status: 400 });
+    body = await readJsonObject(req);
+    args = optObject(body.args, "args") ?? {};
+  } catch (e) {
+    return apiError(e);
   }
 
   const bot = typeof body.bot === "string" ? body.bot.trim().toLowerCase() : "";
   const command = typeof body.command === "string" ? body.command.trim() : "";
-  const args = body.args && typeof body.args === "object" ? body.args : {};
   if (!bot) return Response.json({ ok: false, error: "bot is required" }, { status: 400 });
   if (!ALL_COMMANDS.includes(command)) {
     return Response.json(

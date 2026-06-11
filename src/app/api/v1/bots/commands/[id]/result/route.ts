@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const caller = authBot(req);
+  const caller = await authBot(req);
   if (!caller) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   const { id } = await ctx.params;

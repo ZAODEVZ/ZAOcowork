@@ -1,6 +1,22 @@
 import { describe, it, expect } from "vitest";
-import { assignPersistedId } from "./data";
+import { assignPersistedId, looksLikeUuid } from "./data";
 import type { ActionItem } from "./types";
+
+// getItem() routes to the `id` (uuid) column vs the `legacy_id` (#N) column by
+// shape — querying the uuid column with a numeric value errors in Postgres.
+describe("looksLikeUuid", () => {
+  it("is true for a UUID primary key", () => {
+    expect(looksLikeUuid("11111111-2222-3333-4444-555555555555")).toBe(true);
+  });
+  it("is false for a numeric legacy_id (the #N route key)", () => {
+    expect(looksLikeUuid("467")).toBe(false);
+    expect(looksLikeUuid("1")).toBe(false);
+  });
+  it("is false for a slug or empty string", () => {
+    expect(looksLikeUuid("meeting-jose-onb")).toBe(false);
+    expect(looksLikeUuid("")).toBe(false);
+  });
+});
 
 // assignPersistedId is the read-back step after a create INSERT: the app/bot
 // inserts with legacy_id = NULL, the `tasks_slug_guard` trigger assigns the
