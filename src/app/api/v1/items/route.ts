@@ -69,5 +69,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return Response.json({ ok: true, id }, { status: 201 });
+  // item.id is the DB-assigned number after save (not the optimistic newId).
+  return Response.json({ ok: true, id: item.id }, { status: 201 });
 }

@@ -205,8 +205,10 @@ export async function quickCreate(
   await saveActions(doc, user, `quick-add #${id} ${title.slice(0, 40)}`);
   revalidateAll();
   // Return the new task's identity so the UI can show an obvious "created #N
-  // in <column>" confirmation with a jump-to link.
-  return { id, title, status, category, owner: item.owner };
+  // in <column>" confirmation with a jump-to link. Read item.id (not the
+  // optimistic newId) — saveActions/applyDiff overwrites it with the
+  // DB-assigned number.
+  return { id: item.id, title, status, category, owner: item.owner };
 }
 
 export async function updateItem(form: FormData): Promise<void> {
