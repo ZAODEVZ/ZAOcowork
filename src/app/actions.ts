@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { destroySession, requireSession, requireAdmin, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { serviceClient } from "@/lib/supabase-server";
 import { logAudit } from "@/lib/audit";
+import { notifyAssignment, notifyReviewDecision } from "@/lib/notify";
 import { onTaskClosed, recomputeBlockedState } from "@/lib/dep-flow";
 import { addDependency, removeDependency } from "@/lib/dependencies";
 import {
@@ -550,6 +551,17 @@ export async function reviewUpdate(form: FormData): Promise<void> {
     await onTaskClosed(id);
   }
   revalidateAll();
+  // DM the submitter so they know the outcome without checking the board.
+  const submitterSlug = reviewed?.submittedBy ?? "";
+  if (submitterSlug && submitterSlug !== user && decision !== "pending") {
+    notifyReviewDecision({
+      item,
+      submitterSlug,
+      decision: decision as "approved" | "rejected" | "changes_requested",
+      reviewerName: userLabel(user as import("@/lib/auth").SessionUser),
+      reviewNotes: reviewNotes || undefined,
+    }).catch((e) => console.error("[actions] notifyReviewDecision failed", e));
+  }
 }
 
 export async function todoProcess(
@@ -734,6 +746,7 @@ export async function setAssignees(form: FormData): Promise<void> {
   const cur = await getItem(id);
   if (!cur) return;
   const now = new Date().toISOString();
+  const prevSlugs = new Set(cur.assignees ?? []);
   const owner = ownerFromAssignees(slugs);
   const label = slugs.length === 0 ? "no one" : slugs.map((s) => userLabel(s)).join(", ");
   await saveItem(
@@ -753,6 +766,13 @@ export async function setAssignees(form: FormData): Promise<void> {
     `set assignees #${id}: ${label}`,
   );
   revalidateAll();
+  // DM anyone newly added to the task (skip if they assigned themselves).
+  const newSlugs = slugs.filter((s) => !prevSlugs.has(s));
+  if (newSlugs.length > 0) {
+    notifyAssignment({ item: cur, actor: user, newAssigneeSlugs: newSlugs }).catch((e) =>
+      console.error("[actions] notifyAssignment failed", e),
+    );
+  }
 }
 
 // ============================================================================

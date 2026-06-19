@@ -5,6 +5,7 @@ import { getActions, ageDays, type ActionItem } from "@/lib/data";
 import { isAssignedTo } from "@/lib/types";
 import { listTeamMembers, type TeamMember } from "@/lib/team";
 import { matchMentions } from "@/lib/mentions";
+import { sendDirectMessage, escapeHtml } from "@/lib/telegram";
 
 // /api/my-digest — per-person digest (their open tasks + @mentions + pending
 // reviews). Cron-friendly like /api/digest:
@@ -19,10 +20,14 @@ export const dynamic = "force-dynamic";
 interface PersonalDigest {
   member: string;
   email: string | null;
+  telegramId: number | null;
   assigned: Array<{ id: string; title: string; status: string; priority: string; age: number; due: string }>;
+  dueSoon: Array<{ id: string; title: string; due: string; priority: string }>;
   mentions: Array<{ id: string; title: string; by: string; at: string }>;
   pendingReviews: number;
 }
+
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
 
 function buildFor(member: TeamMember, items: ActionItem[]): PersonalDigest {
   const me = (member.legacy_owner ?? member.name).toLowerCase();
@@ -43,6 +48,15 @@ function buildFor(member: TeamMember, items: ActionItem[]): PersonalDigest {
       due: it.due || "",
     }));
 
+  const now = Date.now();
+  const dueSoon = assigned
+    .filter((t) => {
+      if (!t.due || t.status === "DONE") return false;
+      const dueMs = new Date(t.due).getTime();
+      return dueMs > 0 && dueMs - now <= THREE_DAYS_MS;
+    })
+    .map((t) => ({ id: t.id, title: t.title, due: t.due, priority: t.priority }));
+
   const mentions: PersonalDigest["mentions"] = [];
   for (const it of items) {
     for (const c of it.comments ?? []) {
@@ -60,11 +74,29 @@ function buildFor(member: TeamMember, items: ActionItem[]): PersonalDigest {
     }
   }
 
-  return { member: member.name, email: member.email, assigned, mentions: mentions.slice(0, 10), pendingReviews };
+  return { member: member.name, email: member.email, telegramId: member.telegram_id ?? null, assigned, dueSoon, mentions: mentions.slice(0, 10), pendingReviews };
 }
 
 function isEmpty(d: PersonalDigest): boolean {
-  return d.assigned.length === 0 && d.mentions.length === 0 && d.pendingReviews === 0;
+  return d.assigned.length === 0 && d.dueSoon.length === 0 && d.mentions.length === 0 && d.pendingReviews === 0;
+}
+
+function toTelegramHtml(d: PersonalDigest, base: string): string {
+  const link = (id: string, label: string) =>
+    `<a href="${base}/?task=${encodeURIComponent(id)}">${escapeHtml(label)}</a>`;
+  const lines: string[] = [`📋 <b>Your Co-Works digest — ${escapeHtml(d.member)}</b>`];
+  if (d.dueSoon.length > 0) {
+    lines.push("", "⏰ <b>Due in the next 3 days:</b>");
+    for (const t of d.dueSoon) lines.push(`• ${link(t.id, `#${t.id} ${t.title}`)} — ${escapeHtml(t.priority)}, due ${escapeHtml(t.due)}`);
+  }
+  if (d.assigned.length > 0) {
+    lines.push("", `📌 <b>${d.assigned.length} open task${d.assigned.length === 1 ? "" : "s"}</b>`);
+    for (const t of d.assigned.slice(0, 5)) lines.push(`• [${escapeHtml(t.status)}] ${link(t.id, `#${t.id} ${t.title}`)}`);
+    if (d.assigned.length > 5) lines.push(`  …and ${d.assigned.length - 5} more`);
+  }
+  if (d.mentions.length > 0) lines.push("", `💬 <b>${d.mentions.length} recent mention${d.mentions.length === 1 ? "" : "s"}</b>`);
+  if (d.pendingReviews > 0) lines.push("", `🔍 <b>${d.pendingReviews} update${d.pendingReviews === 1 ? "" : "s"} awaiting your review</b>`);
+  return lines.join("\n");
 }
 
 function toHtml(d: PersonalDigest, base: string): string {
@@ -151,6 +183,16 @@ export async function GET(req: NextRequest) {
     } catch (err) {
       results.push({ member: d.member, sent: false, error: err instanceof Error ? err.message : String(err) });
     }
+  }
+
+  // Also send a Telegram DM to anyone with telegram_id set (independent of
+  // whether they have email; a DM failure never fails the overall response).
+  for (const d of digests) {
+    if (!d.telegramId) continue;
+    const tgHtml = toTelegramHtml(d, base);
+    sendDirectMessage(d.telegramId, tgHtml).catch((e) =>
+      console.error(`[my-digest] Telegram DM to ${d.telegramId} failed`, e),
+    );
   }
 
   return Response.json({ ok: true, sent: true, results });

@@ -1,19 +1,16 @@
-// Server-only notification dispatcher for the web app. Currently handles the
-// "new comment" event: posts to the ZAO DEVZ Telegram group, tagging the people
-// who should see it. Best-effort throughout — a failure here must never break
-// the comment save that triggered it.
+// Server-only notification dispatcher for the web app.
 //
-// Targeting (union, minus the comment's author):
-//   - @mentions in the comment text         (suppressed when `silent`)
-//   - the task owner
-//   - everyone who already commented on the task
-//   - all leads / admins
+// Events handled:
+//   notifyComment   — new comment on a task (group ping + @mention DMs)
+//   notifyAssignment — task assigned/reassigned (personal DM to new assignees)
+//   notifyReviewDecision — update approved/rejected/changes-requested (DM to submitter)
+//
+// All functions are best-effort and never throw — a notification failure must
+// never break the mutation that triggered it.
 //
 // FOLLOW-UP (ZAO OS): the 1-hour "no reaction -> DM the person" escalation
 // can't run here (Vercel is serverless: no reaction stream, no delayed jobs).
 // It belongs in the ZAO OS repo, which owns the bot's long-running process.
-// sendGroupMessage returns the group message_id so that loop can later
-// correlate reactions/replies to mark recipients "seen".
 
 import { listTeamMembers, type TeamMember } from "./team";
 import { sendGroupMessage, sendDirectMessage, escapeHtml, type TelegramSendResult } from "./telegram";
@@ -141,4 +138,106 @@ export async function notifyComment(args: NotifyCommentArgs): Promise<TelegramSe
   }
 
   return groupResult;
+}
+
+// ---------------------------------------------------------------------------
+// Assignment notification
+// ---------------------------------------------------------------------------
+
+interface NotifyAssignmentArgs {
+  item: ActionItem;
+  /** login slug of who made the assignment */
+  actor: string;
+  /** legacy_owner slugs of the people NEWLY added (diff vs previous assignees) */
+  newAssigneeSlugs: string[];
+}
+
+/**
+ * DM each newly-assigned teammate ("You were assigned to #id — title").
+ * Never DMs the actor (they know they assigned it). Fire-and-forget.
+ */
+export async function notifyAssignment(args: NotifyAssignmentArgs): Promise<void> {
+  const { item, actor, newAssigneeSlugs } = args;
+  if (newAssigneeSlugs.length === 0) return;
+  const actorKey = actor.toLowerCase();
+
+  let members: TeamMember[];
+  try {
+    members = (await listTeamMembers()).filter((m) => m.active);
+  } catch (err) {
+    console.warn("[notify] roster load failed, skipping assignment notification", err);
+    return;
+  }
+
+  const url = `${appBaseUrl()}/?task=${encodeURIComponent(item.id)}`;
+  const actorName = actor.charAt(0).toUpperCase() + actor.slice(1);
+  const html = [
+    `📌 <b>${escapeHtml(actorName)}</b> assigned you to`,
+    `<b>#${escapeHtml(item.id)}</b> — ${escapeHtml(item.title)}`,
+    `👉 <a href="${url}">Open task</a>`,
+  ].join("\n");
+
+  for (const slug of newAssigneeSlugs) {
+    if (slug === actorKey) continue; // don't DM yourself
+    const m = members.find((m) => (m.legacy_owner ?? m.name).toLowerCase() === slug);
+    if (m?.telegram_id) {
+      sendDirectMessage(m.telegram_id, html).catch((e) =>
+        console.error(`[notify] assignment DM to ${m.telegram_id} failed`, e),
+      );
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Review decision notification
+// ---------------------------------------------------------------------------
+
+interface NotifyReviewDecisionArgs {
+  item: ActionItem;
+  /** legacy_owner slug of the person who submitted the update */
+  submitterSlug: string;
+  decision: "approved" | "rejected" | "changes_requested";
+  /** display name of the reviewer */
+  reviewerName: string;
+  reviewNotes?: string;
+}
+
+/**
+ * DM the update submitter when a lead approves, rejects, or requests changes.
+ * Fire-and-forget.
+ */
+export async function notifyReviewDecision(args: NotifyReviewDecisionArgs): Promise<void> {
+  const { item, submitterSlug, decision, reviewerName, reviewNotes } = args;
+
+  let members: TeamMember[];
+  try {
+    members = (await listTeamMembers()).filter((m) => m.active);
+  } catch (err) {
+    console.warn("[notify] roster load failed, skipping review notification", err);
+    return;
+  }
+
+  const submitter = members.find(
+    (m) => (m.legacy_owner ?? m.name).toLowerCase() === submitterSlug.toLowerCase(),
+  );
+  if (!submitter?.telegram_id) return;
+
+  const url = `${appBaseUrl()}/?task=${encodeURIComponent(item.id)}`;
+  const icon = decision === "approved" ? "✅" : decision === "rejected" ? "❌" : "🔄";
+  const label =
+    decision === "approved"
+      ? `approved by ${escapeHtml(reviewerName)}`
+      : decision === "rejected"
+        ? `rejected by ${escapeHtml(reviewerName)}`
+        : `changes requested by ${escapeHtml(reviewerName)}`;
+
+  const lines = [
+    `${icon} Your update on <b>#${escapeHtml(item.id)}</b> — ${escapeHtml(item.title)} was ${label}`,
+  ];
+  if (reviewNotes) lines.push(`<i>${escapeHtml(reviewNotes)}</i>`);
+  lines.push(`👉 <a href="${url}">Open task</a>`);
+
+  sendDirectMessage(submitter.telegram_id, lines.join("\n")).catch((e) =>
+    console.error(`[notify] review DM to ${submitter.telegram_id} failed`, e),
+  );
 }
