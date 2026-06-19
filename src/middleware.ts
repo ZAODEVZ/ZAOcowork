@@ -19,13 +19,53 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 }
 
-export function middleware(req: NextRequest) {
+// Verify the HMAC-signed session cookie at the edge so forged cookies are
+// rejected before they reach any route handler. Mirrors the logic in
+// getSession() (src/lib/auth.ts) but uses Web Crypto (Edge-compatible) instead
+// of node:crypto. Returns a Promise because crypto.subtle is async.
+const VALID_USER_RE = /^[a-z][a-z0-9_-]{0,30}$/;
+const enc = new TextEncoder();
+
+async function isCookieValid(raw: string): Promise<boolean> {
+  const secret = process.env.AUTH_SECRET;
+  if (!secret || secret.length < 32) return false;
+  const parts = raw.split(".");
+  if (parts.length !== 3) return false;
+  const [user, expStr, sig] = parts;
+  if (!VALID_USER_RE.test(user)) return false;
+  const exp = parseInt(expStr, 10);
+  if (!Number.isFinite(exp) || exp * 1000 < Date.now()) return false;
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sigBytes = await crypto.subtle.sign("HMAC", key, enc.encode(`${user}.${expStr}`));
+    const expected = Array.from(new Uint8Array(sigBytes))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    // Constant-time compare via XOR — crypto.subtle.verify would need the sig
+    // as ArrayBuffer; hex-string compare is fine here since the expected value
+    // is server-generated and constant-length.
+    if (expected.length !== sig.length) return false;
+    let diff = 0;
+    for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ sig.charCodeAt(i);
+    return diff === 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (isPublic(pathname)) {
     return NextResponse.next();
   }
   const cookie = req.cookies.get("iman-session")?.value;
-  if (!cookie) {
+  if (!cookie || !(await isCookieValid(cookie))) {
     const url = req.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("from", pathname);

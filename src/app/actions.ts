@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { destroySession, requireSession, requireAdmin, isLead, userLabel } from "@/lib/auth";
+import { destroySession, requireSession, requireAdmin, isAdmin, isLead, userLabel } from "@/lib/auth";
+import { serviceClient } from "@/lib/supabase-server";
 import { logAudit } from "@/lib/audit";
 import { onTaskClosed, recomputeBlockedState } from "@/lib/dep-flow";
 import { addDependency, removeDependency } from "@/lib/dependencies";
@@ -307,7 +308,7 @@ export async function patchField(form: FormData): Promise<void> {
     case "archive": {
       // Archive/unarchive is "Ask" tier (lead/admin) per doc-766 (finding #3).
       if (!isLead(user)) {
-        const { isAdmin } = await import("@/lib/auth");
+
         if (!(await isAdmin(user))) return;
       }
       // value "1" -> archive now, "0" -> unarchive
@@ -352,7 +353,7 @@ export async function deleteItem(form: FormData): Promise<void> {
   const user = await requireSession();
   // Block tier: leads OR DB-promoted admins (isLead-only locked out admins).
   if (!isLead(user)) {
-    const { isAdmin } = await import("@/lib/auth");
+
     if (!(await isAdmin(user))) return;
   }
   const id = String(form.get("id") ?? "");
@@ -485,7 +486,7 @@ export async function reviewUpdate(form: FormData): Promise<void> {
   // Ask tier: leads OR DB-promoted admins (was isLead-only, so admins silently
   // couldn't approve/reject).
   if (!isLead(user)) {
-    const { isAdmin } = await import("@/lib/auth");
+
     if (!(await isAdmin(user))) return;
   }
   const id = String(form.get("id") ?? "");
@@ -569,9 +570,20 @@ export async function todoProcess(
     | { type: "update_status"; itemId: string; newStatus: ActionStatus }
     | { type: "add_note"; itemId: string; note: string };
 
+  function isTodoAction(v: unknown): v is TodoAction {
+    if (!v || typeof v !== "object") return false;
+    const a = v as Record<string, unknown>;
+    if (a.type === "create") return typeof a.title === "string";
+    if (a.type === "update_status") return typeof a.itemId === "string" && typeof a.newStatus === "string";
+    if (a.type === "add_note") return typeof a.itemId === "string" && typeof a.note === "string";
+    return false;
+  }
+
   let todoActions: TodoAction[];
   try {
-    todoActions = JSON.parse(raw) as TodoAction[];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return { created: 0, updated: 0 };
+    todoActions = parsed.filter(isTodoAction);
   } catch {
     return { created: 0, updated: 0 };
   }
@@ -758,7 +770,7 @@ import {
 async function requireLeadOrAdmin(): Promise<string> {
   const user = await requireSession();
   if (isLead(user)) return user;
-  const { isAdmin } = await import("@/lib/auth");
+
   if (await isAdmin(user)) return user;
   throw new Error("Forbidden");
 }
@@ -916,7 +928,7 @@ export async function triageRoute(form: FormData): Promise<void> {
   if (!isLead(user)) {
     // Not a lead -> check admin role explicitly. Admin promotion lives in DB
     // via Phase B, so this is the same gate /admin pages use.
-    const { isAdmin } = await import("@/lib/auth");
+
     if (!(await isAdmin(user))) return;
   }
   const id = String(form.get("id") ?? "");
@@ -964,7 +976,7 @@ export async function triageRoute(form: FormData): Promise<void> {
 export async function triageReject(form: FormData): Promise<void> {
   const user = await requireSession();
   if (!isLead(user)) {
-    const { isAdmin } = await import("@/lib/auth");
+
     if (!(await isAdmin(user))) return;
   }
   const id = String(form.get("id") ?? "");
@@ -1412,7 +1424,7 @@ export async function setTaskPublicOverride(form: FormData): Promise<{ ok: boole
   // Public visibility is lead/admin only — was requireSession-only, so any
   // worker could expose/hide tasks on the public /shipped layer.
   if (!isLead(user)) {
-    const { isAdmin } = await import("@/lib/auth");
+
     if (!(await isAdmin(user))) return { ok: false };
   }
 
@@ -1425,15 +1437,7 @@ export async function setTaskPublicOverride(form: FormData): Promise<{ ok: boole
 
   const value = raw === "show" ? true : raw === "hide" ? false : null;
 
-  const { createClient } = await import("@supabase/supabase-js");
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY;
-  if (!url || !key) return { ok: false };
-
-  const sb = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
+  const sb = serviceClient();
   const { error } = await sb.from("tasks").update({ public_override: value }).eq("id", taskId);
 
   if (error) {

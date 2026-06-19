@@ -52,7 +52,7 @@ export async function addUserAction(form: FormData): Promise<void> {
 
   if (!NAME_RE.test(name)) bouncedErr("invalid name");
   if (!SLUG_RE.test(legacy)) bouncedErr("invalid login slug (lowercase letters/numbers/dash/underscore, start with letter)");
-  if (password.length < 8) bouncedErr("password must be at least 8 chars");
+  if (password.length < 12) bouncedErr("password must be at least 12 chars");
   const telegram_id = tgRaw ? Number(tgRaw) : null;
   if (tgRaw && !Number.isFinite(telegram_id)) bouncedErr("telegram_id must be numeric");
 
@@ -82,7 +82,7 @@ export async function resetPasswordAction(form: FormData): Promise<void> {
   const id = String(form.get("id") ?? "").trim();
   const password = String(form.get("password") ?? "");
   if (!id) bouncedErr("missing id");
-  if (password.length < 8) bouncedErr("password must be at least 8 chars");
+  if (password.length < 12) bouncedErr("password must be at least 12 chars");
   await resetMemberPassword(id, password, userLabel(actor));
   await logAudit({
     actor: userLabel(actor),
