@@ -445,6 +445,18 @@ export function Board({
     }
   }, [filters, filterStorageKey]);
   const [activeMobileStatus, setActiveMobileStatus] = useState<BoardStatus>("TODO");
+  // View density: light = minimal filters, mid = standard, power = all controls.
+  // Persisted per browser. Default is "mid" (the current experience).
+  const [density, setDensity] = useState<"light" | "mid" | "power">("mid");
+  useEffect(() => {
+    try {
+      const d = window.localStorage.getItem("zao-board-density");
+      if (d === "light" || d === "mid" || d === "power") setDensity(d);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => {
+    try { window.localStorage.setItem("zao-board-density", density); } catch { /* ignore */ }
+  }, [density]);
   // Board vs Table view (research roadmap Phase A/B). Cards are bad at
   // multivariate comparison/bulk-scan (NN/g); a table is the standard second
   // layout in mature PM tools. Persisted so the choice sticks per browser.
@@ -787,6 +799,11 @@ export function Board({
         urlBrand={urlBrand ?? null}
         selectMode={selectMode}
         onToggleSelectMode={() => setSelectMode((v) => !v)}
+        density={density}
+        onDensityChange={(d) => {
+          if (d !== "power" && view === "table") setView("board");
+          setDensity(d);
+        }}
       />
 
       <SavedViews filters={filters} onApply={setFilters} userKey={currentUser} />
@@ -808,27 +825,31 @@ export function Board({
           <span />
         )}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setShowInsights((v) => !v)}
-            className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
-              showInsights
-                ? "bg-violet-500/15 border-violet-500/40 text-violet-200"
-                : "bg-zao-ink border-white/10 text-white/55 hover:text-white/85"
-            }`}
-            aria-pressed={showInsights}
-          >
-            📊 Insights
-          </button>
-          <button
-            onClick={() => exportItemsCsv(filtered)}
-            disabled={filtered.length === 0}
-            title={`Export ${filtered.length} shown task${filtered.length === 1 ? "" : "s"} as CSV`}
-            className="px-2.5 py-1 text-xs font-medium rounded-md border bg-zao-ink border-white/10 text-white/55 hover:text-white/85 transition disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            ⤓ Export
-          </button>
-          {/* Group-by selector — only meaningful in table view */}
-          {view === "table" && (
+          {density !== "light" && (
+            <button
+              onClick={() => setShowInsights((v) => !v)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+                showInsights
+                  ? "bg-violet-500/15 border-violet-500/40 text-violet-200"
+                  : "bg-zao-ink border-white/10 text-white/55 hover:text-white/85"
+              }`}
+              aria-pressed={showInsights}
+            >
+              📊 Insights
+            </button>
+          )}
+          {density === "power" && (
+            <button
+              onClick={() => exportItemsCsv(filtered)}
+              disabled={filtered.length === 0}
+              title={`Export ${filtered.length} shown task${filtered.length === 1 ? "" : "s"} as CSV`}
+              className="px-2.5 py-1 text-xs font-medium rounded-md border bg-zao-ink border-white/10 text-white/55 hover:text-white/85 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ⤓ Export
+            </button>
+          )}
+          {/* Group-by selector — only meaningful in table view, power only */}
+          {density === "power" && view === "table" && (
             <label className="flex items-center gap-1.5 text-xs text-white/50">
               <span className="hidden sm:inline">Group</span>
               <select
@@ -844,32 +865,34 @@ export function Board({
               </select>
             </label>
           )}
-          {/* View switcher: Board (Kanban) vs Table (compare/bulk-scan) */}
-          <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5">
-            {(["board", "table"] as const).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
-                  view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
-                }`}
-                aria-pressed={view === v}
-              >
-                {v === "board" ? "▦ Board" : "▤ Table"}
-              </button>
-            ))}
-          </div>
+          {/* View switcher: Board vs Table — only in power mode */}
+          {density === "power" && (
+            <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5">
+              {(["board", "table"] as const).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
+                    view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
+                  }`}
+                  aria-pressed={view === v}
+                >
+                  {v === "board" ? "▦ Board" : "▤ Table"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {showInsights && <InsightsPanel items={filtered} />}
+      {showInsights && density !== "light" && <InsightsPanel items={filtered} />}
 
-      {view === "table" && (
+      {density === "power" && view === "table" && (
         <TableView items={filtered} onOpenRoom={setTaskRoomId} groupBy={groupBy} />
       )}
 
       {/* Mobile: status tabs + single column */}
-      <div className={view === "table" ? "hidden" : "md:hidden"}>
+      <div className={density === "power" && view === "table" ? "hidden" : "md:hidden"}>
         <div className="grid grid-cols-4 gap-1 rounded-lg bg-zao-ink p-1 border border-white/10">
           {BOARD_STATUSES.map((s) => (
             <button
@@ -915,7 +938,7 @@ export function Board({
       )}
 
       {/* Desktop: 4 columns */}
-      <div className={`${view === "table" ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
+      <div className={`${density === "power" && view === "table" ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
         {BOARD_STATUSES.map((s) => (
           <Column
             key={s}
@@ -968,6 +991,12 @@ export function Board({
   );
 }
 
+const DENSITY_LABELS: Record<"light" | "mid" | "power", string> = {
+  light: "Light",
+  mid: "Mid",
+  power: "Power",
+};
+
 function FilterBar({
   filters,
   onChange,
@@ -980,6 +1009,8 @@ function FilterBar({
   urlBrand,
   selectMode,
   onToggleSelectMode,
+  density,
+  onDensityChange,
 }: {
   filters: Filters;
   onChange: (f: Filters) => void;
@@ -992,31 +1023,57 @@ function FilterBar({
   urlBrand: string | null;
   selectMode: boolean;
   onToggleSelectMode: () => void;
+  density: "light" | "mid" | "power";
+  onDensityChange: (d: "light" | "mid" | "power") => void;
 }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
-  const me = currentUser.charAt(0).toUpperCase() + currentUser.slice(1);
   return (
     <div className="space-y-2 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-3">
       <div className="flex gap-2">
         <input
           value={filters.search}
           onChange={(e) => set({ search: e.target.value })}
-          placeholder="Search title, notes, owner..."
+          placeholder="Search tasks..."
           className="flex-1 rounded-xl bg-[#0b1220] border border-white/10 px-3 py-2 text-sm placeholder-white/30 focus:outline-none focus:border-zao-accent text-white"
         />
         <NotificationBell items={items} currentUser={currentUser} isLeadUser={isLeadUser} onOpenTask={onOpenTask} />
-        <button
-          onClick={onToggleSelectMode}
-          className={`rounded-xl border px-3 py-2 text-sm transition ${
-            selectMode
-              ? "border-zao-accent/50 bg-zao-accent/15 text-zao-accent"
-              : "border-white/10 text-white/70 hover:bg-white/5"
-          }`}
-          aria-label={selectMode ? "Exit select mode" : "Enter select mode"}
-          title={selectMode ? "Exit multi-select" : "Multi-select for bulk actions"}
-        >
-          {selectMode ? "✓ Select" : "Select"}
-        </button>
+        {density === "power" && (
+          <button
+            onClick={onToggleSelectMode}
+            className={`rounded-xl border px-3 py-2 text-sm transition ${
+              selectMode
+                ? "border-zao-accent/50 bg-zao-accent/15 text-zao-accent"
+                : "border-white/10 text-white/70 hover:bg-white/5"
+            }`}
+            aria-label={selectMode ? "Exit select mode" : "Enter select mode"}
+            title={selectMode ? "Exit multi-select" : "Multi-select for bulk actions"}
+          >
+            {selectMode ? "✓ Select" : "Select"}
+          </button>
+        )}
+        {/* Density toggle — Light / Mid / Power */}
+        <div className="flex items-center gap-0.5 rounded-xl border border-white/10 bg-[#0b1220] p-0.5" title="View density">
+          {(["light", "mid", "power"] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => onDensityChange(d)}
+              className={`px-2.5 py-1.5 text-xs font-medium rounded-lg transition ${
+                density === d
+                  ? "bg-white/10 text-white"
+                  : "text-white/40 hover:text-white/70"
+              }`}
+              title={
+                d === "light"
+                  ? "Light — search + my tasks only"
+                  : d === "mid"
+                  ? "Mid — standard filters"
+                  : "Power — all controls + table view"
+              }
+            >
+              {DENSITY_LABELS[d]}
+            </button>
+          ))}
+        </div>
         <button
           onClick={onHelp}
           className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70 hover:bg-white/5"
@@ -1026,45 +1083,98 @@ function FilterBar({
           ?
         </button>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        <Pill
-          active={filters.mineOnly}
-          onClick={() => set({ mineOnly: !filters.mineOnly })}
-          label={filters.mineOnly ? `My Tasks` : `All Tasks`}
-        />
-        <Pill
-          active={filters.agingOnly}
-          onClick={() => set({ agingOnly: !filters.agingOnly })}
-          label="Aging > 14d"
-          tone="red"
-        />
-        <Divider />
-        <SelectPill
-          value={filters.owner}
-          onChange={(v) => set({ owner: v })}
-          options={["", ...OWNERS]}
-          placeholder="Owner"
-        />
-        <SelectPill
-          value={filters.category}
-          onChange={(v) => set({ category: v })}
-          options={["", ...portalCategories]}
-          placeholder="Category"
-        />
-        <SelectPill
-          value={filters.priority}
-          onChange={(v) => set({ priority: v })}
-          options={["", ...PRIORITIES]}
-          placeholder="Priority"
-        />
-        <SelectPill
-          value={filters.phase}
-          onChange={(v) => set({ phase: v })}
-          options={["", ...PHASES]}
-          placeholder="DMAIC phase"
-        />
-      </div>
-      {!urlBrand && (
+
+      {/* Light: just My Tasks / All Tasks toggle */}
+      {density === "light" && (
+        <div className="flex flex-wrap gap-1.5">
+          <Pill
+            active={filters.mineOnly}
+            onClick={() => set({ mineOnly: !filters.mineOnly })}
+            label={filters.mineOnly ? "My Tasks" : "All Tasks"}
+          />
+        </div>
+      )}
+
+      {/* Mid: My Tasks + Aging + Owner + Category + Priority */}
+      {density === "mid" && (
+        <div className="flex flex-wrap gap-1.5">
+          <Pill
+            active={filters.mineOnly}
+            onClick={() => set({ mineOnly: !filters.mineOnly })}
+            label={filters.mineOnly ? "My Tasks" : "All Tasks"}
+          />
+          <Pill
+            active={filters.agingOnly}
+            onClick={() => set({ agingOnly: !filters.agingOnly })}
+            label="Aging > 14d"
+            tone="red"
+          />
+          <Divider />
+          <SelectPill
+            value={filters.owner}
+            onChange={(v) => set({ owner: v })}
+            options={["", ...OWNERS]}
+            placeholder="Owner"
+          />
+          <SelectPill
+            value={filters.category}
+            onChange={(v) => set({ category: v })}
+            options={["", ...portalCategories]}
+            placeholder="Category"
+          />
+          <SelectPill
+            value={filters.priority}
+            onChange={(v) => set({ priority: v })}
+            options={["", ...PRIORITIES]}
+            placeholder="Priority"
+          />
+        </div>
+      )}
+
+      {/* Power: all filters */}
+      {density === "power" && (
+        <div className="flex flex-wrap gap-1.5">
+          <Pill
+            active={filters.mineOnly}
+            onClick={() => set({ mineOnly: !filters.mineOnly })}
+            label={filters.mineOnly ? "My Tasks" : "All Tasks"}
+          />
+          <Pill
+            active={filters.agingOnly}
+            onClick={() => set({ agingOnly: !filters.agingOnly })}
+            label="Aging > 14d"
+            tone="red"
+          />
+          <Divider />
+          <SelectPill
+            value={filters.owner}
+            onChange={(v) => set({ owner: v })}
+            options={["", ...OWNERS]}
+            placeholder="Owner"
+          />
+          <SelectPill
+            value={filters.category}
+            onChange={(v) => set({ category: v })}
+            options={["", ...portalCategories]}
+            placeholder="Category"
+          />
+          <SelectPill
+            value={filters.priority}
+            onChange={(v) => set({ priority: v })}
+            options={["", ...PRIORITIES]}
+            placeholder="Priority"
+          />
+          <SelectPill
+            value={filters.phase}
+            onChange={(v) => set({ phase: v })}
+            options={["", ...PHASES]}
+            placeholder="DMAIC phase"
+          />
+        </div>
+      )}
+
+      {/* Brand pills: mid + power, only when not locked to a single brand via URL */}
+      {density !== "light" && !urlBrand && (
         <BrandPills
           items={items}
           active={filters.brands}
