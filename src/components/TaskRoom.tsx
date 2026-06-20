@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import type {
   ActionItem,
@@ -24,7 +24,7 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { updateItem, patchField, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction } from "@/app/actions";
+import { patchField, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction } from "@/app/actions";
 import { useDraft } from "@/lib/use-draft";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
@@ -673,20 +673,53 @@ function DetailsPanel({
   // successful save without blanking the field.
   const notesDraft = useDraft(`zao-draft:notes:${item.id}`, item.notes ?? "");
 
-  function handleSave(fd: FormData) {
-    fd.set("id", item.id);
-    start(async () => {
-      await updateItem(fd);
-      notesDraft.commit();
-      setFlash("saved");
-      setTimeout(() => setFlash(null), 2500);
-    });
+  // Controlled state for every field so we can detect changes and auto-save.
+  const [titleValue, setTitleValue] = useState(item.title);
+  const [videoUrlValue, setVideoUrlValue] = useState(item.videoUrl ?? "");
+  // Reset controlled fields when the item changes (e.g. another task opened).
+  useEffect(() => {
+    setTitleValue(item.title);
+    setVideoUrlValue(item.videoUrl ?? "");
+  }, [item.id, item.title, item.videoUrl]);
+
+  // Debounce helper — fires the value only after `delay` ms of no changes.
+  function useDebounce<T>(value: T, delay: number): T {
+    const [debounced, setDebounced] = useState(value);
+    useEffect(() => {
+      const t = setTimeout(() => setDebounced(value), delay);
+      return () => clearTimeout(t);
+    }, [value, delay]);
+    return debounced;
   }
 
-  // Apply a single field immediately (no "Save changes" needed). Used for the
-  // status dropdown so it can be flipped TODO->DONE in place — Jose's feedback:
-  // marking tasks done shouldn't require the master Save button. The board
-  // behind revalidates so the change shows without a manual refresh.
+  const debouncedTitle = useDebounce(titleValue, 600);
+  const debouncedVideoUrl = useDebounce(videoUrlValue, 600);
+  const debouncedNotes = useDebounce(notesDraft.value, 800);
+
+  // Track whether we've mounted yet so we don't fire on the initial render.
+  const mountedRef = useRef(false);
+  useEffect(() => { mountedRef.current = true; }, []);
+
+  // Auto-save debounced fields to the server.
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    if (debouncedTitle && debouncedTitle !== item.title) quickPatch("title", debouncedTitle);
+  }, [debouncedTitle]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    if (debouncedVideoUrl !== (item.videoUrl ?? "")) quickPatch("videoUrl", debouncedVideoUrl);
+  }, [debouncedVideoUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    if (debouncedNotes !== (item.notes ?? "")) {
+      quickPatch("notes", debouncedNotes);
+      notesDraft.commit();
+    }
+  }, [debouncedNotes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply a single field immediately — no Save button needed.
   function quickPatch(field: string, value: string) {
     const fd = new FormData();
     fd.set("id", item.id);
@@ -745,24 +778,20 @@ function DetailsPanel({
           </div>
         </div>
       )}
-      <form action={handleSave} className="space-y-4">
-        {/* Hidden sentinel so requiresApproval=false is distinguishable from not-present */}
-        <input type="hidden" name="_hasRequiresApproval" value="1" />
-
+      <div className="space-y-4">
         <div>
           <label className="block text-[11px] text-white/45 mb-1 uppercase tracking-wider">Title</label>
           <input
-            name="title"
-            defaultValue={item.title}
-            required
-            className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition"
+            value={titleValue}
+            onChange={(e) => setTitleValue(e.target.value)}
+            disabled={pending}
+            className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition disabled:opacity-50"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <FormField label="Status (saves instantly)">
+          <FormField label="Status">
             <select
-              name="status"
               value={statusValue}
               onChange={(e) => {
                 setStatusValue(e.target.value as ActionStatus);
@@ -780,7 +809,12 @@ function DetailsPanel({
           </FormField>
 
           <FormField label="Priority">
-            <select name="priority" defaultValue={item.priority} className={selectCls}>
+            <select
+              defaultValue={item.priority}
+              onChange={(e) => quickPatch("priority", e.target.value)}
+              disabled={pending}
+              className={selectCls}
+            >
               {PRIORITIES.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -790,7 +824,12 @@ function DetailsPanel({
           </FormField>
 
           <FormField label="Service class">
-            <select name="serviceClass" defaultValue={item.serviceClass ?? "Standard"} className={selectCls}>
+            <select
+              defaultValue={item.serviceClass ?? "Standard"}
+              onChange={(e) => quickPatch("serviceClass", e.target.value)}
+              disabled={pending}
+              className={selectCls}
+            >
               {SERVICE_CLASSES.map((sc) => (
                 <option key={sc} value={sc}>
                   {SERVICE_CLASS_LABELS[sc]}
@@ -801,7 +840,12 @@ function DetailsPanel({
 
           {projects && projects.length > 0 && (
             <FormField label="Project">
-              <select name="projectId" defaultValue={item.projectId ?? ""} className={selectCls}>
+              <select
+                defaultValue={item.projectId ?? ""}
+                onChange={(e) => quickPatch("projectId", e.target.value)}
+                disabled={pending}
+                className={selectCls}
+              >
                 <option value="">(none)</option>
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -812,7 +856,7 @@ function DetailsPanel({
             </FormField>
           )}
 
-          <FormField label="Assignees (saves instantly)">
+          <FormField label="Assignees">
             <div className="flex flex-wrap gap-1.5">
               {people.map((m) => {
                 const checked = assigneeList.includes(m.slug);
@@ -843,7 +887,12 @@ function DetailsPanel({
           </FormField>
 
           <FormField label="DMAIC Phase">
-            <select name="phase" defaultValue={item.phase} className={selectCls}>
+            <select
+              defaultValue={item.phase}
+              onChange={(e) => quickPatch("phase", e.target.value)}
+              disabled={pending}
+              className={selectCls}
+            >
               {PHASES.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -853,7 +902,12 @@ function DetailsPanel({
           </FormField>
 
           <FormField label="Category">
-            <select name="category" defaultValue={String(item.category)} className={selectCls}>
+            <select
+              defaultValue={String(item.category)}
+              onChange={(e) => quickPatch("category", e.target.value)}
+              disabled={pending}
+              className={selectCls}
+            >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -863,7 +917,12 @@ function DetailsPanel({
           </FormField>
 
           <FormField label="Task Type">
-            <select name="taskType" defaultValue={item.taskType || "task"} className={selectCls}>
+            <select
+              defaultValue={item.taskType || "task"}
+              onChange={(e) => quickPatch("taskType", e.target.value)}
+              disabled={pending}
+              className={selectCls}
+            >
               {TASK_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {TASK_TYPE_LABELS[t]}
@@ -874,20 +933,22 @@ function DetailsPanel({
 
           <FormField label="Due Date">
             <input
-              name="due"
+              type="date"
               defaultValue={item.due}
-              placeholder="YYYY-MM-DD"
-              className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition"
+              onChange={(e) => quickPatch("due", e.target.value)}
+              disabled={pending}
+              className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500/50 transition disabled:opacity-50"
             />
           </FormField>
 
           <div className="col-span-2">
             <FormField label="Video walkthrough URL (Loom / YouTube / Vimeo)">
               <input
-                name="videoUrl"
-                defaultValue={item.videoUrl ?? ""}
+                value={videoUrlValue}
+                onChange={(e) => setVideoUrlValue(e.target.value)}
                 placeholder="https://loom.com/share/..."
-                className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition"
+                disabled={pending}
+                className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500/50 transition disabled:opacity-50"
               />
             </FormField>
             {item.videoUrl && (
@@ -909,8 +970,8 @@ function DetailsPanel({
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                name="important"
                 defaultChecked={item.important}
+                onChange={(e) => quickPatch("important", e.target.checked ? "1" : "0")}
                 className="h-4 w-4 rounded"
               />
               <span className="text-sm text-white/75">Important</span>
@@ -918,8 +979,8 @@ function DetailsPanel({
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                name="urgent"
                 defaultChecked={item.urgent}
+                onChange={(e) => quickPatch("urgent", e.target.checked ? "1" : "0")}
                 className="h-4 w-4 rounded"
               />
               <span className="text-sm text-white/75">Urgent</span>
@@ -929,7 +990,6 @@ function DetailsPanel({
 
         <FormField label="Notes (Customer / Success / Measurements)">
           <textarea
-            name="notes"
             value={notesDraft.value}
             onChange={(e) => notesDraft.update(e.target.value)}
             rows={5}
@@ -947,20 +1007,19 @@ function DetailsPanel({
           </div>
           <input
             type="checkbox"
-            name="requiresApproval"
             defaultChecked={item.requiresApproval}
+            onChange={(e) => quickPatch("requiresApproval", e.target.checked ? "1" : "0")}
             className="h-5 w-5 rounded flex-shrink-0"
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2.5 text-sm font-medium transition disabled:opacity-50"
-        >
-          {pending ? "Saving..." : flash === "saved" ? "Saved!" : "Save Changes"}
-        </button>
-      </form>
+        {/* Auto-save status indicator */}
+        {(pending || flash === "saved") && (
+          <p className="text-center text-xs text-white/40">
+            {pending ? "Saving…" : "✓ Saved"}
+          </p>
+        )}
+      </div>
 
       {/* Metadata + delete */}
       <div className="border-t border-white/10 pt-4 space-y-2">

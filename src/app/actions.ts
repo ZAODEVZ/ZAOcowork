@@ -337,6 +337,18 @@ export async function patchField(form: FormData): Promise<void> {
       ];
       break;
     }
+    case "important":
+      next.important = value === "1" || value === "true";
+      break;
+    case "urgent":
+      next.urgent = value === "1" || value === "true";
+      break;
+    case "requiresApproval":
+      next.requiresApproval = value === "1" || value === "true";
+      break;
+    case "taskType":
+      next.taskType = TASK_TYPES.includes(value as TaskType) ? (value as TaskType) : undefined;
+      break;
     default:
       return;
   }
