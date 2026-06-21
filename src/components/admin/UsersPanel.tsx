@@ -55,12 +55,18 @@ export function UsersPanel({ members, actorLabel }: { members: TeamMember[]; act
 
 function AddUserForm() {
   const [pending, setPending] = useState(false);
+  const [name, setName] = useState("");
+  const slug = name.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_-]/g, "").slice(0, 30);
   return (
     <form
       action={async (fd) => {
+        // Inject derived slug so the server action receives it
+        fd.set("legacy_owner", slug);
+        fd.set("role", "worker");
         setPending(true);
         try {
           await addUserAction(fd);
+          setName("");
           (document.getElementById("admin-add-user-form") as HTMLFormElement | null)?.reset();
         } finally {
           setPending(false);
@@ -73,26 +79,32 @@ function AddUserForm() {
         <span className="text-sm font-semibold text-white/85">Add user</span>
         <span className="text-[10px] text-white/40">creates a login + roster row</span>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <Field label="Display name" name="name" placeholder="e.g. Cannon Jones" required />
-        <Field
-          label="Login slug"
-          name="legacy_owner"
-          placeholder="lowercase, e.g. cannon"
-          required
-          pattern="^[a-z][a-z0-9_-]{0,30}$"
-        />
-        <Field
-          label="Initial password"
-          name="password"
-          type="password"
-          placeholder="min 8 chars"
-          minLength={8}
-          required
-        />
-        <SelectField label="Role" name="role" options={ROLES} defaultValue="worker" />
-        <Field label="Telegram ID (optional)" name="telegram_id" placeholder="numeric" />
-        <Field label="Email (optional)" name="email" type="email" placeholder="user@example.com" />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-xs text-white/50">Name</label>
+          <input
+            name="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Cannon Jones"
+            required
+            className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-zao-accent"
+          />
+          {slug && (
+            <p className="text-[10px] text-white/35">login slug: <span className="text-white/55">{slug}</span></p>
+          )}
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs text-white/50">Password</label>
+          <input
+            name="password"
+            type="password"
+            placeholder="min 8 chars"
+            minLength={8}
+            required
+            className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-3 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-zao-accent"
+          />
+        </div>
       </div>
       <div className="flex justify-end">
         <button
