@@ -22,6 +22,7 @@ interface BotHealth {
   meta?: Record<string, unknown>;
   online: boolean;
   ageSeconds: number;
+  errorsToday?: number;
 }
 
 interface BotEvent {
@@ -371,20 +372,35 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
     };
   }, []);
 
-  const sorted = [...bots].sort((a, b) => Number(a.online) - Number(b.online));
+  // Surface problems first: down/offline, then degraded, then healthy.
+  const severity = (b: BotHealth): number =>
+    !b.online || b.status === 'down' ? 0 : b.status === 'degraded' ? 1 : 2;
+  const sorted = [...bots].sort((a, b) => severity(a) - severity(b) || a.bot.localeCompare(b.bot));
   const up = bots.filter((b) => b.online && b.status === 'up').length;
   const degraded = bots.filter((b) => b.online && b.status === 'degraded').length;
   const down = bots.filter((b) => !b.online || b.status === 'down').length;
+  const allNames = bots.map((b) => b.bot);
+  const allOpen = allNames.length > 0 && allNames.every((n) => open.has(n));
+  const toggleAll = (): void => setOpen(allOpen ? new Set() : new Set(allNames));
 
   return (
     <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-slate-200">Bot fleet</h2>
         {bots.length > 0 ? (
-          <span className="flex items-center gap-2 text-[11px] font-medium">
-            <span className="text-green-400">{up} up</span>
-            {degraded > 0 ? <span className="text-amber-400">{degraded} degraded</span> : null}
-            {down > 0 ? <span className="text-red-400">{down} down</span> : null}
+          <span className="flex items-center gap-3 text-[11px] font-medium">
+            <span className="flex items-center gap-2">
+              <span className="text-green-400">{up} up</span>
+              {degraded > 0 ? <span className="text-amber-400">{degraded} degraded</span> : null}
+              {down > 0 ? <span className="text-red-400">{down} down</span> : null}
+            </span>
+            <button
+              type="button"
+              onClick={toggleAll}
+              className="rounded border border-slate-700 px-2 py-0.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+            >
+              {allOpen ? 'collapse all' : 'expand all'}
+            </button>
           </span>
         ) : null}
       </div>
@@ -409,14 +425,32 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
                   <span className="font-mono text-xs text-slate-600">{isOpen ? '[-]' : '[+]'}</span>
                 </span>
                 <span className="flex items-center gap-2">
+                  {b.errorsToday && b.errorsToday > 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-400 ring-1 ring-red-500/30">
+                      {b.errorsToday} err
+                    </span>
+                  ) : null}
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tok.pill}`}>
                     {tok.label}
                   </span>
                   <span className="text-xs text-slate-500">{ago(b.ageSeconds)}</span>
                 </span>
               </button>
+              {tok.label === 'degraded' ? (
+                <p className="ml-4 mt-0.5 text-[11px] text-amber-400/80">
+                  {metaString(b.meta, 'reason') ?? 'degraded - check logs'}
+                </p>
+              ) : null}
               {isOpen ? (
                 <div className="pl-4">
+                  <div className="mt-1 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-3">
+                    <p className="text-slate-500">status: <span className="text-slate-200">{tok.label}</span></p>
+                    <p className="text-slate-500">last seen: <span className="text-slate-200">{ago(b.ageSeconds)}</span></p>
+                    <p className="text-slate-500">errors (24h): <span className={b.errorsToday ? 'text-red-400' : 'text-slate-200'}>{b.errorsToday ?? 0}</span></p>
+                    {metaString(b.meta, 'unit') ? <p className="text-slate-500">unit: <span className="text-slate-200">{metaString(b.meta, 'unit')}</span></p> : null}
+                    {metaString(b.meta, 'host') ? <p className="text-slate-500">host: <span className="text-slate-200">{metaString(b.meta, 'host')}</span></p> : null}
+                    {metaString(b.meta, 'reason') ? <p className="text-slate-500">reason: <span className="text-slate-200">{metaString(b.meta, 'reason')}</span></p> : null}
+                  </div>
                   {current || lastError ? (
                     <div className="mt-1 space-y-0.5 text-xs">
                       {current ? <p className="text-slate-300">task: {current}</p> : null}
