@@ -22,6 +22,7 @@ interface BotHealth {
   meta?: Record<string, unknown>;
   online: boolean;
   ageSeconds: number;
+  errorsToday?: number;
 }
 
 interface BotEvent {
@@ -412,6 +413,11 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
                   <span className="font-mono text-xs text-slate-600">{isOpen ? '[-]' : '[+]'}</span>
                 </span>
                 <span className="flex items-center gap-2">
+                  {b.errorsToday && b.errorsToday > 0 ? (
+                    <span className="inline-flex items-center rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-400 ring-1 ring-red-500/30">
+                      {b.errorsToday} err
+                    </span>
+                  ) : null}
                   <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tok.pill}`}>
                     {tok.label}
                   </span>
