@@ -39,10 +39,28 @@ export async function GET(req: NextRequest) {
       );
     }
     const now = Date.now();
+    // errors per bot in the last 24h (best-effort; empty if bot_events absent)
+    const since = new Date(now - 24 * 60 * 60_000).toISOString();
+    const errorsByBot = new Map<string, number>();
+    try {
+      const { data: errRows } = await serviceClient()
+        .from("bot_events")
+        .select("bot")
+        .eq("kind", "error")
+        .gte("ts", since);
+      for (const e of (errRows ?? []) as { bot: string }[]) {
+        errorsByBot.set(e.bot, (errorsByBot.get(e.bot) ?? 0) + 1);
+      }
+    } catch {
+      // bot_events missing/unreadable -> no error counts, board still renders
+    }
     const bots = ((data ?? []) as HeartbeatRow[]).map((r) => ({
       ...r,
-      online: r.status === "up" && now - new Date(r.ts).getTime() < ONLINE_WINDOW_MS,
+      // online = posting recently AND not self-reported down. A 'degraded' bot
+      // (process up, model auth dead) stays online so it renders amber, not red.
+      online: r.status !== "down" && now - new Date(r.ts).getTime() < ONLINE_WINDOW_MS,
       ageSeconds: Math.round((now - new Date(r.ts).getTime()) / 1000),
+      errorsToday: errorsByBot.get(r.bot) ?? 0,
     }));
     return Response.json({ ok: true, bots });
   } catch (err) {
