@@ -24,7 +24,7 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { patchField, addComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction } from "@/app/actions";
+import { patchField, addComment, editComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction } from "@/app/actions";
 import { useDraft } from "@/lib/use-draft";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
@@ -1375,6 +1375,90 @@ function UpdateCard({ update }: { update: TaskUpdate }) {
   );
 }
 
+function CommentCard({
+  comment: c,
+  taskId,
+  currentUser,
+}: {
+  comment: Comment;
+  taskId: string;
+  currentUser: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(c.content);
+  const [saving, startSave] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const isOwn = c.userId === currentUser;
+
+  function save() {
+    if (!draft.trim() || draft === c.content) { setEditing(false); return; }
+    setError(null);
+    const fd = new FormData();
+    fd.set("taskId", taskId);
+    fd.set("commentId", c.id);
+    fd.set("content", draft);
+    startSave(async () => {
+      const res = await editComment(fd);
+      if (res?.error) { setError(res.error); return; }
+      setEditing(false);
+    });
+  }
+
+  return (
+    <div className="flex gap-3 group">
+      {userAvatar(c.userId, c.displayName)}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[11px] text-white/75 font-medium">{c.displayName}</span>
+          <span className="text-[11px] text-white/35">{relativeTime(c.createdAt)}</span>
+          {c.editedAt && <span className="text-[10px] text-white/25 italic">(edited)</span>}
+          {isOwn && !editing && (
+            <button
+              onClick={() => { setDraft(c.content); setEditing(true); }}
+              className="text-[10px] text-white/30 hover:text-white/60 transition opacity-0 group-hover:opacity-100 ml-1"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        {editing ? (
+          <div className="space-y-1.5">
+            <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); }
+                if (e.key === "Escape") setEditing(false);
+              }}
+              rows={3}
+              autoFocus
+              className="w-full rounded-lg bg-[#0b1220] border border-white/15 px-3 py-2 text-sm text-white/85 resize-none focus:outline-none focus:border-zao-accent/60"
+            />
+            {error && <p className="text-[11px] text-red-300">{error}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={save}
+                disabled={saving}
+                className="px-3 py-1 text-xs font-medium rounded-md bg-zao-accent/20 border border-zao-accent/40 text-zao-accent hover:bg-zao-accent/30 transition disabled:opacity-50"
+              >
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <button
+                onClick={() => setEditing(false)}
+                className="px-3 py-1 text-xs text-white/45 hover:text-white/70 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{c.content}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
   const [pending, start] = useTransition();
   const { value: content, update: setContent, clear: clearContent } = useDraft(
@@ -1429,17 +1513,7 @@ function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: str
           <p className="text-xs text-white/25 italic">No comments yet.</p>
         )}
         {comments.map((c) => (
-          <div key={c.id} className="flex gap-3">
-            {userAvatar(c.userId, c.displayName)}
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] text-white/40 mb-1">
-                <span className="text-white/75 font-medium">{c.displayName}</span>
-                {" · "}
-                {relativeTime(c.createdAt)}
-              </div>
-              <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{c.content}</p>
-            </div>
-          </div>
+          <CommentCard key={c.id} comment={c} taskId={item.id} currentUser={currentUser} />
         ))}
       </div>
 

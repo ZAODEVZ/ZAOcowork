@@ -122,6 +122,7 @@ export interface Comment {
   displayName: string;
   content: string;
   createdAt: string;
+  editedAt?: string;
 }
 
 export interface TaskUpdate {
