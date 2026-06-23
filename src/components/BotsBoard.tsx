@@ -67,6 +67,29 @@ function resultText(result: Record<string, unknown> | null): string | null {
   return typeof reply === 'string' && reply.trim() ? reply : null;
 }
 
+// Collapse runs of consecutive identical events (same kind + message) into one
+// row with a count. Kills the "startup x18" spam that otherwise floods the feed.
+function collapseEvents(events: BotEvent[]): Array<BotEvent & { count: number }> {
+  const out: Array<BotEvent & { count: number }> = [];
+  for (const e of events) {
+    const last = out[out.length - 1];
+    if (last && last.kind === e.kind && (last.message ?? '') === (e.message ?? '')) {
+      last.count += 1;
+    } else {
+      out.push({ ...e, count: 1 });
+    }
+  }
+  return out;
+}
+
+// Per-status visual tokens (pill + dot), shared by the row + summary.
+function statusTokens(online: boolean, status: 'up' | 'degraded' | 'down') {
+  const s = !online ? 'down' : status;
+  if (s === 'up') return { label: 'up', pill: 'bg-green-500/15 text-green-400 ring-green-500/30', dot: 'bg-green-500' };
+  if (s === 'degraded') return { label: 'degraded', pill: 'bg-amber-500/15 text-amber-400 ring-amber-500/30', dot: 'bg-amber-500' };
+  return { label: 'offline', pill: 'bg-red-500/15 text-red-400 ring-red-500/30', dot: 'bg-red-500' };
+}
+
 function ControlPanel({ bot, onChange }: { bot: string; onChange: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -295,10 +318,13 @@ function BotDetail({ bot, isAdmin }: { bot: string; isAdmin: boolean }) {
           <p className="text-xs text-slate-500">no events yet</p>
         ) : null}
         <ul className="space-y-1.5">
-          {events.map((e) => (
+          {collapseEvents(events).map((e) => (
             <li key={e.id} className="text-xs">
               <span className="text-slate-500">{tsAgo(e.ts)}</span>{' '}
               <span className="font-mono text-slate-300">{e.kind}</span>
+              {e.count > 1 ? (
+                <span className="ml-1 rounded bg-slate-800 px-1 text-[10px] text-slate-400">x{e.count}</span>
+              ) : null}
               {e.message ? <span className="text-slate-400"> - {e.message}</span> : null}
             </li>
           ))}
@@ -346,18 +372,26 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
   }, []);
 
   const sorted = [...bots].sort((a, b) => Number(a.online) - Number(b.online));
+  const up = bots.filter((b) => b.online && b.status === 'up').length;
+  const degraded = bots.filter((b) => b.online && b.status === 'degraded').length;
+  const down = bots.filter((b) => !b.online || b.status === 'down').length;
 
   return (
     <div className="rounded-lg border border-slate-700 bg-slate-900 p-4">
-      <h2 className="mb-3 text-sm font-semibold text-slate-200">Bot fleet</h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-200">Bot fleet</h2>
+        {bots.length > 0 ? (
+          <span className="flex items-center gap-2 text-[11px] font-medium">
+            <span className="text-green-400">{up} up</span>
+            {degraded > 0 ? <span className="text-amber-400">{degraded} degraded</span> : null}
+            {down > 0 ? <span className="text-red-400">{down} down</span> : null}
+          </span>
+        ) : null}
+      </div>
       {error ? <p className="text-xs text-red-400">status unavailable: {error}</p> : null}
       <ul className="space-y-2">
         {sorted.map((b) => {
-          const dot = !b.online
-            ? 'bg-red-500'
-            : b.status === 'up'
-              ? 'bg-green-500'
-              : 'bg-amber-500';
+          const tok = statusTokens(b.online, b.status);
           const current = metaString(b.meta, 'current_task');
           const lastError = metaString(b.meta, 'last_error');
           const isOpen = open.has(b.bot);
@@ -367,15 +401,18 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
                 type="button"
                 onClick={() => toggleOpen(b.bot)}
                 aria-expanded={isOpen}
-                className="flex w-full items-center justify-between rounded px-1 py-0.5 text-left text-sm hover:bg-slate-800/50"
+                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm hover:bg-slate-800/50"
               >
                 <span className="flex items-center gap-2 text-slate-200">
-                  <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
-                  {b.bot}
+                  <span className={`h-2 w-2 rounded-full ${tok.dot}`} />
+                  <span className="font-medium">{b.bot}</span>
                   <span className="font-mono text-xs text-slate-600">{isOpen ? '[-]' : '[+]'}</span>
                 </span>
-                <span className="text-xs text-slate-400">
-                  {b.online ? b.status : 'offline'} · {ago(b.ageSeconds)}
+                <span className="flex items-center gap-2">
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${tok.pill}`}>
+                    {tok.label}
+                  </span>
+                  <span className="text-xs text-slate-500">{ago(b.ageSeconds)}</span>
                 </span>
               </button>
               {isOpen ? (
