@@ -371,7 +371,10 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
     };
   }, []);
 
-  const sorted = [...bots].sort((a, b) => Number(a.online) - Number(b.online));
+  // Surface problems first: down/offline, then degraded, then healthy.
+  const severity = (b: BotHealth): number =>
+    !b.online || b.status === 'down' ? 0 : b.status === 'degraded' ? 1 : 2;
+  const sorted = [...bots].sort((a, b) => severity(a) - severity(b) || a.bot.localeCompare(b.bot));
   const up = bots.filter((b) => b.online && b.status === 'up').length;
   const degraded = bots.filter((b) => b.online && b.status === 'degraded').length;
   const down = bots.filter((b) => !b.online || b.status === 'down').length;
@@ -415,6 +418,11 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
                   <span className="text-xs text-slate-500">{ago(b.ageSeconds)}</span>
                 </span>
               </button>
+              {tok.label === 'degraded' ? (
+                <p className="ml-4 mt-0.5 text-[11px] text-amber-400/80">
+                  {metaString(b.meta, 'reason') ?? 'degraded - check logs'}
+                </p>
+              ) : null}
               {isOpen ? (
                 <div className="pl-4">
                   {current || lastError ? (
