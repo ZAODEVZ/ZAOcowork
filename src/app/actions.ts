@@ -428,6 +428,30 @@ export async function addComment(form: FormData): Promise<{ error?: string }> {
   }
 }
 
+export async function editComment(form: FormData): Promise<{ error?: string }> {
+  try {
+    const user = await requireSession();
+    const taskId = String(form.get("taskId") ?? "");
+    const commentId = String(form.get("commentId") ?? "");
+    const content = String(form.get("content") ?? "").trim();
+    if (!taskId || !commentId || !content) return { error: "Missing required fields." };
+    const item = await getItem(taskId);
+    if (!item) return { error: `Task #${taskId} not found.` };
+    const comments = item.comments || [];
+    const idx = comments.findIndex((c) => c.id === commentId);
+    if (idx === -1) return { error: "Comment not found." };
+    if (comments[idx].userId !== user) return { error: "You can only edit your own comments." };
+    const now = new Date().toISOString();
+    const updated = comments.map((c, i) => i === idx ? { ...c, content, editedAt: now } : c);
+    await saveItem({ ...item, updatedAt: now, comments: updated }, user, `edit comment on #${taskId}`);
+    revalidateAll();
+    return {};
+  } catch (err) {
+    console.error("[editComment] failed", err);
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
 export async function submitUpdate(form: FormData): Promise<void> {
   const user = await requireSession();
   const id = String(form.get("id") ?? "");
