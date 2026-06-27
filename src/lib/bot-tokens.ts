@@ -56,6 +56,21 @@ export async function revokeBotTokens(bot: string): Promise<void> {
   invalidateBotTokenCache();
 }
 
+/** The current active token for `bot`, or null if none. Admin-only callers. */
+export async function getActiveBotToken(bot: string): Promise<string | null> {
+  const slug = bot.trim().toLowerCase();
+  if (!slug) return null;
+  const { data, error } = await serviceClient()
+    .from("bot_tokens")
+    .select("token, created_at")
+    .eq("bot", slug)
+    .is("revoked_at", null)
+    .order("created_at", { ascending: false })
+    .limit(1);
+  if (error || !data || data.length === 0) return null;
+  return String((data[0] as { token: unknown }).token);
+}
+
 /** Lowercased slugs that currently have an active token. Empty on any error. */
 export async function listBotsWithActiveTokens(): Promise<string[]> {
   try {

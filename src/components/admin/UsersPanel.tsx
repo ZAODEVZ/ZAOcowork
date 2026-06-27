@@ -10,6 +10,7 @@ import {
   setRoleAction,
   issueClaudeTokenAction,
   revokeClaudeTokenAction,
+  getClaudeTokenAction,
 } from "@/app/admin/actions";
 
 // /admin Users surface. Server actions handle the writes; this client wrapper
@@ -383,18 +384,36 @@ function ClaudeAccessCell({
       setToken(null);
     });
   }
+  function reveal() {
+    const fd = new FormData();
+    fd.set("slug", slug);
+    start(async () => {
+      const res = await getClaudeTokenAction(fd);
+      setToken(res.token);
+    });
+  }
 
   if (!slug) return <span className="text-[10px] text-white/25">—</span>;
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         {hasClaude ? (
           <span className="text-[11px] rounded px-1.5 py-0.5 border border-violet-400/40 bg-violet-500/15 text-violet-200">
             🤖 enabled
           </span>
         ) : (
           <span className="text-[11px] text-white/35">off</span>
+        )}
+        {hasClaude && !token && (
+          <button
+            type="button"
+            onClick={reveal}
+            disabled={pending}
+            className="text-[11px] underline text-violet-300/80 hover:text-violet-200 disabled:opacity-50"
+          >
+            {pending ? "…" : "show skill"}
+          </button>
         )}
         <button
           type="button"
@@ -410,7 +429,7 @@ function ClaudeAccessCell({
       {token && (
         <div className="rounded-lg border border-violet-400/30 bg-violet-500/10 p-2 space-y-1.5 max-w-[280px]">
           <p className="text-[10px] text-violet-200/90">
-            Shown once. Send the skill to {memberName} — they paste it into Claude, no setup.
+            Send the skill to {memberName} — they paste it into Claude, no setup. Treat it like a password.
           </p>
           <button
             type="button"

@@ -23,7 +23,7 @@ import {
 } from "@/lib/projects";
 import type { ProjectStatus } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
-import { issueBotToken, revokeBotTokens } from "@/lib/bot-tokens";
+import { issueBotToken, revokeBotTokens, getActiveBotToken } from "@/lib/bot-tokens";
 
 function asRole(v: FormDataEntryValue | null): TeamRole {
   const s = String(v ?? "").toLowerCase();
@@ -146,6 +146,16 @@ export async function issueClaudeTokenAction(form: FormData): Promise<{ token: s
   });
   revalidatePath("/admin");
   return { token, bot: slug };
+}
+
+// Re-reveal the current active token for an already-enabled user, so the admin
+// can re-copy the skill without rotating. Admin-gated; the token is stored
+// plaintext (it's the bearer secret) so this discloses nothing new to an admin.
+export async function getClaudeTokenAction(form: FormData): Promise<{ token: string | null }> {
+  await requireAdmin();
+  const slug = String(form.get("slug") ?? "").trim().toLowerCase();
+  if (!slug) return { token: null };
+  return { token: await getActiveBotToken(slug) };
 }
 
 export async function revokeClaudeTokenAction(form: FormData): Promise<void> {
