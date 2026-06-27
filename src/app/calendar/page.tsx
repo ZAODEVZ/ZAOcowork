@@ -1,6 +1,7 @@
 import { getSession, isAdmin, isLead } from "@/lib/auth";
 import { getActions } from "@/lib/data";
 import { listActiveBrands } from "@/lib/brands-db";
+import { listMeetings } from "@/lib/meetings";
 import { NavBar } from "@/components/NavBar";
 import { CalendarView } from "@/components/CalendarView";
 import { redirect } from "next/navigation";
@@ -11,10 +12,16 @@ export default async function CalendarPage() {
   const user = await getSession();
   if (!user) redirect("/login");
 
-  const [navBrands, doc] = await Promise.all([
+  const [navBrands, doc, meetings] = await Promise.all([
     listActiveBrands().catch(() => []),
     getActions(),
+    listMeetings({ sinceDays: 60 }).catch(() => []),
   ]);
+  const meetingMarks = meetings.map((m) => ({
+    id: m.id,
+    title: m.title,
+    date: m.startsAt.slice(0, 10),
+  }));
 
   return (
     <main className="min-h-screen bg-zao-navy text-white">
@@ -25,7 +32,7 @@ export default async function CalendarPage() {
           <h1 className="text-lg font-semibold text-white/90">Calendar</h1>
           <span className="text-sm text-white/35">Tasks by due date</span>
         </div>
-        <CalendarView items={doc.items} currentUser={user} />
+        <CalendarView items={doc.items} currentUser={user} meetings={meetingMarks} />
       </div>
     </main>
   );

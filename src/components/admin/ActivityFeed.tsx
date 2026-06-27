@@ -18,6 +18,7 @@ const ENTITY_LABELS: Record<AuditEntityType, string> = {
   user: "Users",
   brand: "Brands",
   system: "System",
+  meeting: "Meetings",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -83,6 +84,8 @@ function entityColor(t: AuditEntityType): string {
       return "border-amber-500/30 bg-amber-500/8 text-amber-200";
     case "system":
       return "border-violet-500/30 bg-violet-500/8 text-violet-200";
+    case "meeting":
+      return "border-cyan-500/30 bg-cyan-500/8 text-cyan-200";
   }
 }
 
