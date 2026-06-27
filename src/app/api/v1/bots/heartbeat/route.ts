@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authBot } from "@/lib/bot-auth";
+import { guardBot } from "@/lib/bot-route";
 import { serviceClient } from "@/lib/supabase-server";
 import { readJsonObject, optObject, apiError } from "@/lib/api-validate";
 
@@ -12,8 +12,10 @@ export const dynamic = "force-dynamic";
 const STATUSES = new Set(["up", "degraded", "down"]);
 
 export async function POST(req: NextRequest) {
-  const bot = await authBot(req);
-  if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  // Heartbeats are frequent by design — allow a higher ceiling (120/min).
+  const guard = await guardBot(req, { scope: "heartbeat", max: 120 });
+  if (guard instanceof Response) return guard;
+  const { bot } = guard;
 
   let body: Record<string, unknown>;
   let meta: Record<string, unknown>;

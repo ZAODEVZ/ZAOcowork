@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authBot } from "@/lib/bot-auth";
+import { guardBot, botError, botOk } from "@/lib/bot-route";
 import { getItem, saveItem, type ActionStatus } from "@/lib/data";
 import { readJsonObject, apiError } from "@/lib/api-validate";
 
@@ -24,9 +24,41 @@ function normalizeStatus(v: unknown): ActionStatus | null {
   return STATUS_ALIASES[v.trim().toLowerCase()] ?? null;
 }
 
+// GET /api/v1/items/:id — read a single task with its comments + activity.
+export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const guard = await guardBot(req, { scope: "items-read", max: 120 });
+  if (guard instanceof Response) return guard;
+
+  const { id } = await ctx.params;
+  const it = await getItem(id);
+  if (!it) return botError(404, `no task #${id}`);
+
+  return botOk({
+    task: {
+      id: it.id,
+      title: it.title,
+      status: it.status,
+      priority: it.priority,
+      assignees: it.assignees ?? [],
+      owner: it.owner,
+      category: it.category,
+      due: it.due || null,
+      notes: it.notes || "",
+      createdAt: it.createdAt,
+      updatedAt: it.updatedAt,
+      comments: (it.comments ?? []).map((c) => ({
+        author: c.displayName,
+        content: c.content,
+        createdAt: c.createdAt,
+      })),
+    },
+  });
+}
+
 export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const bot = await authBot(req);
-  if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const guard = await guardBot(req, { scope: "items" });
+  if (guard instanceof Response) return guard;
+  const { bot } = guard;
 
   const { id } = await ctx.params;
   let body: Record<string, unknown>;
@@ -38,7 +70,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   // Single-row read/write — getItem resolves by legacy_id (#N) or UUID.
   const cur = await getItem(id);
-  if (!cur) return Response.json({ ok: false, error: `no task #${id}` }, { status: 404 });
+  if (!cur) return botError(404, `no task #${id}`);
 
   const now = new Date().toISOString();
   const next = { ...cur, updatedAt: now };
@@ -46,7 +78,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
 
   if (body.status !== undefined) {
     const s = normalizeStatus(body.status);
-    if (!s) return Response.json({ ok: false, error: `bad status "${String(body.status)}"` }, { status: 400 });
+    if (!s) return botError(400, `bad status "${String(body.status)}"`);
     if (s !== cur.status) {
       next.status = s;
       if (s === "DONE" && !next.completedAt) {
@@ -74,7 +106,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   }
 
   if (changes.length === 0) {
-    return Response.json({ ok: true, id: cur.id, status: cur.status, unchanged: true });
+    return botOk({ id: cur.id, status: cur.status, unchanged: true });
   }
 
   next.activity = [
@@ -84,11 +116,8 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: strin
   try {
     await saveItem(next, bot, `bot ${bot} patched #${cur.id}: ${changes.join(", ")}`);
   } catch (err) {
-    return Response.json(
-      { ok: false, error: err instanceof Error ? err.message : "save failed" },
-      { status: 500 },
-    );
+    return botError(500, err instanceof Error ? err.message : "save failed");
   }
 
-  return Response.json({ ok: true, id: cur.id, status: next.status });
+  return botOk({ id: cur.id, status: next.status });
 }

@@ -5,7 +5,17 @@
 export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { closeMergedSources } from "@/lib/auto-close";
+
+// Constant-time string compare so the bearer-token check can't be brute-forced
+// by measuring response time (a plain !== leaks the matching prefix length).
+function safeEqualStr(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,10 +27,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const authHeader = request.headers.get("authorization");
+    const authHeader = request.headers.get("authorization") ?? "";
     const expectedAuth = `Bearer ${autoCloseKey}`;
 
-    if (authHeader !== expectedAuth) {
+    if (!safeEqualStr(authHeader, expectedAuth)) {
       return NextResponse.json(
         { ok: false, error: "Unauthorized" },
         { status: 401 },

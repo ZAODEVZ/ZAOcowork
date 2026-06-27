@@ -1,6 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { buildWeeklyDigest, digestToHtml, digestToText } from "@/lib/digest";
 import { getSession } from "@/lib/auth";
+
+// Constant-time compare so the cron bearer token can't be timing-attacked.
+function safeEqualStr(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 // /api/digest - returns the weekly throughput digest (doc 764 F6).
 //
@@ -32,7 +41,7 @@ export async function GET(req: NextRequest) {
   // Auth: either a session cookie OR a bearer matching DIGEST_CRON_TOKEN.
   const cronToken = process.env.DIGEST_CRON_TOKEN;
   const auth = req.headers.get("authorization") ?? "";
-  const bearerOk = cronToken && auth === `Bearer ${cronToken}`;
+  const bearerOk = Boolean(cronToken) && safeEqualStr(auth, `Bearer ${cronToken}`);
 
   if (!bearerOk) {
     // /api/digest is exempt from the middleware cookie check (so the cron can
