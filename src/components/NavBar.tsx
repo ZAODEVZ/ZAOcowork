@@ -60,6 +60,7 @@ export function NavBar({
   const onMine = pathname === "/my-work";
   const onCalendar = pathname === "/calendar";
   const onMeetings = pathname === "/meetings";
+  const onCrm = pathname === "/crm";
   const onSettings = pathname === "/settings";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
@@ -116,6 +117,7 @@ export function NavBar({
               mine: onMine,
               calendar: onCalendar,
               meetings: onMeetings,
+              crm: onCrm,
               activity: onActivity,
               chat: onChat,
               admin: onAdmin,
@@ -196,7 +198,7 @@ function NavMenu({
   active,
 }: {
   showAdmin: boolean;
-  active: { mine: boolean; calendar: boolean; meetings: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
+  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -239,7 +241,7 @@ function NavMenu({
   }, [open]);
 
   const anyActive =
-    active.mine || active.calendar || active.meetings || active.activity || active.chat || active.admin || active.settings;
+    active.mine || active.calendar || active.meetings || active.crm || active.activity || active.chat || active.admin || active.settings;
 
   const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean }> = [
     { href: "/my-work", label: "My Work", icon: "🙋", active: active.mine },
@@ -247,6 +249,7 @@ function NavMenu({
     { href: "/meetings", label: "Meetings", icon: "🗓️", active: active.meetings },
     { href: "/activity", label: "Activity", icon: "📰", active: active.activity, badge: true },
     { href: "/chat", label: "Assistant", icon: "🤖", active: active.chat },
+    { href: "/crm", label: "CRM", icon: "👥", active: active.crm },
     ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
     { href: "/settings", label: "Settings", icon: "⚙", active: active.settings },
   ];
