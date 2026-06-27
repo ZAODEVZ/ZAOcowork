@@ -8,6 +8,8 @@ import {
   resetPasswordAction,
   setActiveAction,
   setRoleAction,
+  issueClaudeTokenAction,
+  revokeClaudeTokenAction,
 } from "@/app/admin/actions";
 
 // /admin Users surface. Server actions handle the writes; this client wrapper
@@ -22,25 +24,40 @@ function isFounder(m: TeamMember): boolean {
   return slug === "zaal" || slug === "iman";
 }
 
-export function UsersPanel({ members, actorLabel }: { members: TeamMember[]; actorLabel: string }) {
+export function UsersPanel({
+  members,
+  actorLabel,
+  claudeBots = [],
+}: {
+  members: TeamMember[];
+  actorLabel: string;
+  claudeBots?: string[];
+}) {
+  const claudeSet = new Set(claudeBots.map((b) => b.toLowerCase()));
   return (
     <div className="space-y-4">
       <AddUserForm />
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02]">
-        <table className="w-full text-sm min-w-[700px]">
+        <table className="w-full text-sm min-w-[820px]">
           <thead>
             <tr className="text-left text-[10px] uppercase tracking-wider text-white/40 border-b border-white/10">
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Login slug</th>
               <th className="px-3 py-2 font-medium">Role</th>
               <th className="px-3 py-2 font-medium">Password</th>
+              <th className="px-3 py-2 font-medium">Claude access</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {members.map((m) => (
-              <UserRow key={m.id} member={m} actorLabel={actorLabel} />
+              <UserRow
+                key={m.id}
+                member={m}
+                actorLabel={actorLabel}
+                hasClaude={claudeSet.has((m.legacy_owner ?? "").toLowerCase())}
+              />
             ))}
           </tbody>
         </table>
@@ -119,11 +136,12 @@ function AddUserForm() {
   );
 }
 
-function UserRow({ member }: { member: TeamMember; actorLabel: string }) {
+function UserRow({ member, hasClaude }: { member: TeamMember; actorLabel: string; hasClaude: boolean }) {
   const founder = isFounder(member);
   const [editingPwd, setEditingPwd] = useState(false);
   const [role, setRole] = useState<TeamRole>(member.role);
   const [roleSaving, startRole] = useTransition();
+  const slug = (member.legacy_owner ?? "").toLowerCase();
 
   // Keep local optimistic value in sync if the server-rendered role changes
   // (e.g. after a refresh or another admin's edit lands).
@@ -219,6 +237,9 @@ function UserRow({ member }: { member: TeamMember; actorLabel: string }) {
         )}
       </td>
       <td className="px-3 py-2">
+        <ClaudeAccessCell slug={slug} hasClaude={hasClaude} memberName={member.name} />
+      </td>
+      <td className="px-3 py-2">
         <form action={setActiveAction} className="inline">
           <input type="hidden" name="id" value={member.id} />
           <input type="hidden" name="active" value={member.active ? "false" : "true"} />
@@ -263,6 +284,114 @@ function UserRow({ member }: { member: TeamMember; actorLabel: string }) {
         )}
       </td>
     </tr>
+  );
+}
+
+// Per-user Claude/bot access. Enabling issues a token (shown once) so the
+// person's Claude can drive the board under their identity — no SQL, no
+// separate "bot" concept to manage.
+function ClaudeAccessCell({
+  slug,
+  hasClaude,
+  memberName,
+}: {
+  slug: string;
+  hasClaude: boolean;
+  memberName: string;
+}) {
+  const [pending, start] = useTransition();
+  const [token, setToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  function enable() {
+    const fd = new FormData();
+    fd.set("slug", slug);
+    start(async () => {
+      const res = await issueClaudeTokenAction(fd);
+      setToken(res.token);
+    });
+  }
+  function revoke() {
+    if (!window.confirm(`Revoke Claude access for ${memberName}? Their Claude will stop working until re-enabled.`)) return;
+    const fd = new FormData();
+    fd.set("slug", slug);
+    start(async () => {
+      await revokeClaudeTokenAction(fd);
+      setToken(null);
+    });
+  }
+
+  if (!slug) return <span className="text-[10px] text-white/25">—</span>;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        {hasClaude ? (
+          <span className="text-[11px] rounded px-1.5 py-0.5 border border-violet-400/40 bg-violet-500/15 text-violet-200">
+            🤖 enabled
+          </span>
+        ) : (
+          <span className="text-[11px] text-white/35">off</span>
+        )}
+        <button
+          type="button"
+          onClick={hasClaude ? revoke : enable}
+          disabled={pending}
+          className="text-[11px] underline text-white/55 hover:text-white/85 disabled:opacity-50"
+        >
+          {pending ? "…" : hasClaude ? "revoke" : token ? "rotate" : "enable"}
+        </button>
+      </div>
+
+      {/* The token is shown exactly once, right after issuing. */}
+      {token && (
+        <div className="rounded-lg border border-violet-400/30 bg-violet-500/10 p-2 space-y-1.5 max-w-[260px]">
+          <p className="text-[10px] text-violet-200/90">
+            Copy now — shown once. Paste into {memberName}&apos;s Claude config.
+          </p>
+          <div className="flex items-center gap-1">
+            <code className="flex-1 truncate text-[10px] text-white/80 font-mono bg-black/30 rounded px-1.5 py-1">
+              {token}
+            </code>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard?.writeText(token);
+                setCopied(true);
+                window.setTimeout(() => setCopied(false), 1500);
+              }}
+              className="text-[10px] rounded px-1.5 py-1 border border-white/15 text-white/70 hover:bg-white/5"
+            >
+              {copied ? "✓" : "copy"}
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const cfg = JSON.stringify(
+                {
+                  mcpServers: {
+                    "zao-cowork": {
+                      command: "node",
+                      args: ["/path/to/ZAOcowork/mcp-server/index.mjs"],
+                      env: { ZAO_API_URL: "https://thezao.xyz", ZAO_BOT_TOKEN: token },
+                    },
+                  },
+                },
+                null,
+                2,
+              );
+              navigator.clipboard?.writeText(cfg);
+              setCopied(true);
+              window.setTimeout(() => setCopied(false), 1500);
+            }}
+            className="w-full text-[10px] rounded px-1.5 py-1 border border-white/15 text-white/70 hover:bg-white/5"
+          >
+            copy full MCP config
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
