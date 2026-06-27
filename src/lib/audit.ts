@@ -8,7 +8,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-export type AuditEntityType = "task" | "user" | "brand" | "system";
+export type AuditEntityType = "task" | "user" | "brand" | "system" | "meeting";
 
 export interface AuditLogRow {
   id: string;

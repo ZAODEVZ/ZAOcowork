@@ -33,14 +33,28 @@ function toDateKey(year: number, month: number, day: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+type MeetingMark = { id: string; title: string; date: string };
+
 export function CalendarView({
   items,
   currentUser,
+  meetings = [],
 }: {
   items: ActionItem[];
   currentUser: string;
+  meetings?: MeetingMark[];
 }) {
   const router = useRouter();
+
+  // Meetings grouped by their date key (YYYY-MM-DD).
+  const meetingsByDate = useMemo(() => {
+    const map = new Map<string, MeetingMark[]>();
+    for (const m of meetings) {
+      if (!map.has(m.date)) map.set(m.date, []);
+      map.get(m.date)!.push(m);
+    }
+    return map;
+  }, [meetings]);
   const today = new Date();
   const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -172,6 +186,7 @@ export function CalendarView({
             }
             const { key, day } = cell;
             const dayItems = byDate.get(key) ?? [];
+            const dayMeetings = meetingsByDate.get(key) ?? [];
             const isToday = key === todayKey;
             const isSelected = key === selected;
             const isOverdue = key < todayKey;
@@ -204,6 +219,21 @@ export function CalendarView({
                   {dayItems.length > 3 && (
                     <span className="text-[10px] text-white/30">+{dayItems.length - 3}</span>
                   )}
+                </div>
+
+                {/* Meeting chips — cyan, link to /meetings */}
+                <div className="space-y-0.5 mb-0.5">
+                  {dayMeetings.slice(0, 2).map(mt => (
+                    <div
+                      key={mt.id}
+                      onClick={e => { e.stopPropagation(); router.push("/meetings"); }}
+                      title={mt.title}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border border-cyan-400/40 bg-cyan-500/10 text-cyan-200 truncate leading-tight cursor-pointer hover:brightness-125 transition"
+                    >
+                      <span className="flex-shrink-0">🗓️</span>
+                      <span className="truncate">{mt.title}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {/* Task chips — show up to 3 */}

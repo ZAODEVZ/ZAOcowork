@@ -14,6 +14,7 @@ const ENTITY_BADGE: Record<AuditEntityType, string> = {
   user: "border-fuchsia-400/40 bg-fuchsia-500/15 text-fuchsia-200",
   brand: "border-amber-400/40 bg-amber-500/15 text-amber-200",
   system: "border-white/15 bg-white/[0.04] text-white/55",
+  meeting: "border-cyan-400/40 bg-cyan-500/15 text-cyan-200",
 };
 
 const ENTITY_FILTERS: Array<{ label: string; value: AuditEntityType | "all" }> = [

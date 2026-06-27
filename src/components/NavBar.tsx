@@ -59,6 +59,7 @@ export function NavBar({
   const onActivity = pathname === "/activity";
   const onMine = pathname === "/my-work";
   const onCalendar = pathname === "/calendar";
+  const onMeetings = pathname === "/meetings";
   const onSettings = pathname === "/settings";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
@@ -114,6 +115,7 @@ export function NavBar({
             active={{
               mine: onMine,
               calendar: onCalendar,
+              meetings: onMeetings,
               activity: onActivity,
               chat: onChat,
               admin: onAdmin,
@@ -194,7 +196,7 @@ function NavMenu({
   active,
 }: {
   showAdmin: boolean;
-  active: { mine: boolean; calendar: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
+  active: { mine: boolean; calendar: boolean; meetings: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -237,11 +239,12 @@ function NavMenu({
   }, [open]);
 
   const anyActive =
-    active.mine || active.calendar || active.activity || active.chat || active.admin || active.settings;
+    active.mine || active.calendar || active.meetings || active.activity || active.chat || active.admin || active.settings;
 
   const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean }> = [
     { href: "/my-work", label: "My Work", icon: "🙋", active: active.mine },
     { href: "/calendar", label: "Calendar", icon: "📅", active: active.calendar },
+    { href: "/meetings", label: "Meetings", icon: "🗓️", active: active.meetings },
     { href: "/activity", label: "Activity", icon: "📰", active: active.activity, badge: true },
     { href: "/chat", label: "Assistant", icon: "🤖", active: active.chat },
     ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
