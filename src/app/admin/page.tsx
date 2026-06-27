@@ -11,6 +11,7 @@ import { listProposals } from "@/lib/proposals";
 import { listProjects } from "@/lib/projects";
 import { migrationPath } from "@/lib/migrations";
 import { listTeamMembers } from "@/lib/team";
+import { listBotsWithActiveTokens } from "@/lib/bot-tokens";
 import { listBrands, listActiveBrands } from "@/lib/brands-db";
 import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
 import { getActions } from "@/lib/data";
@@ -84,6 +85,7 @@ export default async function AdminPage({
   ]);
 
   const members = membersRes.rows;
+  const claudeBots = await listBotsWithActiveTokens();
   const membersError = membersRes.error;
   const unownedCount = doc.items.filter((it) => {
     const o = String(it.owner ?? "").trim();
@@ -161,7 +163,7 @@ export default async function AdminPage({
                   <div className="mt-2 text-[11px] text-amber-200/60">err: {membersError}</div>
                 </div>
               ) : (
-                <UsersPanel members={members} actorLabel={userLabelStr} />
+                <UsersPanel members={members} actorLabel={userLabelStr} claudeBots={claudeBots} />
               )}
             </Section>
 

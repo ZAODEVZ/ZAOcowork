@@ -23,6 +23,7 @@ import {
 } from "@/lib/projects";
 import type { ProjectStatus } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
+import { issueBotToken, revokeBotTokens } from "@/lib/bot-tokens";
 
 function asRole(v: FormDataEntryValue | null): TeamRole {
   const s = String(v ?? "").toLowerCase();
@@ -123,6 +124,42 @@ export async function setActiveAction(form: FormData): Promise<void> {
     entity_id: id,
     action: active ? "reactivate_user" : "deactivate_user",
     detail: active ? "reactivated" : "deactivated",
+  });
+  revalidatePath("/admin");
+}
+
+// Enable (or rotate) Claude/bot access for a team member. The member's login
+// slug doubles as the bot name, so their Claude acts under the same identity.
+// Returns the freshly issued token — shown to the admin exactly once.
+export async function issueClaudeTokenAction(form: FormData): Promise<{ token: string; bot: string }> {
+  const actor = await requireAdmin();
+  const slug = String(form.get("slug") ?? "").trim().toLowerCase();
+  if (!SLUG_RE.test(slug)) bouncedErr("invalid slug");
+  const token = await issueBotToken(slug, `Claude access issued by ${userLabel(actor)}`, userLabel(actor));
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: slug,
+    entity_label: slug,
+    action: "issue_claude_token",
+    detail: `Claude/bot access enabled for ${slug}`,
+  });
+  revalidatePath("/admin");
+  return { token, bot: slug };
+}
+
+export async function revokeClaudeTokenAction(form: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const slug = String(form.get("slug") ?? "").trim().toLowerCase();
+  if (!slug) bouncedErr("missing slug");
+  await revokeBotTokens(slug);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: slug,
+    entity_label: slug,
+    action: "revoke_claude_token",
+    detail: `Claude/bot access revoked for ${slug}`,
   });
   revalidatePath("/admin");
 }
