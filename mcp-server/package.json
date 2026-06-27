@@ -1,0 +1,19 @@
+{
+  "name": "zao-cowork-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for the ZAO Co-Works board — let any Claude read and update tasks.",
+  "type": "module",
+  "bin": {
+    "zao-cowork-mcp": "index.mjs"
+  },
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

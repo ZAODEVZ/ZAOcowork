@@ -472,10 +472,8 @@ async function applyDiff(
     if (!i.dbId) {
       const recovered = beforeDbIdByLegacy.get(i.id);
       if (recovered) {
-        console.warn(
-          `[data] recovered missing dbId for item ${i.id} via legacy_id — ` +
-            `a caller dropped dbId; treating as UPDATE not INSERT`,
-        );
+        // A caller dropped dbId; recover it via legacy_id so this is treated as
+        // an UPDATE not an INSERT. (Was console.warn — silent recovery is fine.)
         i.dbId = recovered;
       }
     }
@@ -514,8 +512,7 @@ async function applyDiff(
   for (const item of updates) {
     if (!item.dbId) {
       // Shouldn't happen for a read-then-update flow, but if dbId is missing
-      // we cannot target the row safely - skip + log instead of mass-updating.
-      console.warn(`[data] update skipped: item ${item.id} has no dbId`);
+      // we cannot target the row safely — skip instead of mass-updating.
       continue;
     }
     const row = itemToRow(item, team);

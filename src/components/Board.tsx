@@ -937,8 +937,29 @@ export function Board({
         />
       )}
 
+      {/* Empty state — filters match nothing (board view only) */}
+      {!(density === "power" && view === "table") && filtered.length === 0 && (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] py-16 px-6 text-center">
+          <p className="text-3xl mb-3">🗂️</p>
+          <p className="text-sm text-white/60 mb-1">No tasks match your filters.</p>
+          <p className="text-xs text-white/35 mb-4">
+            {items.length === 0
+              ? "This board has no tasks yet — add one above."
+              : `${items.length} task${items.length === 1 ? "" : "s"} are hidden by the current filters.`}
+          </p>
+          {filtersActive && (
+            <button
+              onClick={() => setFilters({ ...EMPTY_FILTERS, mineOnly: true })}
+              className="px-4 py-2 text-xs font-medium rounded-lg border border-white/15 text-white/70 hover:bg-white/5 transition"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Desktop: 4 columns */}
-      <div className={`${density === "power" && view === "table" ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
+      <div className={`${(density === "power" && view === "table") || filtered.length === 0 ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
         {BOARD_STATUSES.map((s) => (
           <Column
             key={s}

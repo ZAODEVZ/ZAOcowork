@@ -24,6 +24,30 @@ logs the resolved bot on every write (audit), and rejects unknown tokens with
 `401`. **Revoke** a bot by rotating/removing its entry and redeploying. Generate
 tokens as long random strings (e.g. `openssl rand -hex 24`).
 
+## Rate limits
+
+Every `/api/v1/*` endpoint is rate-limited **per bot token** (in-memory
+sliding window, approximate under serverless scale-out):
+
+| Scope | Limit |
+|-------|-------|
+| Task writes (`POST`/`PATCH /items`, comments) | 60 / min |
+| Reads (`GET /items*`) | 120 / min |
+| Heartbeats | 120 / min |
+
+On `429` the body includes `retryAfterMs` / `retryAfterSeconds` — back off and
+retry. All responses are `{ ok: true, ... }` or `{ ok: false, error }`.
+
+## Using it from Claude
+
+Two turnkey wrappers ship in this repo so any Claude can drive the board:
+
+- **MCP server** (`mcp-server/`) — native tools (`list_tasks`, `get_task`,
+  `create_task`, `update_task`, `comment_task`) for Claude Desktop / Code.
+- **Skill** (`skills/zao-cowork/SKILL.md`) — curl-based recipes for Claude Code.
+
+Both need `ZAO_API_URL` + `ZAO_BOT_TOKEN`. See `mcp-server/README.md`.
+
 ## Endpoints
 
 ### 1. `POST /api/v1/items` — create a task
@@ -58,6 +82,33 @@ tokens as long random strings (e.g. `openssl rand -hex 24`).
 ```
 - Setting `DONE` stamps `completed_at`/`completed_by=<bot>`. Bots are trusted
   infra, so status applies directly (no review queue).
+
+### 2a. `GET /api/v1/items` — list tasks
+Filter via query params; all optional.
+```jsonc
+// GET /api/v1/items?status=WIP&assignee=thyrev&q=calendar&limit=20
+// status   TODO|WIP|BLOCKED|DONE   assignee  login slug (lowercase)
+// q        search title/notes      limit     1..500 (default 100)
+// 200 -> { "ok": true, "count": 3, "tasks": [
+//   { "id": "42", "title": "...", "status": "WIP", "priority": "P2",
+//     "assignees": ["thyrev"], "owner": "ThyRev", "category": "...",
+//     "due": "2026-07-03", "notes": "...", "createdAt": "...", "updatedAt": "..." } ] }
+```
+Archived + TRIAGE tasks are excluded.
+
+### 2b. `GET /api/v1/items/:id` — read one task (with comments)
+```jsonc
+// 200 -> { "ok": true, "task": { …, "comments": [
+//   { "author": "thyrev", "content": "...", "createdAt": "..." } ] } }
+// 404 -> { "ok": false, "error": "no task #42" }
+```
+
+### 2c. `POST /api/v1/items/:id/comments` — comment on a task
+```jsonc
+// body
+{ "content": "string (required, max 4000)" }
+// 201 -> { "ok": true, "id": "42", "commentId": "c-..." }
+```
 
 ### 3. `POST /api/v1/bots/heartbeat` — report alive
 The bot identity comes from the **token**, not the body (a token can only

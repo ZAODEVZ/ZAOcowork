@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { authBot } from "@/lib/bot-auth";
+import { guardBot } from "@/lib/bot-route";
 import { serviceClient } from "@/lib/supabase-server";
 import { readJsonObject, reqString, optObject, apiError } from "@/lib/api-validate";
 
@@ -13,8 +13,9 @@ const MAX_MESSAGE = 2000;
 const MAX_KIND = 64;
 
 export async function POST(req: NextRequest) {
-  const bot = await authBot(req);
-  if (!bot) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const guard = await guardBot(req, { scope: "events" });
+  if (guard instanceof Response) return guard;
+  const { bot } = guard;
 
   let body: Record<string, unknown>;
   let kind: string;
