@@ -2,9 +2,11 @@ import { getSession, isAdmin, isLead } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
 import { listTeamMembers } from "@/lib/team";
 import { listMeetings } from "@/lib/meetings";
+import { listMeetingRecaps } from "@/lib/meeting-recaps";
 import { googleConfigured } from "@/lib/google-calendar";
 import { NavBar } from "@/components/NavBar";
 import { MeetingsPanel } from "@/components/MeetingsPanel";
+import { MeetingRecapsPanel } from "@/components/MeetingRecapsPanel";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +15,11 @@ export default async function MeetingsPage() {
   const user = await getSession();
   if (!user) redirect("/login");
 
-  const [navBrands, roster, meetings] = await Promise.all([
+  const [navBrands, roster, meetings, recaps] = await Promise.all([
     listActiveBrands().catch(() => []),
     listTeamMembers().catch(() => []),
     listMeetings({ sinceDays: 30 }).catch(() => []),
+    listMeetingRecaps().catch(() => []),
   ]);
 
   const team = roster
@@ -40,7 +43,20 @@ export default async function MeetingsPage() {
             <code className="mx-1 text-amber-300">GOOGLE_CALENDAR_ID</code> to enable the push.
           </div>
         )}
-        <MeetingsPanel meetings={meetings} team={team} currentUser={user} />
+
+        {/* Meetings section */}
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-white/70">Upcoming & Recent</h2>
+          <MeetingsPanel meetings={meetings} team={team} currentUser={user} />
+        </div>
+
+        {/* Recaps section */}
+        {recaps.length > 0 && (
+          <div className="space-y-4 border-t border-white/10 pt-6">
+            <h2 className="text-sm font-semibold text-white/70">Meeting Recaps</h2>
+            <MeetingRecapsPanel recaps={recaps} />
+          </div>
+        )}
       </div>
     </main>
   );
