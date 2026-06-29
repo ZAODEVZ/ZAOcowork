@@ -8,9 +8,8 @@ import {
   resetPasswordAction,
   setActiveAction,
   setRoleAction,
-  issueClaudeTokenAction,
   revokeClaudeTokenAction,
-  getClaudeTokenAction,
+  shareClaudeSecurelyAction,
   setTelegramAction,
 } from "@/app/admin/actions";
 
@@ -20,71 +19,6 @@ import {
 // hardcoded admin override for them so any DB-side accident is recoverable.
 
 const ROLES: TeamRole[] = ["admin", "lead", "worker"];
-
-const ZAO_API_URL = "https://thezao.xyz";
-
-// A fully self-contained skill: token + URL baked in, all recipes inline. The
-// recipient pastes this straight into Claude (or saves it as a skill file) and
-// it works with zero setup — no repo clone, no MCP install, no env vars.
-function buildSkillMarkdown(token: string, name: string): string {
-  return `Paste this whole message to your Claude — no install, no files, nothing to download. It already has everything it needs to manage the ZAO board. (If your Claude supports skills, you can also save it as .claude/skills/zao-cowork/SKILL.md — but pasting it into the chat works fine.)
-
----
-name: zao-cowork
-description: Read and update the ZAO Co-Works task board (thezao.xyz) for ${name}. Use when asked to list, create, update, or comment on tasks/work items, check what's assigned, or mark tasks done.
----
-
-# ZAO Co-Works (${name})
-
-You can drive the ZAO Co-Works board over its API. Auth and base URL are baked
-in below — just run the curl commands. There is nothing to install or clone.
-Everything you do is attributed to "${name}".
-
-API base: \`${ZAO_API_URL}\`
-Auth header (use on every request): \`Authorization: Bearer ${token}\`
-
-## Recipes
-
-List tasks (filters optional — status TODO|WIP|BLOCKED|DONE, assignee = login slug, q = search):
-\`\`\`bash
-curl -s "${ZAO_API_URL}/api/v1/items?status=WIP&limit=20" \\
-  -H "Authorization: Bearer ${token}"
-\`\`\`
-
-Get one task (with comments):
-\`\`\`bash
-curl -s "${ZAO_API_URL}/api/v1/items/42" -H "Authorization: Bearer ${token}"
-\`\`\`
-
-Create a task (title required):
-\`\`\`bash
-curl -s -X POST "${ZAO_API_URL}/api/v1/items" \\
-  -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \\
-  -d '{"title":"My task","due_date":"2026-07-03","notes":"details"}'
-\`\`\`
-
-Update a task (only fields you send change):
-\`\`\`bash
-curl -s -X PATCH "${ZAO_API_URL}/api/v1/items/42" \\
-  -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \\
-  -d '{"status":"DONE"}'
-\`\`\`
-
-Comment on a task:
-\`\`\`bash
-curl -s -X POST "${ZAO_API_URL}/api/v1/items/42/comments" \\
-  -H "Authorization: Bearer ${token}" -H "Content-Type: application/json" \\
-  -d '{"content":"PR merged, closing this out."}'
-\`\`\`
-
-## Notes
-- Task ids are plain numbers (the #N in the UI). Assignees are lowercase login
-  slugs (zaal, iman, thyrev, …). Status: TODO, WIP, BLOCKED, DONE.
-- Every response is \`{"ok":true,...}\` or \`{"ok":false,"error":"..."}\`.
-- Rate limits: writes 60/min, reads 120/min. On 429, wait \`retryAfterSeconds\` and retry.
-- Before creating, search first (\`?q=\`) to avoid duplicates. Leave a comment when you change status.
-`;
-}
 
 function isFounder(m: TeamMember): boolean {
   const slug = (m.legacy_owner ?? "").toLowerCase();
@@ -458,15 +392,15 @@ function ClaudeAccessCell({
   memberName: string;
 }) {
   const [pending, start] = useTransition();
-  const [token, setToken] = useState<string | null>(null);
+  const [share, setShare] = useState<{ code: string; claimText: string; expiresMinutes: number } | null>(null);
   const [copied, setCopied] = useState(false);
 
-  function enable() {
+  function shareSecurely() {
     const fd = new FormData();
     fd.set("slug", slug);
     start(async () => {
-      const res = await issueClaudeTokenAction(fd);
-      setToken(res.token);
+      const res = await shareClaudeSecurelyAction(fd);
+      setShare(res);
     });
   }
   function revoke() {
@@ -475,15 +409,7 @@ function ClaudeAccessCell({
     fd.set("slug", slug);
     start(async () => {
       await revokeClaudeTokenAction(fd);
-      setToken(null);
-    });
-  }
-  function reveal() {
-    const fd = new FormData();
-    fd.set("slug", slug);
-    start(async () => {
-      const res = await getClaudeTokenAction(fd);
-      setToken(res.token);
+      setShare(null);
     });
   }
 
@@ -499,83 +425,52 @@ function ClaudeAccessCell({
         ) : (
           <span className="text-[11px] text-white/35">off</span>
         )}
-        {hasClaude && !token && (
-          <button
-            type="button"
-            onClick={reveal}
-            disabled={pending}
-            className="text-[11px] underline text-violet-300/80 hover:text-violet-200 disabled:opacity-50"
-          >
-            {pending ? "…" : "show skill"}
-          </button>
-        )}
         <button
           type="button"
-          onClick={hasClaude ? revoke : enable}
+          onClick={shareSecurely}
           disabled={pending}
-          className="text-[11px] underline text-white/55 hover:text-white/85 disabled:opacity-50"
+          className="text-[11px] underline text-violet-300/80 hover:text-violet-200 disabled:opacity-50"
         >
-          {pending ? "…" : hasClaude ? "revoke" : token ? "rotate" : "enable"}
+          {pending ? "…" : hasClaude ? "share code" : "enable + share"}
         </button>
+        {hasClaude && (
+          <button
+            type="button"
+            onClick={revoke}
+            disabled={pending}
+            className="text-[11px] underline text-white/55 hover:text-white/85 disabled:opacity-50"
+          >
+            revoke
+          </button>
+        )}
       </div>
 
-      {/* The token is shown exactly once, right after issuing. */}
-      {token && (
+      {/* One-time pairing code — only the code is shared, never the token. */}
+      {share && (
         <div className="rounded-lg border border-violet-400/30 bg-violet-500/10 p-2 space-y-1.5 max-w-[280px]">
           <p className="text-[10px] text-violet-200/90">
-            Send the skill to {memberName} — they paste it into Claude, no setup. Treat it like a password.
+            One-time code for {memberName} — expires in {share.expiresMinutes} min, works once.
+            Safe to send: it carries no token.
           </p>
+          <div className="flex items-center gap-1">
+            <code className="flex-1 text-center text-xs font-mono text-violet-100 bg-black/30 rounded px-1.5 py-1">
+              {share.code}
+            </code>
+          </div>
           <button
             type="button"
             onClick={() => {
-              navigator.clipboard?.writeText(buildSkillMarkdown(token, memberName));
+              navigator.clipboard?.writeText(share.claimText);
               setCopied(true);
               window.setTimeout(() => setCopied(false), 1500);
             }}
             className="w-full text-[11px] font-medium rounded px-2 py-1.5 border border-violet-400/40 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30"
           >
-            {copied ? "✓ copied" : "📋 Copy skill (paste into Claude)"}
+            {copied ? "✓ copied" : "📋 Copy connect message"}
           </button>
-          <p className="text-[10px] text-white/40">↑ This is all they need. Don&apos;t send the MCP config below — it requires cloning the repo.</p>
-          <details className="text-[10px] text-white/45">
-            <summary className="cursor-pointer hover:text-white/70">advanced: raw token / MCP config (needs a repo clone)</summary>
-            <div className="mt-1.5 space-y-1.5">
-              <div className="flex items-center gap-1">
-                <code className="flex-1 truncate text-[10px] text-white/80 font-mono bg-black/30 rounded px-1.5 py-1">
-                  {token}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => navigator.clipboard?.writeText(token)}
-                  className="text-[10px] rounded px-1.5 py-1 border border-white/15 text-white/70 hover:bg-white/5"
-                >
-                  copy
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const cfg = JSON.stringify(
-                    {
-                      mcpServers: {
-                        "zao-cowork": {
-                          command: "node",
-                          args: ["/path/to/ZAOcowork/mcp-server/index.mjs"],
-                          env: { ZAO_API_URL: ZAO_API_URL, ZAO_BOT_TOKEN: token },
-                        },
-                      },
-                    },
-                    null,
-                    2,
-                  );
-                  navigator.clipboard?.writeText(cfg);
-                }}
-                className="w-full text-[10px] rounded px-1.5 py-1 border border-white/15 text-white/70 hover:bg-white/5"
-              >
-                copy MCP config (needs repo clone)
-              </button>
-            </div>
-          </details>
+          <p className="text-[10px] text-white/40">
+            They paste it into Claude — it claims the code once and gets its token directly.
+          </p>
         </div>
       )}
     </div>

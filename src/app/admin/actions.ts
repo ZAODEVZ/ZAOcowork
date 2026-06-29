@@ -25,6 +25,8 @@ import {
 import type { ProjectStatus } from "@/lib/types";
 import { logAudit } from "@/lib/audit";
 import { issueBotToken, revokeBotTokens, getActiveBotToken } from "@/lib/bot-tokens";
+import { createClaim, CLAIM_TTL_MINUTES } from "@/lib/token-claims";
+import { buildClaimInstructions } from "@/lib/skill-template";
 
 function asRole(v: FormDataEntryValue | null): TeamRole {
   const s = String(v ?? "").toLowerCase();
@@ -149,14 +151,34 @@ export async function issueClaudeTokenAction(form: FormData): Promise<{ token: s
   return { token, bot: slug };
 }
 
-// Re-reveal the current active token for an already-enabled user, so the admin
-// can re-copy the skill without rotating. Admin-gated; the token is stored
-// plaintext (it's the bearer secret) so this discloses nothing new to an admin.
-export async function getClaudeTokenAction(form: FormData): Promise<{ token: string | null }> {
-  await requireAdmin();
+// Securely share Claude access: ensures the member has a token (issues one if
+// not), then mints a single-use, short-expiry pairing CODE that maps to it. The
+// admin shares only the code text — the token never travels in the shared file.
+export async function shareClaudeSecurelyAction(
+  form: FormData,
+): Promise<{ code: string; claimText: string; expiresMinutes: number }> {
+  const actor = await requireAdmin();
   const slug = String(form.get("slug") ?? "").trim().toLowerCase();
-  if (!slug) return { token: null };
-  return { token: await getActiveBotToken(slug) };
+  if (!SLUG_RE.test(slug)) bouncedErr("invalid slug");
+  let token = await getActiveBotToken(slug);
+  if (!token) {
+    token = await issueBotToken(slug, `Claude access issued by ${userLabel(actor)}`, userLabel(actor));
+  }
+  const code = await createClaim(slug, token, userLabel(actor));
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: slug,
+    entity_label: slug,
+    action: "share_claude_code",
+    detail: `one-time pairing code generated for ${slug}`,
+  });
+  revalidatePath("/admin");
+  return {
+    code,
+    claimText: buildClaimInstructions(code, CLAIM_TTL_MINUTES),
+    expiresMinutes: CLAIM_TTL_MINUTES,
+  };
 }
 
 export async function revokeClaudeTokenAction(form: FormData): Promise<void> {
