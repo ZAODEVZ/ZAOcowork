@@ -8,6 +8,7 @@ import {
   resetMemberPassword,
   setMemberActive,
   setMemberRole,
+  setMemberTelegram,
   type TeamRole,
 } from "@/lib/team";
 import {
@@ -170,6 +171,35 @@ export async function revokeClaudeTokenAction(form: FormData): Promise<void> {
     entity_label: slug,
     action: "revoke_claude_token",
     detail: `Claude/bot access revoked for ${slug}`,
+  });
+  revalidatePath("/admin");
+}
+
+// Pair a member with Telegram. username (with or without a leading @) enables
+// group @mention pings; the optional numeric id enables direct DMs. Blank
+// values clear the pairing.
+export async function setTelegramAction(form: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const id = String(form.get("id") ?? "").trim();
+  if (!id) bouncedErr("missing id");
+  const rawUser = String(form.get("telegram_username") ?? "").trim().replace(/^@/, "");
+  const username = rawUser || null;
+  if (username && !/^[A-Za-z0-9_]{4,32}$/.test(username)) {
+    bouncedErr("invalid telegram username (letters, numbers, underscore; 5+ chars)");
+  }
+  const rawId = String(form.get("telegram_id") ?? "").trim();
+  let telegram_id: number | null = null;
+  if (rawId) {
+    telegram_id = Number(rawId);
+    if (!Number.isFinite(telegram_id)) bouncedErr("telegram id must be numeric");
+  }
+  await setMemberTelegram(id, username, telegram_id);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: id,
+    action: "set_telegram",
+    detail: username ? `paired @${username}` : "cleared telegram",
   });
   revalidatePath("/admin");
 }
