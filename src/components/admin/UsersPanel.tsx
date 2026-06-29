@@ -11,6 +11,7 @@ import {
   issueClaudeTokenAction,
   revokeClaudeTokenAction,
   getClaudeTokenAction,
+  setTelegramAction,
 } from "@/app/admin/actions";
 
 // /admin Users surface. Server actions handle the writes; this client wrapper
@@ -109,6 +110,7 @@ export function UsersPanel({
               <th className="px-3 py-2 font-medium">Login slug</th>
               <th className="px-3 py-2 font-medium">Role</th>
               <th className="px-3 py-2 font-medium">Password</th>
+              <th className="px-3 py-2 font-medium">Telegram</th>
               <th className="px-3 py-2 font-medium">Claude access</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium text-right">Actions</th>
@@ -301,6 +303,13 @@ function UserRow({ member, hasClaude }: { member: TeamMember; actorLabel: string
         )}
       </td>
       <td className="px-3 py-2">
+        <TelegramCell
+          id={member.id}
+          username={member.telegram_username}
+          telegramId={member.telegram_id}
+        />
+      </td>
+      <td className="px-3 py-2">
         <ClaudeAccessCell slug={slug} hasClaude={hasClaude} memberName={member.name} />
       </td>
       <td className="px-3 py-2">
@@ -348,6 +357,89 @@ function UserRow({ member, hasClaude }: { member: TeamMember; actorLabel: string
         )}
       </td>
     </tr>
+  );
+}
+
+// Pair a member with Telegram. Username (@handle) lets the bot ping them in the
+// group; the numeric id lets it DM them. Both editable inline.
+function TelegramCell({
+  id,
+  username,
+  telegramId,
+}: {
+  id: string;
+  username: string | null;
+  telegramId: number | null;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [pending, start] = useTransition();
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-2">
+        {username ? (
+          <a
+            href={`https://t.me/${username}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[11px] text-sky-300 hover:text-sky-200"
+          >
+            @{username}
+          </a>
+        ) : (
+          <span className="text-[11px] text-white/35">not paired</span>
+        )}
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="text-[11px] underline text-white/55 hover:text-white/85"
+        >
+          {username ? "edit" : "pair"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      action={(fd) => {
+        fd.set("id", id);
+        start(async () => {
+          await setTelegramAction(fd);
+          setEditing(false);
+        });
+      }}
+      className="space-y-1 max-w-[180px]"
+    >
+      <input
+        name="telegram_username"
+        defaultValue={username ?? ""}
+        placeholder="@username"
+        className="w-full rounded bg-[#0b1220] border border-white/10 px-2 py-1 text-xs text-white placeholder-white/30"
+      />
+      <input
+        name="telegram_id"
+        defaultValue={telegramId ?? ""}
+        placeholder="numeric id (for DMs, optional)"
+        className="w-full rounded bg-[#0b1220] border border-white/10 px-2 py-1 text-[10px] text-white placeholder-white/30"
+      />
+      <div className="flex items-center gap-1.5">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded bg-sky-500/80 hover:bg-sky-500 px-2 py-0.5 text-[11px] text-black disabled:opacity-50"
+        >
+          {pending ? "…" : "save"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditing(false)}
+          className="text-[11px] text-white/45 hover:text-white/80"
+        >
+          cancel
+        </button>
+      </div>
+    </form>
   );
 }
 

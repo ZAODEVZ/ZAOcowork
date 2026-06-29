@@ -229,6 +229,20 @@ export async function setMemberActive(id: string, active: boolean): Promise<void
   if (error) throw new Error(`setMemberActive failed: ${error.message}`);
 }
 
+// Pair a member with Telegram. username (no @) enables group @mention pings;
+// the numeric id enables direct DMs. Either can be cleared by passing null.
+export async function setMemberTelegram(
+  id: string,
+  telegram_username: string | null,
+  telegram_id: number | null,
+): Promise<void> {
+  const { error } = await db()
+    .from("team_members")
+    .update({ telegram_username, telegram_id })
+    .eq("id", id);
+  if (error) throw new Error(`setMemberTelegram failed: ${error.message}`);
+}
+
 export async function resetMemberPassword(
   id: string,
   password: string,
