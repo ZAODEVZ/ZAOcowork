@@ -27,7 +27,9 @@ const ZAO_API_URL = "https://thezao.xyz";
 // recipient pastes this straight into Claude (or saves it as a skill file) and
 // it works with zero setup — no repo clone, no MCP install, no env vars.
 function buildSkillMarkdown(token: string, name: string): string {
-  return `---
+  return `Paste this whole message to your Claude — no install, no files, nothing to download. It already has everything it needs to manage the ZAO board. (If your Claude supports skills, you can also save it as .claude/skills/zao-cowork/SKILL.md — but pasting it into the chat works fine.)
+
+---
 name: zao-cowork
 description: Read and update the ZAO Co-Works task board (thezao.xyz) for ${name}. Use when asked to list, create, update, or comment on tasks/work items, check what's assigned, or mark tasks done.
 ---
@@ -35,8 +37,8 @@ description: Read and update the ZAO Co-Works task board (thezao.xyz) for ${name
 # ZAO Co-Works (${name})
 
 You can drive the ZAO Co-Works board over its API. Auth and base URL are baked
-in below — just run the curl commands. Everything you do is attributed to
-"${name}".
+in below — just run the curl commands. There is nothing to install or clone.
+Everything you do is attributed to "${name}".
 
 API base: \`${ZAO_API_URL}\`
 Auth header (use on every request): \`Authorization: Bearer ${token}\`
@@ -534,8 +536,9 @@ function ClaudeAccessCell({
           >
             {copied ? "✓ copied" : "📋 Copy skill (paste into Claude)"}
           </button>
+          <p className="text-[10px] text-white/40">↑ This is all they need. Don&apos;t send the MCP config below — it requires cloning the repo.</p>
           <details className="text-[10px] text-white/45">
-            <summary className="cursor-pointer hover:text-white/70">just the token / MCP config</summary>
+            <summary className="cursor-pointer hover:text-white/70">advanced: raw token / MCP config (needs a repo clone)</summary>
             <div className="mt-1.5 space-y-1.5">
               <div className="flex items-center gap-1">
                 <code className="flex-1 truncate text-[10px] text-white/80 font-mono bg-black/30 rounded px-1.5 py-1">
