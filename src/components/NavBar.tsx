@@ -54,7 +54,8 @@ export function NavBar({
   const sp = useSearchParams();
   const activeBrand = sp.get("brand");
 
-  const onBoard = pathname === "/";
+  const onBoard = pathname === "/board";
+  const onHome = pathname === "/";
   const onChat = pathname === "/chat";
   const onActivity = pathname === "/activity";
   const onMine = pathname === "/my-work";
@@ -84,11 +85,12 @@ export function NavBar({
     <nav className="flex flex-col rounded-xl bg-black/25 border border-white/10 p-1.5">
       <div className="flex items-center gap-1.5">
         <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
-          <BrandTab href="/" label="General" active={onBoard && !activeBrand} color={null} />
+          <BrandTab href="/" label="Home" active={onHome} color={null} />
+          <BrandTab href="/board" label="Board" active={onBoard && !activeBrand} color={null} />
           {primary.map((b) => (
             <BrandTab
               key={b.name}
-              href={`/?brand=${encodeURIComponent(b.name)}`}
+              href={`/board?brand=${encodeURIComponent(b.name)}`}
               label={b.name}
               active={onBoard && activeBrand === b.name}
               color={b.color}
@@ -381,7 +383,7 @@ function MoreBrandsDropdown({
             return (
               <Link
                 key={b.name}
-                href={`/?brand=${encodeURIComponent(b.name)}`}
+                href={`/board?brand=${encodeURIComponent(b.name)}`}
                 prefetch={false}
                 onClick={() => setOpen(false)}
                 className={`block px-3 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap transition ${

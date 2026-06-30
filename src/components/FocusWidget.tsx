@@ -88,7 +88,7 @@ export function FocusWidget({
           {entries.map((e, i) => (
             <li key={e.task.id}>
               <Link
-                href={`/?task=${encodeURIComponent(e.task.id)}`}
+                href={`/board?task=${encodeURIComponent(e.task.id)}`}
                 className="flex items-start gap-3 px-4 py-2.5 hover:bg-white/[0.03] transition"
               >
                 <span className="mt-0.5 text-[10px] font-mono text-white/45 w-4 text-right flex-shrink-0">

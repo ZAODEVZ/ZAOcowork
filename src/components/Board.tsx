@@ -2531,7 +2531,7 @@ function ProjectPickerBar({
           Project
         </span>
         <a
-          href="/"
+          href="/board"
           className={`text-xs rounded-md px-2 py-1 border whitespace-nowrap transition flex-shrink-0 ${
             !activeId
               ? "bg-indigo-500/20 text-indigo-100 border-indigo-500/40"
