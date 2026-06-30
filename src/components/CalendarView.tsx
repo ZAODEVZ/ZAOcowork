@@ -241,7 +241,7 @@ export function CalendarView({
                   {dayItems.slice(0, 3).map(it => (
                     <div
                       key={it.id}
-                      onClick={e => { e.stopPropagation(); router.push(`/?task=${it.id}`); }}
+                      onClick={e => { e.stopPropagation(); router.push(`/board?task=${it.id}`); }}
                       title={it.title}
                       className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border truncate leading-tight cursor-pointer hover:brightness-125 transition ${
                         STATUS_CHIP[it.status] ?? "border-white/20 text-white/50"
@@ -275,7 +275,7 @@ export function CalendarView({
             {selectedItems.map(it => (
               <button
                 key={it.id}
-                onClick={() => router.push(`/?task=${it.id}`)}
+                onClick={() => router.push(`/board?task=${it.id}`)}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition hover:brightness-125 ${
                   STATUS_CHIP[it.status] ?? "border-white/10 text-white/60"
                 } bg-black/20`}

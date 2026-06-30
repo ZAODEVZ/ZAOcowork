@@ -23,5 +23,5 @@ export default async function TodoPage({
   if (!/^[a-zA-Z0-9_-]{1,40}$/.test(id)) {
     redirect("/");
   }
-  redirect(`/?task=${encodeURIComponent(id)}`);
+  redirect(`/board?task=${encodeURIComponent(id)}`);
 }

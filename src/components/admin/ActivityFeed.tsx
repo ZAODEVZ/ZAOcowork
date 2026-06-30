@@ -250,7 +250,7 @@ function FeedRow({ row }: { row: AuditLogRow }) {
   const verb = actionLabel(row.action);
   const target = row.entity_label || (row.entity_id ? `#${row.entity_id}` : "");
   const link =
-    row.entity_type === "task" && row.entity_id ? `/?task=${encodeURIComponent(row.entity_id)}` : null;
+    row.entity_type === "task" && row.entity_id ? `/board?task=${encodeURIComponent(row.entity_id)}` : null;
 
   return (
     <li className="flex items-start gap-3 px-4 py-2.5 hover:bg-white/[0.03] transition">

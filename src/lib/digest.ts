@@ -225,7 +225,7 @@ export function digestToHtml(d: Digest): string {
     ? `<li>No stuck tasks - clean board.</li>`
     : d.topStuck
         .map((s) =>
-          `<li>#${escape(s.id)} <a href="https://www.thezao.xyz/?task=${encodeURIComponent(s.id)}">${escape(s.title)}</a> - ${s.staleDays}d stale in ${escape(s.status)}, owner ${escape(s.owner)}</li>`,
+          `<li>#${escape(s.id)} <a href="https://www.thezao.xyz/board?task=${encodeURIComponent(s.id)}">${escape(s.title)}</a> - ${s.staleDays}d stale in ${escape(s.status)}, owner ${escape(s.owner)}</li>`,
         )
         .join("");
   const deltaSign = d.shipped > d.shippedPrev ? "up" : d.shipped < d.shippedPrev ? "down" : "flat";

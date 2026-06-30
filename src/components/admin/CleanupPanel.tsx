@@ -250,7 +250,7 @@ function CleanupRow({
         )}
       </div>
       <a
-        href={`/?task=${item.id}`}
+        href={`/board?task=${item.id}`}
         onClick={(e) => e.stopPropagation()}
         target="_blank"
         rel="noreferrer"
