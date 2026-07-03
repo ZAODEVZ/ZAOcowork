@@ -1,0 +1,907 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ZAO - Technical Whitepaper</title>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+</style>
+
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Technical Whitepaper - Working Draft v0.1</p>
+    <h1>The ZAO<br>Technical Whitepaper</h1>
+    <p class="thesis">A specification of Respect governance, on-chain architecture, and monetary policy for the Fractal democracy.</p>
+    <div class="meta">
+      <span>Version 0.1</span><span class="dot"></span>
+      <span>2026-07-02</span><span class="dot"></span>
+      <span>Living document</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <p class="draft-flag">Working draft - not yet ratified - some figures pending final verification</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Changelog</h2>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>v0.1 (2026-07-02) - first draft. Architecture, Respect Game mechanics, and comparative governance set from research docs 718a-d; monetary policy from doc 941.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Verification Status</h2>
+      <p>Two tiers of fact in this draft:</p>
+      <p><strong>Code-verified (2026-07-02, safe):</strong> Respect has no decay today (vote_weight = Math.round(OG + ZOR), a raw sum); the Optimism contract addresses (OG, ZOR, OREC); OG is ERC-20 and ZOR is ERC-1155; the Fibonacci curve (1x 55/34/21/13/8/5, 2x 110/68/42/26/16/10).</p>
+      <p><strong>Research-sourced, VERIFY before publishing:</strong> every other specific number is drawn from research docs 718a-g and is a lead, not a confirmed fact. This includes the exact OREC period lengths (48h/48h), the quorum threshold (~10% / 1,000 Respect), the Gini figure (~0.23), the member count (~200), the week count, the issuance dates (Sept/Dec 2025), and the Fractal-number split (1-73 / 74+). Re-verify each against the live contracts and on-chain data before this document is published or signed.</p>
+      <p><em>The monetary-policy section (5) describes a PROPOSAL (doc 941), not current implementation.</em></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">1 - What Respect Is</span>
+      <h2>Respect is a soulbound reputation token</h2>
+      <p>Respect is a soulbound reputation token representing contribution to The ZAO.</p>
+      <p>It is not money. You cannot buy it, sell it, or trade it. It cannot be transferred between wallets. Once earned through the weekly Respect Game, it stays with you forever unless you voluntarily burn it (burning is irreversible). No other person, no administrator, no smart contract can take Respect from you or give it to you without your participation in the game.</p>
+      <p>Respect comes in two forms:</p>
+      <p><strong>OG Respect (ERC-20)</strong> - the historical ledger. Issued from the ZAO's founding through September 2025 (Fractals 1-73). A record of early recognition: founding contributions, content features, artist awards, and mentor acknowledgment. OG is frozen as of December 2025; no new OG is minted. It lives on Optimism at address 0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957. All OG balances at any point in history grant voting weight in OREC proposals.</p>
+      <p><strong>ZOR Respect (ERC-1155)</strong> - the living ledger. Issued weekly starting September 2025 (Fractals 74+) via the OREC optimistic execution contract. One token per award, minted with session metadata (week, breakout group, rank). Vote weight is the sum of OG and ZOR balances (see the formula below, code-verified), so both the historical ledger and the living ledger count toward governance. ZOR lives on Optimism at address 0x9885CCeEf7E8371Bf8d6f2413723D25917E7445c.</p>
+      <p><strong>Only humans can earn Respect.</strong> Agents, bots, contracts, and organizational accounts cannot participate in the Respect Game and cannot be assigned Respect. Agents are members' tools and the network's infrastructure. Membership and governance are human-only.</p>
+      <p>A member's voting weight in governance is:</p>
+      <pre><code>vote_weight = OG_balance + ZOR_balance</code></pre>
+      <p>Both balances are read at the proposal start block on Optimism. Both are immutable on-chain (transfers revert). The weight is locked and never changes even if the balances later shift, preventing vote-buying between proposal creation and execution.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">2 - The Respect Game: Weekly Mechanism</span>
+      <h2>How Respect distributes weekly</h2>
+      <p>The Respect Game is the engine that distributes Respect. It runs every week, currently on Monday at 6pm EST for The ZAO. The mechanism is human-centered and consensus-driven.</p>
+
+      <h3>2.1 The Six Phases</h3>
+
+      <p><strong>Phase 1: Randomization (5 min)</strong></p>
+      <p>All participants join a video call or voice channel. A facilitator (typically Zaal or a member volunteer) randomizes all participants into breakout rooms. Group sizes range from 3-6 people. The randomization is unbiased and prevents pre-planned collusion rings; no member knows their group before entering.</p>
+
+      <p><strong>Phase 2: Contribution Sharing (45-60 min)</strong></p>
+      <p>Each participant gets 3-4 minutes to share what they contributed to The ZAO in the past week. Contributions can be of any kind: shipping code, mentoring a new member, writing research, organizing an event, producing music, performing at a concert, creating art, or behind-the-scenes coordination. The group listens and takes notes. No evaluation happens yet. The goal is for each person to tell the story of their contribution in their own words.</p>
+
+      <p><strong>Phase 3: Consensus Ranking (30-45 min)</strong></p>
+      <p>The group discusses the contributions and collaboratively ranks each other from rank 1 (most helpful to the network) to rank 6 (least helpful this week). Ranking is ordinal - a rank number, not a score. The critical rule: <strong>2/3 consensus is required on each person's rank.</strong> In a 6-person group, at least 4 people must agree on each individual's position. If the group cannot reach 2/3 agreement on anyone, they can discuss further and try again, or they can agree to abort the entire ranking session. If they abort, the group earns zero Respect for that week.</p>
+
+      <p>This consensus requirement is the primary defense against Sybil attacks and collusion. It means a fake account cannot rank itself rank 1 without convincing a supermajority of real humans that it deserves to be.</p>
+
+      <p><strong>Phase 4: On-Chain Submission</strong></p>
+      <p>Once the group agrees on the ranking, someone with write access (typically the facilitator or a volunteer) calls the OREC contract to propose the result:</p>
+      <pre><code>const proposal = await orclient.proposeBreakoutResult({
+  meetingNum: 100,           // Which weekly meeting (ZAO is meeting ~100+)
+  groupNum: 3,               // Which breakout room in this meeting
+  rankings: [                // Six ranked wallet addresses
+    addressOfRank1,
+    addressOfRank2,
+    addressOfRank3,
+    addressOfRank4,
+    addressOfRank5,
+    addressOfRank6,
+  ]
+  // Respect values auto-calculated from the contract's curve
+  // (ZAO's default: 110, 68, 42, 26, 16, 10)
+});</code></pre>
+
+      <p>The proposal is recorded on-chain and assigned a proposal ID. The OREC contract automatically records the proposer's YES vote with their current OG + ZOR Respect weight.</p>
+
+      <p><strong>Phase 5: Voting and Veto Period (96 hours typical)</strong></p>
+      <p>The community now votes:</p>
+      <p><strong>Voting period (48 hours):</strong> Any member with OG Respect can vote YES or NO. Vote weight = their OG balance at the proposal's start block (frozen; prevents double-voting). Anyone can vote, including members not in the breakout group, because anyone can evaluate the group's consensus from the contribution descriptions on-chain.</p>
+      <p><strong>Veto period (48 hours):</strong> After voting closes, a 48-hour NO-only window opens. Only NO votes are accepted. This is the "challenge period" - a chance for the community to object if the group's consensus seems wrong. If a NO vote arrives during this window, the proposal is blocked and must be resubmitted.</p>
+      <p>This two-window design solves last-minute attacks: someone cannot wait until the final block to dump a surprise NO vote. The veto period is a fixed window, and the community knows when it is coming.</p>
+
+      <p><strong>Phase 6: Execution and Minting (After 96 hours)</strong></p>
+      <p>After both voting and veto periods elapse, anyone can call:</p>
+      <pre><code>await orclient.execute(proposalId);</code></pre>
+
+      <p>The contract checks three conditions:</p>
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>Time: 48 hours of voting + 48 hours of veto have both elapsed.</li>
+        <li>Quorum: YES votes total at least 10% of the network's active Respect (a low threshold, by design).</li>
+        <li>Supermajority: YES weight exceeds twice the NO weight (YES > 2 * NO).</li>
+      </ol>
+
+      <p>If all three pass, execution succeeds. The OREC contract calls the ZOR token contract to mint Respect to each ranked member according to their rank (110 for rank 1, 68 for rank 2, etc.). Each mint is a separate ERC-1155 token with the proposal metadata embedded (week, group, rank), creating an immutable historical record.</p>
+
+      <h3>2.2 The Fibonacci Reward Curve</h3>
+
+      <p>Respect distribution follows the Fibonacci sequence, a curve intentionally designed to avoid gaming while creating meaningful differentiation.</p>
+
+      <p><strong>Standard Fibonacci (Eden and Optimism Fractal):</strong></p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>Standard</th><th>Phi Ratio</th><th>Cumulative %</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1st</td><td>55</td><td>1.618x</td><td>40.4%</td></tr>
+            <tr><td>2nd</td><td>34</td><td>1.618x</td><td>65.0%</td></tr>
+            <tr><td>3rd</td><td>21</td><td>1.618x</td><td>80.4%</td></tr>
+            <tr><td>4th</td><td>13</td><td>1.615x</td><td>89.9%</td></tr>
+            <tr><td>5th</td><td>8</td><td>1.600x</td><td>95.6%</td></tr>
+            <tr><td>6th</td><td>5</td><td>1.250x</td><td>100.0%</td></tr>
+            <tr><td>Total</td><td>136</td><td>--</td><td>--</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>ZAO's 2x Fibonacci (Current, as of May 2026):</strong></p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Rank</th><th>ZAO 2x</th><th>Standard 1x</th><th>Ratio</th><th>Phi Ratio (preserved)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1st</td><td>110</td><td>55</td><td>2.0x</td><td>1.618x</td></tr>
+            <tr><td>2nd</td><td>68</td><td>34</td><td>2.0x</td><td>1.618x</td></tr>
+            <tr><td>3rd</td><td>42</td><td>21</td><td>2.0x</td><td>1.618x</td></tr>
+            <tr><td>4th</td><td>26</td><td>13</td><td>2.0x</td><td>1.618x</td></tr>
+            <tr><td>5th</td><td>16</td><td>8</td><td>2.0x</td><td>1.615x</td></tr>
+            <tr><td>6th</td><td>10</td><td>5</td><td>2.0x</td><td>1.600x</td></tr>
+            <tr><td>Total</td><td>272</td><td>136</td><td>2.0x</td><td>--</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Why Fibonacci</strong></p>
+
+      <p>The phi ratio (1.618, the golden ratio) reflects human judgment of fairness. When contributions are measured by humans in a small group, the measurement error is roughly 60% - people cannot distinguish whether a contribution was 1.0x or 1.6x the effort of the next one. The Fibonacci curve encodes this uncertainty. Each rank is 60% higher than the one below, which means:</p>
+
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>If two people think they did roughly equal work, the difference between 55 and 34 (1.6x) feels acceptable, even if one person judges the other should have ranked lower.</li>
+        <li>The distribution passes the Ultimatum Game test: when a rank 6 member (earning 10 tokens) sees a rank 1 member earning 110, the ratio feels "fair enough" to accept, because the Ultimatum Game threshold for fairness is roughly 35/65. Fibonacci's 27/73 split (10 vs. 110) exceeds that threshold.</li>
+        <li>Large singular rank differences (e.g., 1st vs 6th: 11x) are unusual and mean real disagreement about contribution. The curve allows for it without permitting extreme outliers.</li>
+      </ol>
+
+      <p><strong>ZAO's 2x scaling</strong> doubles every rank (110 instead of 55, 68 instead of 34, etc.) while preserving the phi ratio. The rationale: ZAO emphasizes rapid advancement for top contributors (artists, builders, mentors) so they reach decision-making tiers faster. Because there is no decay today, Respect simply accumulates: a member who takes rank 1 every week earns 110 per week under the 2x curve versus 55 under standard Fibonacci, so the 2x curve roughly halves the time to senior standing while keeping Sybil resistance intact (still requires consensus, still soulbound, still cannot be bought).</p>
+
+      <p><strong>Distribution equality (Gini)</strong></p>
+
+      <p>Research (doc 718b) reports the Fibonacci reward curve produces a Gini coefficient near 0.23, far more equal than token-weighted DAOs (commonly cited at 0.97 and up, dominated by the top few percent). The direction is not in doubt: peer-ranked Respect distributes far more equally than capital-weighted voting.</p>
+
+      <h3>2.3 Consensus Thresholds and Passing Conditions</h3>
+
+      <p>For a breakout group's ranking to result in minted Respect, three conditions must be met:</p>
+
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Consensus in the room:</strong> 2/3 of the group must agree on each member's rank. If consensus fails on anyone, the entire proposal fails.</li>
+        <li><strong>Voting quorum:</strong> Total YES votes across the community must reach a minimum weight threshold. ZAO's threshold is 1,000 Respect units (roughly 10% of the active base). This is intentionally low to prevent a passive minority from stalling governance.</li>
+        <li><strong>Supermajority:</strong> YES votes must exceed twice the NO votes: YES_weight > 2 * NO_weight. This means:
+          <ul style="list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0;">
+            <li>If NO reaches 33% of the weight, the proposal fails (cannot get 2x NO).</li>
+            <li>If NO stays below 33%, the proposal passes (assuming quorum is met).</li>
+            <li>A 50/50 split always fails (50 is not > 100).</li>
+          </ul>
+        </li>
+      </ol>
+
+      <p><strong>Implications:</strong></p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>1/3 of the active Respect base can veto any proposal (collective veto right).</li>
+        <li>2/3 can guarantee passage (no larger supermajority needed).</li>
+        <li>Single dissenting whales have no special power; a whale with 100k tokens still votes as one person, and 1/3 of the active base can block them.</li>
+      </ul>
+
+      <p>This is the core defense against tyranny: the supermajority rule prevents a 51% majority from steamrolling a 49% minority. Both must be consulted.</p>
+
+      <h3>2.4 Weekly Cycle and Participation Patterns</h3>
+
+      <p>The Respect Game runs every week, currently Monday 6pm EST for The ZAO. A single cycle spans 5-6 days:</p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Day 0 (Monday 6pm):</strong> Breakout rooms, sharing, ranking, on-chain submission</li>
+        <li><strong>Days 0-2:</strong> Voting period (48 hours)</li>
+        <li><strong>Days 2-4:</strong> Veto period (48 hours)</li>
+        <li><strong>Days 4-5:</strong> Execution window (open until Friday)</li>
+      </ul>
+
+      <p>Members can participate in multiple groups in a single week if attendance allows. A member's total Respect for the week is the sum of all their ranks across all groups they joined. This is by design: it prevents a "one-shot" mentality and rewards members who show up multiple times.</p>
+
+      <p>Participation is synchronous: members must attend the live call to share and be ranked. Async options exist (the Respect.Games web app allows week-long contribution submission and a 24-hour voting window), but live attendance is the primary mode. This synchronicity is one of the model's strengths (drives real relationships and accountability) and its central constraint (demands weekly time from all members).</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">3 - On-Chain Architecture: OREC and Soulbound Tokens</span>
+      <h2>How consensus becomes immutable records</h2>
+
+      <h3>3.1 OREC: Optimistic Execution</h3>
+
+      <p>OREC is a smart contract that inverts the default assumption of traditional DAOs. Traditional DAO governance requires an active majority to pass proposals (e.g., "get 50% of token holders to vote yes"). OREC assumes consensus exists and requires only a proactive minority to object.</p>
+
+      <p>This is borrowed from optimistic rollups (L2 blockchain scaling), which assume transactions are valid and allow a challenge period for fraud-proofs. OREC applies the same logic to governance: assume the breakout room's ranking is valid, allow a challenge period, and only block execution if sufficient weight vetoes.</p>
+
+      <p><strong>The Three-Phase Cycle</strong></p>
+
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Voting Period (48 hours):</strong>
+          <ul style="list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0;">
+            <li>Proposal is live for YES and NO votes.</li>
+            <li>Vote weight = Respect balance at the proposal creation block (historical snapshot).</li>
+            <li>Any member with OG Respect can vote.</li>
+            <li>Proposer's wallet auto-votes YES upon submission.</li>
+            <li>Gas cost per vote: ~0.02-0.05 on Optimism (low, accessible).</li>
+          </ul>
+        </li>
+        <li><strong>Veto Period (48 hours):</strong>
+          <ul style="list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0;">
+            <li>Voting closes; only NO votes are accepted.</li>
+            <li>This is the challenge window: a chance for the community to flag a bad proposal.</li>
+            <li>Prevents surprise attacks (attacker cannot wait until the final block to dump a NO vote).</li>
+            <li>If a NO vote arrives, the proposal is blocked and must be resubmitted.</li>
+          </ul>
+        </li>
+        <li><strong>Execution (Open window):</strong>
+          <ul style="list-style: disc; padding-left: 1.5rem; margin: 0.5rem 0;">
+            <li>Both periods elapse.</li>
+            <li>Anyone calls execute(proposalId).</li>
+            <li>Three checks: Time (both periods have passed), Quorum (YES >= 10% of active Respect), Supermajority (YES > 2 * NO).</li>
+            <li>If all pass, the contract mints Respect to the ranked members.</li>
+          </ul>
+        </li>
+      </ol>
+
+      <p><strong>Why "Optimistic"</strong></p>
+
+      <p>The word "optimistic" reflects the security model. Instead of "prove this proposal is good before execution" (pessimistic, high gas cost, active majority required), OREC assumes "this proposal is good unless proven bad" (optimistic, low gas cost, passive majority wins). A fraud-proof window (the veto period) allows the community to challenge.</p>
+
+      <p>This solves voter apathy. In traditional DAOs, a 5-10% participation rate is typical because voters see their individual vote as negligible. OREC inverts this: if you do not vote, you are implicitly consenting. An active 1/3 can veto, but apathy is treated as YES (not required to vote and wait for consensus).</p>
+
+      <h3>3.2 Soulbound Token Design: OG and ZOR</h3>
+
+      <p>ZAO maintains two separate Respect token contracts to preserve history while enabling future governance.</p>
+
+      <p><strong>OG Respect (ERC-20)</strong></p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Attribute</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Address</td><td>0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957 (Optimism)</td></tr>
+            <tr><td>Standard</td><td>ERC-20 (soulbound variant)</td></tr>
+            <tr><td>Total Supply</td><td>~38,484 ZAO (as of May 2026)</td></tr>
+            <tr><td>Status</td><td>Frozen (no new mints since Dec 2025)</td></tr>
+            <tr><td>Transfer</td><td>Reverts (soulbound; all transfers blocked at contract level)</td></tr>
+            <tr><td>Use</td><td>Historical ledger (Fractals 1-73, pre-ORDAO era)</td></tr>
+            <tr><td>Vote Weight</td><td>OG balance grants full voting power in OREC, read at proposal block</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>OG is a one-time ledger of early recognition. It was minted manually (via admin governance) before OREC existed. It is now frozen as a historical record. Members' OG balances still grant voting weight, treating early contributors fairly.</p>
+
+      <p>Code enforcement:</p>
+      <pre><code>function transfer(address to, uint256 amount) public override returns (bool) {
+  revert("Respect is soulbound and cannot be transferred");
+}</code></pre>
+
+      <p><strong>ZOR Respect (ERC-1155)</strong></p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Attribute</th><th>Value</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Address</td><td>0x9885CCeEf7E8371Bf8d6f2413723D25917E7445c (Optimism)</td></tr>
+            <tr><td>Standard</td><td>ERC-1155 (soulbound variant)</td></tr>
+            <tr><td>Token ID</td><td>0 (single ID; awards differentiated by amount)</td></tr>
+            <tr><td>Minting</td><td>Only OREC can mint (no manual admin override)</td></tr>
+            <tr><td>Transfer</td><td>Reverts (soulbound; only minting and burning allowed)</td></tr>
+            <tr><td>Use</td><td>Living ledger (Fractals 74+, post-ORDAO era)</td></tr>
+            <tr><td>Recent Activity</td><td>242+ OREC transactions as of May 21, 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>ZOR is the living ledger of weekly Respect Game results. One ZOR token is minted per ranked member per proposal, with metadata (week, group, rank) embedded. The fact that only OREC can mint ZOR removes the human bottleneck of admin approval; proposals execute automatically if consensus passes.</p>
+
+      <p>Code enforcement (ERC-1155 soulbound pattern):</p>
+      <pre><code>function _beforeTokenTransfer(
+  address operator,
+  address from,
+  address to,
+  uint256[] memory ids,
+  uint256[] memory amounts,
+  bytes memory data
+) internal override {
+  require(
+    from == address(0) || to == address(0),
+    "Respect tokens are soulbound and cannot be transferred"
+  );
+  super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+}</code></pre>
+
+      <p><strong>Why Two Tokens</strong></p>
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Historical preservation:</strong> OG cannot be lost or overwritten. It is proof of early contributions, immutable on-chain forever.</li>
+        <li><strong>Democratic future:</strong> ZOR reflects ongoing peer evaluation without manual gates. Only OREC (the consensus contract) can mint; no admin has override power.</li>
+        <li><strong>Vote weight decoupling:</strong> A member's voting power (OG balance) is independent of their recent earnings (ZOR). This prevents "who won Respect last week" from dominating "who votes on big decisions." Early adopters vote at full weight even if inactive lately.</li>
+      </ol>
+
+      <p><strong>Vote Weight Calculation</strong></p>
+
+      <p>A member's voting power in any OREC proposal is:</p>
+      <pre><code>vote_weight = OG_balance + ZOR_balance</code></pre>
+
+      <p>Both balances are read at the proposal creation block, then frozen. The weight never changes even if ZOR or OG balances shift afterward, preventing vote-buying between proposal submission and execution.</p>
+
+      <p>Code verification (src/lib/respect/voteWeight.ts, line 58):</p>
+      <pre><code>weight: Math.round(ogValue + zorValue)</code></pre>
+
+      <p>This is a raw lifetime sum. No decay is currently applied.</p>
+
+      <h3>3.3 Contract Relationship and Proposal Flow</h3>
+
+      <pre><code>Member Wallet
+├─ Balance: OG (ERC-20) = voting power (frozen historical)
+├─ Balance: ZOR (ERC-1155) = living earned respect
+└─ Both soulbound (cannot transfer)
+
+Breakout Consensus (off-chain)
+  ↓ proposeBreakoutResult()
+  ↓ [OREC creates proposal, auto-votes YES]
+  ↓
+Community Voting (on-chain, 48h YES/NO)
+  ↓ [YES votes accumulate]
+  ↓
+Veto Period (on-chain, 48h NO-only)
+  ↓ [Community challenges the result if disagreed]
+  ↓
+Execution (open call to execute() function)
+  ↓ [Checks quorum + supermajority + time]
+  ↓ [ZOR.mint() to all ranked members]
+  ↓
+Leaderboard Update
+  └─ ZOR balances increase; voting power increases for next week</code></pre>
+
+      <h3>3.4 Chain Choice: Optimism</h3>
+
+      <p>All contracts live on Optimism OP Mainnet, not Ethereum mainnet or other L2s. The reasons:</p>
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>EVM equivalence:</strong> Optimism's bytecode-compatible execution means contracts work identically to Ethereum without needing Solidity rewrites.</li>
+        <li><strong>Gas efficiency:</strong> Optimism costs 100x less gas than Ethereum mainnet (~0.02 per vote on Optimism, ~2.00 on mainnet). This makes weekly participation affordable for all members.</li>
+        <li><strong>Superchain readiness:</strong> As the OP Stack matures, fractals on Optimism can be bridged and composed across chains (e.g., a ZAO fractal on Base, a ZABAL fractal on Arbitrum, all voting on shared OP Mainnet decisions).</li>
+        <li><strong>frapps deployment tooling:</strong> OREC is deployed via the frapps.xyz platform (an ORDAO hosting service), which abstracts infrastructure. ZAO runs on zao.frapps.xyz, with OREC at the address above and metadata stored on ornode.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">4 - Comparative Analysis: Why Fractal Governance</span>
+      <h2>How Fractal compares to other approaches</h2>
+
+      <h3>4.1 Token-Weighted Voting (Uniswap, Compound, Aave)</h3>
+      <p><strong>Mechanism:</strong> 1 token = 1 vote. Voting power equals token balance. Tokens are traded on open markets.</p>
+      <p><strong>Sybil Resistance:</strong> Extremely high by design. Tokens have cost; cannot mint new tokens for free via wallet-splitting.</p>
+      <p><strong>Plutocracy Resistance:</strong> Extremely low. Voting power correlates directly with capital. Compound's top 8 delegates hold >50% voting power; Uniswap's top 11 delegates hold >50%. Participation rates are 3-10% (voter apathy), because retail voters' votes are negligible.</p>
+      <p><strong>Why it fails for ZAO:</strong> ZAO's mission is to return value to creators. Token-weighted voting would give the richest members the most votes, regardless of their contributions. This recreates the label-controlled gatekeeping The ZAO exists to end.</p>
+
+      <h3>4.2 Quadratic Voting and Funding</h3>
+      <p><strong>Mechanism:</strong> Voters receive a fixed budget of "voice credits" (e.g., 100). Casting n votes on a single choice costs n^2 credits (1st vote costs 1, 2nd costs 4, 3rd costs 9, etc.). This forces preference expression: voters must decide what matters most and allocate accordingly.</p>
+      <p><strong>Mathematical elegance:</strong> Under conditions of verified identity, quadratic voting achieves near-optimal allocation of resources. The square-root scaling prevents whales from dominating.</p>
+      <p><strong>Sybil vulnerability:</strong> On permissionless blockchains, quadratic voting is broken. A Sybil attacker with 4 tokens can split across 4 wallets (1 token each) and achieve 2x voting power. Optimal sybil strategy is equal splitting. Measured sybil amplification factors on Ethereum-based DAOs: 1,172x - 4,039x (recent 2024-2025 research).</p>
+
+      <h3>4.3 Conviction Voting</h3>
+      <p><strong>Mechanism:</strong> Voting power is time-locked. Voters stake tokens on proposals they support; conviction "charges" over days (via decay half-life). Switching proposals drains conviction from the old one. Larger proposals require higher conviction thresholds to pass.</p>
+      <p><strong>Sybil Resistance:</strong> High. Requires capital AND time. A Sybil attack requires buying tokens and holding them consistently over weeks, which is expensive.</p>
+      <p><strong>Plutocracy Resistance:</strong> High. The time-lock means even a whale cannot flash-vote; they must commit their stake for days.</p>
+
+      <h3>4.4 Nouns Auction Model</h3>
+      <p><strong>Mechanism:</strong> One NFT (Noun) is minted daily forever. Each Noun is auctioned to the highest bidder. 100% of auction proceeds go to the treasury. 1 Noun = 1 vote.</p>
+      <p><strong>Sybil Resistance:</strong> Very high. NFTs are unique and cannot be sybil'd without buying new NFTs, which is expensive.</p>
+      <p><strong>Why ZAO doesn't use it:</strong> Nouns require capital: in 2024, Nouns averaged ~100 ETH per day (~300k). This excludes members without significant wealth. ZAO's mission is to include creators regardless of capital.</p>
+
+      <h3>4.5 Moloch DAO and Ragequit Rights</h3>
+      <p><strong>Mechanism:</strong> Minimal voting on grants. Shares represent both voting power AND exit rights. A 49% shareholder can rage-quit (exit for pro-rata treasury share) if a 51% majority passes a bad proposal. This removes the incentive for tyranny: the cost of a 51% majority proposal is the 49% ragequitting.</p>
+      <p><strong>Why ZAO doesn't use it:</strong> Moloch is a grant-making DAO, optimized for venture-like collectives distributing capital. ZAO is a contribution-based fractal, not a grants committee.</p>
+
+      <h3>4.6 Optimism Collective: Bicameral Governance</h3>
+      <p><strong>Mechanism:</strong> Two voting houses with veto power over each other. Token House (OP token, capital-weighted) votes on core protocol. Citizens' House (soulbound NFTs, one-person-one-vote) votes on public goods allocation. Each can veto the other's high-stakes decisions.</p>
+      <p><strong>Sophistication:</strong> This is the most sophisticated governance model at scale. It acknowledges that capital and values are different signals and should have separate institutional representation.</p>
+      <p><strong>Why ZAO uses fractal instead:</strong> Fractal is simpler (single house, not two) and contribution-based (not capital-based). It works well for communities <500 members; bicameral systems are better for 10,000+ members with diverse stakeholder groups.</p>
+
+      <h3>4.7 ZAO Fractal: Distinctive Advantages</h3>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Dimension</th><th>Token-Weighted</th><th>Quadratic</th><th>Conviction</th><th>Nouns</th><th>Moloch</th><th>Optimism Bicameral</th><th>ZAO Fractal</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Sybil Resistance</td><td>Very High</td><td>Zero (permissionless)</td><td>High</td><td>Very High</td><td>Medium</td><td>High</td><td>Extremely High</td></tr>
+            <tr><td>Plutocracy Resistance</td><td>Very Low</td><td>Very High*</td><td>High</td><td>Low (early)</td><td>Very High</td><td>Very High</td><td>Extremely High</td></tr>
+            <tr><td>Capital Required</td><td>Yes</td><td>Optional</td><td>Yes</td><td>Yes</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Contribution-Based</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>Limited</td><td>Yes</td></tr>
+            <tr><td>Time-Based Decay</td><td>No</td><td>No</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>Optional (proposed)</td></tr>
+            <tr><td>Participation Friction</td><td>Low</td><td>Medium</td><td>Medium</td><td>High</td><td>Low</td><td>Medium</td><td>Medium (weekly)</td></tr>
+            <tr><td>Scale Proven</td><td>10,000+</td><td>100s-1000s</td><td>100s-1000s</td><td>100s</td><td>100s-1000s</td><td>10,000+</td><td>~200 (ZAO)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>ZAO Fractal's distinctive claims:</strong></p>
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Contribution-only governance.</strong> No capital required. Members earn voting power by showing up and contributing, not by buying tokens.</li>
+        <li><strong>Sybil-resistant by consensus, not cost.</strong> A fake account cannot rank itself rank 1 without convincing a supermajority of real humans. This is stronger than costly Sybil resistance (which can be overcome by a well-funded attacker).</li>
+        <li><strong>Small-group consensus.</strong> 3-6 person groups with 2/3 majority rules force genuine deliberation. This is proven effective in citizens' assemblies and Dunbar-limited collaboration.</li>
+        <li><strong>Longest-proven track record.</strong> ZAO has run 90+ unbroken weeks of Respect Games. Eden on EOS paused in Jan 2026; Optimism Fractal paused indefinitely; ZAO continues weekly. This is the longest-running permissionless fractal anywhere.</li>
+        <li><strong>Fair distribution.</strong> Respect is distributed far more equally than capital-weighted voting (doc 718b reports a Gini near 0.23 versus 0.97 and up for token DAOs). No whale can dominate.</li>
+        <li><strong>Optional decay.</strong> See Section 5 below. The mechanism can evolve to include reputation decay so recent contributions matter more than tenure.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">5 - Monetary Policy: The Decay Proposal (Proposed, Not Current)</span>
+      <h2>How Respect could evolve to weight recent contributions</h2>
+
+      <p><em>This section describes a proposal to evolve Respect governance, documented in research (pending doc 941). It is not current implementation. The current system applies NO decay.</em></p>
+
+      <p>Currently, Respect accumulates forever with no decay. A member's vote weight = Math.round(OG + ZOR), a raw lifetime sum. This means a member who was highly active 4 years ago still votes at full weight even if inactive since then.</p>
+
+      <p>The decay proposal would change this to weight recent contributions more heavily, creating meritocratic governance that reflects current community engagement rather than historical tenure.</p>
+
+      <p>The proposal, "monetary policy for merit" (research doc 941), is a set of independent votes, each with a recommended default. It reframes Respect as a flow that measures current relevance, not lifetime tenure. What follows is the recommended shape.</p>
+
+      <h3>5.1 Banked and Active (the core split)</h3>
+
+      <p>Respect splits into two views:</p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Banked</strong> - your lifetime total. It never burns. It is your rank, your legacy, your membership. This is the running sum the system already keeps.</li>
+        <li><strong>Active</strong> - a rolling, decaying balance that sets governance weight and bounty access. This is the new view.</li>
+      </ul>
+
+      <p>This separates "honor what you did" from "weight what you are doing now," and it is the clean answer to the Year 3 legacy question. It is validated by SourceCred's cred/grain architecture, which held even after that organization wound down.</p>
+
+      <h3>5.2 Active decay: a 180-day half-life (recommended)</h3>
+
+      <p>Active decays on a 180-day trailing half-life:</p>
+      <pre><code>Active(t) = Active0 * e^(-0.00385 * t)     (t in days)</code></pre>
+
+      <p>Skip a month and you lose about 2% (unfelt). Skip a quarter and you lose about 27% (felt). This matches the Fractal and ZABAL cycle.</p>
+
+      <h3>5.3 What pauses the decay (multi-signal participation)</h3>
+
+      <p>Active decay is paused for a window by ANY ONE of:</p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>fractal attendance,</li>
+        <li>a judged bounty ship,</li>
+        <li>two peer attestations (EAS, free on Base).</li>
+      </ul>
+
+      <p>"Participation is what you ship, not where you sit." Attendance alone is near-free to fake; a judged ship or a two-peer quorum is costly to fake. A shipped bounty on a missed-call week still counts. This keeps the model from penalizing quiet infrastructure work over visible social work.</p>
+
+      <h3>5.4 Grace for legitimate absence</h3>
+
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Earned grace tokens:</strong> about two per active year, each granting 30 days of absence immunity. Earned only while active, so they cannot be stockpiled.</li>
+        <li><strong>First-miss amnesty:</strong> auto-granted once.</li>
+        <li><strong>Cap:</strong> one grace activation per quarter.</li>
+      </ul>
+
+      <p>These are explicitly not buyable "freezes," which would let someone hold standing while contributing nothing.</p>
+
+      <h3>5.5 Year 3 legacy migration</h3>
+
+      <p>At a "Year 3 Census," snapshot the two years of no-decay Respect (OG + ZOR to date) into Banked. Active starts fresh from that epoch forward. No aristocracy (old Respect confers standing, not current governance power) and no retroactive purge (nothing is taken away). This is why the Banked/Active split is the clean answer to the hardest open question.</p>
+
+      <h3>5.6 Routing bounties by Active Respect (phase 2)</h3>
+
+      <p>Gate POIDH bounty judging by Active Respect (for example, a Curator tier and up); claim submission stays permissionless. Buildable off-chain today via a Safe multisig judged by a Snapshot strategy reading Active Respect on Base. This is what makes Respect route the money, the core thesis.</p>
+
+      <h3>5.7 The one implementation unblock (not a vote)</h3>
+
+      <p>Today only a few wallets can submit breakout results on-chain, because of gas friction on OREC.proposeBreakoutResult(). A gas-free relayer submit button in ZAO OS would let every member submit, a prerequisite for the multi-signal model above.</p>
+
+      <h3>5.8 Status: proposed, not adopted</h3>
+
+      <p>Each item above is an independent community vote. The recommended ballot: Banked/Active split YES; 180-day half-life; multi-signal participation YES; earned grace YES; Y3 snapshot to Banked YES; bounty routing by Active YES (phase 2). If adopted, it becomes a new version of this document, logged with a version bump.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">6 - Sybil and Collusion Defense</span>
+      <h2>How Respect defends against fake accounts and coordinated attacks</h2>
+
+      <h3>6.1 Sybil Defense Layers</h3>
+
+      <p><strong>Layer 1: Consensus requirement (2/3 supermajority within breakout groups).</strong></p>
+      <p>The Respect Game requires 2/3 agreement on each rank. A fake account cannot self-rank rank 1 without convincing 2/3 of the group (e.g., 4 of 6 people) that it deserves the highest rank. If the attacker controls only the fake account, they need to convince at least 4 real humans. This is hard. If the attacker can coordinate with colluders:</p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>3 attacker accounts + 6 real humans = needs 3 + 1 real human to reach 4/6 (67%) on the fake account.</li>
+        <li>4 attacker accounts + 5 real humans = needs 4 + 0 = achievable but requires all attackers voting together on one person per round.</li>
+      </ul>
+
+      <p><strong>Layer 2: Randomization.</strong> Groups are randomized each week. An attacker cannot plan in advance which groups their fake accounts will be in. This prevents pre-arranged collusion rings.</p>
+
+      <p><strong>Layer 3: Weekly re-evaluation.</strong> Each week, members are re-ranked in new groups with new people. An attacker cannot "lock in" a rank once earned. To maintain high Respect (and thus high voting weight), they must achieve consensus every single week.</p>
+
+      <p><strong>Layer 4: Soulbound transfer prohibition.</strong> Fake accounts cannot sell or transfer Respect to real accounts. All Respect earned by a fake account is trapped there. An attacker cannot accumulate fake Respect and then move it to a main account.</p>
+
+      <p><strong>Layer 5: Two-wallet operating core concentration (current) / all-members-on-chain (goal).</strong> Currently, most OREC proposals are submitted by 2-3 wallets. This small group can veto bad proposals (and has, informally). The goal is "all members on-chain," where hundreds of wallets are eligible to submit. This distributes power and makes coordination harder.</p>
+
+      <h3>6.2 Sybil Cost Analysis</h3>
+
+      <p>Assume an attacker wants to get 10 fake accounts to rank 1 status (high Respect) over 15 weeks:</p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Per-week cost:</strong> Each fake account needs 2/3 consensus in a 6-person group. The attacker needs to compromise 2-3 real humans per group, per week (via bribery, social engineering, etc.).</li>
+        <li><strong>Total cost:</strong> 10 fake accounts * 15 weeks = 150 "group-sways." Each group-sway requires compromising ~2 humans. Total: 300 human relationships to maintain.</li>
+        <li><strong>Detection cost:</strong> The more humans you recruit to collude, the higher the chance someone reports it. The ZAO community can observe unusual voting patterns (e.g., "these 5 people always vote the same way on the same accounts") and flag anomalies.</li>
+        <li><strong>Opportunity cost:</strong> 300 hours of social engineering / bribery could be spent shipping real contribution to The ZAO and earning Respect legitimately.</li>
+      </ul>
+
+      <p><strong>Conclusion:</strong> Sybil cost is social (requires human coordination), not financial (cannot buy token votes). This makes it expensive relative to legitimate contribution.</p>
+
+      <h3>6.3 Collusion Defense</h3>
+
+      <p><strong>Define collusion:</strong> A group of real humans (e.g., a Sybil ring, or a rival faction) votes together on OREC proposals to pass bad ideas or block good ones.</p>
+
+      <p><strong>Defenses:</strong></p>
+      <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>Voting transparency:</strong> All OREC votes are on-chain. Any member can query who voted YES/NO on any proposal. If a collusion ring always votes together, it is visible.</li>
+        <li><strong>Supermajority requirement:</strong> 1/3 of active Respect can veto. A collusion ring cannot be larger than 2/3 of the network without being detected (there is not a hidden majority). If the ring is 2/3 - 1 members, the remaining 1/3 can block them.</li>
+        <li><strong>Small group consensus:</strong> The Respect Game itself (the source of Respect) requires 2/3 consensus in small groups. This prevents one faction from loading up a group with their people (randomization) and prevents hidden coordination (synchronous meetings).</li>
+        <li><strong>Exit option:</strong> If collusion ring captures governance, members can hard-fork or migrate to a new DAO. The cost of collusion-driven tyranny is community exit.</li>
+      </ol>
+
+      <h3>6.4 Known Limitations</h3>
+
+      <p><strong>Visibility bias:</strong> Obvious, loud work (social posts, events, visible shipping) is easier to rank than quiet work (database maintenance, behind-the-scenes mentorship). Mitigation: explicit criteria like "infrastructure contribution" and rotating facilitators to bring different perspectives. This is incomplete; the proposal in section 5.2 (multi-signal participation) addresses it.</p>
+
+      <p><strong>Operating-core concentration (current):</strong> Only 2-3 wallets have submitted most OREC proposals. They are not acting as dictators (proposals are genuine breakout group rankings), but they are a bottleneck. Mitigation: educating members on how to submit proposals, low-friction tools, lowering gas costs. Goal: "all members on-chain."</p>
+
+      <p><strong>Newcomer cold start:</strong> A brand-new member starts with zero Respect (no voting power) and must wait weeks to accumulate. This creates an insider advantage. Mitigation: The Respect Game is weekly; after 4-5 weeks of participation, a newcomer can have 200-400 Respect (enough to participate in governance). Bootstrap programs (mentorship, initial Respect grants, "new member circle") can accelerate on-boarding.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">7 - Conclusion</span>
+      <h2>The ZAO Technical Whitepaper in summary</h2>
+      <p>The ZAO Technical Whitepaper specifies the mechanism, the math, and the on-chain architecture that enable Respect-based governance at scale.</p>
+
+      <p>Respect is soulbound (cannot be transferred), consensus-earned (requires 2/3 group agreement), and immutable on-chain (OG and ZOR). The Respect Game distributes Respect weekly via Fibonacci scoring, using a curve designed to encode human judgment of fairness and prevent gaming. OREC optimistic execution brings consensus to on-chain actions with low gas costs and high accessibility.</p>
+
+      <p>The architecture is not perfect. It demands weekly participation (a real constraint). It has visibility bias and operating-core concentration (real limitations). It has not been scaled beyond a couple hundred members (unproven). But it has been run continuously for over a year of unbroken weekly practice, longer than any other permissionless fractal we know of. It distributes far more equally than capital-weighted voting. And it is governed by the community, not controlled by capital.</p>
+
+      <p>The decay proposal (documented but not adopted) shows the system is designed to evolve. If the ZAO community votes to weight recent contributions more heavily, they can upgrade the mechanism and log the change as a new version.</p>
+
+      <p>This whitepaper is a living document. The ZAO strives to keep it accurate and to revisit assumptions when evidence calls for it. Every change is logged and versioned, so the document's history is itself a governance record.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Appendix: Contract Addresses and Parameters</h2>
+
+      <p><strong>Optimism OP Mainnet Contracts:</strong></p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li><strong>OG Respect (ERC-20):</strong> 0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957</li>
+        <li><strong>ZOR Respect (ERC-1155):</strong> 0x9885CCeEf7E8371Bf8d6f2413723D25917E7445c</li>
+        <li><strong>OREC (Optimistic Respect Executive):</strong> 0xcB05F9254765CA521F7698e61E0A6CA6456Be532</li>
+      </ul>
+
+      <p><strong>OREC Parameters (ZAO Configuration):</strong></p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Parameter</th><th>Value</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>voting_period</td><td>259,200 sec (3 days)</td><td>Window for YES/NO votes</td></tr>
+            <tr><td>veto_period</td><td>259,200 sec (3 days)</td><td>Window for NO-only veto</td></tr>
+            <tr><td>prop_weight_threshold</td><td>1,000 Respect</td><td>Minimum YES weight to be eligible</td></tr>
+            <tr><td>supermajority_ratio</td><td>2x</td><td>YES must exceed 2 * NO to pass</td></tr>
+            <tr><td>min_quorum_percent</td><td>~10%</td><td>Rough minimum of active base</td></tr>
+            <tr><td>respect_source</td><td>OG ERC-20</td><td>Vote weight drawn from this</td></tr>
+            <tr><td>execution_target</td><td>ZOR ERC-1155</td><td>Respect minted to this</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>Respect Game Parameters (Current):</strong></p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Parameter</th><th>Value</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Cycle</td><td>Weekly, Monday 6pm EST</td><td>Recurring schedule</td></tr>
+            <tr><td>Group size</td><td>3-6 members</td><td>Ideal: 5-6 for wisdom of crowds</td></tr>
+            <tr><td>Consensus threshold</td><td>2/3</td><td>Per-person agreement required</td></tr>
+            <tr><td>Fibonacci curve (ZAO 2x)</td><td>110/68/42/26/16/10</td><td>Rank 1-6 Respect distribution</td></tr>
+            <tr><td>Decay model (proposed)</td><td>Banked/Active split; Active on a 180-day half-life</td><td>doc 941, not adopted</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Appendix: Sources and Verification</h2>
+
+      <p><strong>Code Verification (2026-07-02):</strong></p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>src/lib/respect/voteWeight.ts line 58: Vote weight formula (OG + ZOR, no decay applied currently).</li>
+        <li>OREC contract addresses verified against Optimism mainnet (etherscan.io, blockscan.com).</li>
+      </ul>
+
+      <p><strong>Research Foundation:</strong></p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>Doc 718a-d: Theory, mechanism design, on-chain architecture, comparative governance.</li>
+        <li>Doc 718e: Critiques and failure modes.</li>
+        <li>Doc 718f: Whitepaper craft and voice.</li>
+        <li>Doc 718g: ZAO fractal distinctness.</li>
+      </ul>
+
+      <p><strong>References to Proposed Future (Not Current):</strong></p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>Decay mechanism: Proposed in research (pending doc 941). Currently NOT applied.</li>
+        <li>Multi-signal participation: Pending doc 941.</li>
+        <li>Bounce routing and Year 3 migration: Pending doc 941.</li>
+      </ul>
+
+      <p><strong>Chain and Contract Data:</strong></p>
+      <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
+        <li>Optimism OP Mainnet block explorers: etherscan.io/optimism, blockscan.com.</li>
+        <li>OREC deployment: frapps.xyz (ORDAO deployment platform).</li>
+        <li>ZAO OS codebase: /Users/zaalpanthaki/Documents/ZAO OS V1/.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p class="draft-flag">Version 0.1, 2026-07-02 - working draft, not yet ratified</p>
+      <p>Part of the ZAO papers - thezao.xyz/papers</p>
+    </div>
+  </footer>
+</main>
+</body>
+</html>
