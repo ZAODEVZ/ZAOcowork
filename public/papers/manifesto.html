@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ZAO - Manifesto</title>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  .creed { list-style: none; padding: 0; margin: 1.4rem 0 0; counter-reset: m; }
+  .creed li { padding: 1rem 0 1rem 3.2rem; position: relative; border-top: 1px solid var(--line); }
+  .creed li::before {
+    counter-increment: m; content: counter(m);
+    position: absolute; left: 0; top: 1rem;
+    font-family: var(--sans); font-weight: 800; font-size: 1.1rem; color: var(--accent);
+  }
+  .creed b { font-family: var(--sans); font-size: 1.05rem; display: block; margin-bottom: 0.2rem; }
+  .creed span { color: var(--ink-soft); font-size: 1rem; }
+
+  .closer { text-align: center; padding: clamp(3rem, 9vh, 5rem) 0; border-bottom: none; }
+  .closer .big { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; font-size: clamp(2rem, 7vw, 3.2rem); line-height: 1.05; margin: 0 0 1rem; text-wrap: balance; }
+  .closer p { margin-left: auto; margin-right: auto; }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+</style>
+
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">The ZAO Manifesto</p>
+    <h1>Five Commitments</h1>
+    <p class="thesis">The creed you sign when you join The ZAO. Signing means minting an on-chain proof that you are aligned and belong to this network.</p>
+    <div class="meta">
+      <span>Version 1.0</span><span class="dot"></span>
+      <span>2026-07-02</span><span class="dot"></span>
+      <span>Permanent</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <p class="lead">The ZAO is a decentralized impact network that returns profit, data, and IP to independent artists. We exist to break four gates: the gatekeeping of profit, power, potential, and knowledge. I refuse to be part of a system that keeps the upside from the people who make the thing.</p>
+      <p>Everything below is who I am in this community, and what I commit to.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">1</span>
+      <h2>I Contribute</h2>
+      <p>I bring something. Time, energy, or capital. I choose what I can give, but I give. There are no free riders in a network that is actually alive. Contribution is how I matter here. It is how anyone matters.</p>
+      <p>I do not have to be full-time or rich or connected. I have to show up. I have to do the work, even if it is small. The network moves because people like me keep moving it.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">2</span>
+      <h2>I Build in the Open</h2>
+      <p>I share what I make. Not the polished version when it is done, but the real thing as it comes. I show the work, the thinking, the mistakes, the learning, so that the person who comes after me does not start from zero.</p>
+      <p>I help others build. I answer questions. I point people to tools. I make space for new ideas even when they are not mine. Knowledge that stays locked is knowledge that dies. Here, knowledge is free, because the future is more important than my ego.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">3</span>
+      <h2>I Honor Creator Ownership</h2>
+      <p>Creators own their profit. If an artist makes a song and a thousand people buy it, the artist keeps as close to all of the thousand dollars as I can make happen. No middleman. No platform cut. No label margin. The person who made the thing owns the thing.</p>
+      <p>Creators own their data. They know who listened, where, how many times, what they said about it. That data is theirs to sell, to study, to share however they choose. I will never own someone else's audience.</p>
+      <p>Creators own their IP. The rights, the publishing, the whole skeleton of the thing they made. It stays with them. I take no one's cut. Not a piece of profit. Not a share of rights. Not a percentage of potential. The work is theirs. Period.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">4</span>
+      <h2>I Govern by Contribution</h2>
+      <p>My standing in this network comes from what I actually do, not what I hold or who I know. The person who ships a song, runs an event, builds a tool, or shows up and does the work every week - they have a say. The person with the biggest wallet does not.</p>
+      <p>I show up to the Fractal. Every week we gather, in small groups or in person, and we rank each other by contribution. It is how I get seen. It is how I help others get seen. This is not a system I can game from a distance. It requires presence. It requires showing up.</p>
+      <p>My standing does not compound just for existing. It comes from what I am actually bringing right now, today, this week, to the work we are doing together. That keeps the power distributed. That keeps it real.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">5</span>
+      <h2>I Believe in the Gift</h2>
+      <p>Everyone has one gift the world needs. Not a maybe. Not someday. A real thing that only they can bring. Most of us never get to find it because we are too busy surviving, or because someone told us we could not, or because no one put the tools in our hands.</p>
+      <p>Given the right resources, the tools, the capital, the platform, the recognition, we can bring that gift out in every human. This is the deepest thing I believe. It is why I am here.</p>
+      <p>That is what the network is for. That is what open-source tooling and the blockchain and the agents are for. They are the resources. They are the leverage. They are how we make it possible for every person to do the one thing they are best at, and to own it completely.</p>
+      <p>I am here to help bring that out in myself and in everyone around me. That is my commitment.</p>
+    </div>
+  </section>
+
+  <section class="closer">
+    <div class="wrap">
+      <h2>What It Means to Sign</h2>
+      <p>If I sign this manifesto, I am saying yes to all of it. Yes to bringing something. Yes to building in the open. Yes to honoring creator ownership in all its forms. Yes to showing up and letting contribution be my measure. Yes to the belief that every human has a gift and that together we can bring it out.</p>
+      <p>This is not a promise I can break without consequence. It is a hat on the blockchain, tied to the version I signed. It is permanent. It is the part of The ZAO that does not change.</p>
+      <p class="big" style="color: var(--accent); font-family: var(--sans); font-weight: 700; font-size: 1.3rem; margin-top: 1.5rem;">Come join if you mean it.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p class="draft-flag">Version 1.0, 2026-07-02</p>
+      <p>Part of the ZAO papers - thezao.xyz/papers</p>
+    </div>
+  </footer>
+</main>
+</body>
+</html>
