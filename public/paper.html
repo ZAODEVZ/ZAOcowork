@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The ZAO - Whitepaper</title>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Manifesto */
+  .manifesto {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: clamp(1.8rem, 5vw, 3rem);
+    margin: 2rem 0 0;
+  }
+  .manifesto .kicker { font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); font-weight: 600; margin: 0 0 1rem; }
+  .creed { list-style: none; padding: 0; margin: 1.4rem 0 0; counter-reset: m; }
+  .creed li { padding: 1rem 0 1rem 3.2rem; position: relative; border-top: 1px solid var(--line); }
+  .creed li::before {
+    counter-increment: m; content: counter(m);
+    position: absolute; left: 0; top: 1rem;
+    font-family: var(--sans); font-weight: 800; font-size: 1.1rem; color: var(--accent);
+  }
+  .creed b { font-family: var(--sans); font-size: 1.05rem; display: block; margin-bottom: 0.2rem; }
+  .creed span { color: var(--ink-soft); font-size: 1rem; }
+
+  .closer { text-align: center; padding: clamp(3rem, 9vh, 5rem) 0; border-bottom: none; }
+  .closer .big { font-family: var(--sans); font-weight: 800; letter-spacing: -0.02em; font-size: clamp(2rem, 7vw, 3.2rem); line-height: 1.05; margin: 0 0 1rem; text-wrap: balance; }
+  .closer p { margin-left: auto; margin-right: auto; }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+</style>
+
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Whitepaper - Working Draft v0.1</p>
+    <h1>The&nbsp;ZAO</h1>
+    <p class="thesis">A decentralized impact network returning <b>profit, data, and IP</b> to independent artists.</p>
+    <div class="meta">
+      <span>A living document</span><span class="dot"></span>
+      <span>Mission and creed permanent</span><span class="dot"></span>
+      <span>Everything else evolves by vote</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="wrap">
+      <span class="num">01 - What The ZAO is</span>
+      <p class="lead">The ZAO is a decentralized impact network for musicians, builders, and creators. We exist for one reason: to bring the profit, the data, and the ownership of creative work back to the people who make it. Not a slice of it. As close to all of it as we can get, with no fees taken from what an artist earns.</p>
+      <p>For a hundred years the deal has been the same. An artist makes the work. Someone else, a label, a platform, a middleman, keeps the profit, owns the data, and controls the rights. The artist does the hardest part and owns the least of it.</p>
+      <p>The ZAO is the other way to do it. A network where the people who contribute own the upside, decide the direction, and keep what they make. We have run this in the open, every week, for over a year. This document is what we have learned, and how you join.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">02 - What we are against</span>
+      <h2>We are against gatekeeping. Not one kind of it. Four.</h2>
+      <ul class="gates">
+        <li><b>Gatekept profit</b><span>The margin on creative work flows to whoever controls distribution, not to whoever made the thing.</span></li>
+        <li><b>Gatekept power</b><span>Who gets a say is decided by money and status, not by the work you actually put in.</span></li>
+        <li><b>Gatekept potential</b><span>Most people never get the tools, the capital, or the room to bring out the one thing they are great at.</span></li>
+        <li><b>Gatekept knowledge</b><span>How things really work is kept behind closed doors, so the next person has to start from zero.</span></li>
+      </ul>
+      <div class="stat">
+        In 2025 the biggest streaming platform paid the music industry over eleven billion dollars. Fewer than fourteen thousand artists earned a hundred thousand of it. Almost everyone else made close to nothing, and none of them own the audience they built.
+        <span class="src">Source: Spotify Loud and Clear, 2025</span>
+      </div>
+      <p>The ZAO opens all four gates. Profit goes back to artists. Power comes from contribution. Resources get put in people's hands. And we build in the open so the knowledge is free.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">03 - An impact network</span>
+      <h2>We did not invent a new machine. We are cultivating a network.</h2>
+      <p>An impact network is a web of real relationships between people working toward a shared purpose. It is not a company with a boss. It is not a coalition that disbands when a task is done. It is a living system that keeps learning and keeps producing. The single most important thing about it is trust, because a network moves at the speed of trust.</p>
+      <p>You do not build a network like a building, brick by brick from a blueprint. You cultivate it like a garden. You create the right conditions and the best things emerge on their own. Almost everything good The ZAO has made, its concerts, its partnerships, its tools, came from a member's idea, not a plan from the top.</p>
+      <p>Five things keep the network alive. We organize the whole ZAO around them.</p>
+      <ol class="fivec">
+        <li><b>Clarify.</b> We are clear on the purpose (this document) and the principles (the creed you sign).</li>
+        <li><b>Convene.</b> We gather, every week and in person, because relationships are the whole game.</li>
+        <li><b>Cultivate trust.</b> We earn it deliberately, through showing up and recognizing each other's work.</li>
+        <li><b>Coordinate.</b> We move information, resources, and decisions through the network. This is where our governance lives.</li>
+        <li><b>Collaborate.</b> We bring everyone's piece of the puzzle together to change the thing we are here to change.</li>
+      </ol>
+      <p>Leadership is shared, not held by one person. The founder's job is to be a steward of the purpose, not a hero at the center of it.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">04 - The Fractal</span>
+      <h2>How The ZAO governs itself</h2>
+      <p>Coordination needs a way to make decisions and to measure who is actually contributing. Ours is called the Fractal, and its unit of account is Respect.</p>
+      <p><strong>Respect is not money.</strong> You cannot buy it, sell it, or trade it. It is a record of contribution, earned by doing the work, and only humans can earn it. It lives on-chain and it cannot be taken from you.</p>
+      <p>Every week the community meets. In small groups, people share what they contributed, and the group ranks each other by the value of that contribution. Higher-ranked contributions earn more Respect, on a curve where each place earns meaningfully more than the one below it. Your standing comes from what you have contributed, not from what you hold.</p>
+      <p>That is the whole idea: <strong>contribution over capital.</strong> In most of the world, and most of crypto, money buys influence. Here, the work does. It is not a new invention, but The ZAO has run it longer and more seriously than almost anyone, in music, in public, week after week.</p>
+      <p class="note">One honest note: today Respect only accumulates. It does not decay. Whether it should, so that standing tracks recent contribution and not just tenure, is an open question the community will decide. The math and the contracts live in the companion Technical Whitepaper. This document keeps it simple on purpose.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">05 - The lanes</span>
+      <h2>What the network builds</h2>
+      <p>Governance is the engine. The point of the engine is what it produces. Work in The ZAO grows in lanes, and a member can plug into any of them.</p>
+      <div class="lane"><span class="tag">Music</span><p>The original lane, and the clearest proof the mission works. WaveWarZ is a music prediction market on Solana where artists battle and fans trade on the outcome. The artist is paid instantly, and roughly ninety-eight cents of every dollar traded stays in the ecosystem rather than going to a middleman. That is the whole thesis running as a real product.</p></div>
+      <div class="lane"><span class="tag">Builders</span><p>ZABAL Gamez is a three-month build-a-thon where a member who ships one small thing is a real contributor. It runs on the lab: an open-source monorepo where new ZAO tools get prototyped in public. The bar is one small, shippable move, not a big build.</p></div>
+      <div class="lane"><span class="tag">Events and festivals</span><p>The network becomes real in a room. The ZAO has produced festivals from NYC to Miami to Denver, and ZAO Stock is the annual gathering, beginning this year. This is where online contribution turns into people standing next to each other.</p></div>
+      <div class="lane"><span class="tag">Tools and agents</span><p>ZAO OS is the open-source social client the whole network runs on. The agent stack, ZOE and ZOL and the rest, is the leverage layer: open tools that give one member the reach of a team.</p></div>
+      <p style="margin-top:1.5rem">New lanes emerge when members start them. That is the impact network cultivating itself: the best things here were started by members, not planned from the top.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">06 - The agentic future</span>
+      <h2>Open-source, blockchain, agents, and how you align</h2>
+      <p>Returning everything to the artist was not possible before now. It takes three things working together, and The ZAO is built on all three.</p>
+      <ul class="gates">
+        <li><b>Open-source tooling</b><span>The shared resources, free for anyone to use and improve.</span></li>
+        <li><b>Blockchain</b><span>Provable ownership and a way for value to flow directly to the person who earned it, with no middleman.</span></li>
+        <li><b>Agents</b><span>AI that gives one human the leverage of a whole team, so a solo artist can do what used to need a label or a studio.</span></li>
+      </ul>
+      <p>A word on the agents, because we are clear about this: <strong>agents are not members.</strong> They cannot earn Respect. Only humans can. Agents are the resources and the distribution. They serve the network. They do not govern it.</p>
+      <p>This is the deepest thing we believe. Everyone has one gift the world needs. Given the right resources, it can be brought out in every human. Open-source, the blockchain, and agents are how we put those resources in people's hands.</p>
+      <h3>How you plug in</h3>
+      <p>You show up. You contribute what you can, time, energy, or capital. You ship one small thing. You earn Respect for it. And you sign the manifesto, which is how you formally join. From there, you pick a lane and build.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <span class="num">07 - The honest part</span>
+      <h2>What is hard about this</h2>
+      <p>A document that only tells you what works is not worth trusting. Here is what is genuinely hard, and where we actually are.</p>
+      <div class="faq"><p class="q">It runs on donation.</p><p class="a">The ZAO is sustained by donated time, energy, and capital. Right now the founder carries most of the capital. Self-sustaining, through tools, events, grants, and partners, is the goal, not today's reality. We say that plainly.</p></div>
+      <div class="faq"><p class="q">Weekly participation is demanding.</p><p class="a">Governance that meets every week asks a lot. Our year-plus of unbroken weeks is real evidence it can last, but sustained participation is the central risk of the model, not a solved problem.</p></div>
+      <div class="faq"><p class="q">The active core is small, and scaling is unproven.</p><p class="a">A small group drives much of the on-chain governance today. We have proven one network, run for over a year. Whether it scales to many nested networks is the open question, and we frame it as one.</p></div>
+      <div class="faq"><p class="q">Why so small, and why gated?</p><p class="a">Depth over breadth. A real culture is set by a small core and opened carefully, by referral. We would rather have a few hundred people who show up than a million who do not.</p></div>
+      <div class="faq"><p class="q">What if the founder leaves?</p><p class="a">The code is open source, the research is public, governance is distributed, and standing is earned, not appointed. The network is built to outlive any one person, the founder included.</p></div>
+      <div class="faq"><p class="q">Why tokens you cannot sell?</p><p class="a">Because the moment reputation can be bought, it stops measuring contribution. Soulbound Respect is the entire point: it keeps money out of governance.</p></div>
+      <p style="margin-top:1.6rem">None of this is a reason to look away. It is the reason to trust the rest.</p>
+    </div>
+  </section>
+
+  <section class="closer">
+    <div class="wrap">
+      <span class="num" style="text-align:center">08 - Why this matters</span>
+      <p class="big">Not new governance technology. A new governance culture.</p>
+      <p>Proof that a community can put money and power where the work is, keep it up for years, and use it to give creators back what is theirs. We are not asking you to believe a promise. We are showing you a practice, in the open, and inviting you to join it.</p>
+      <p style="color:var(--accent); font-family:var(--sans); font-weight:700; font-size:1.3rem; margin-top:1.5rem">Come build the difference.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="manifesto">
+        <p class="kicker">The Manifesto - the part you sign</p>
+        <h2 style="margin-bottom:0.6rem">Five commitments</h2>
+        <p style="color:var(--ink-soft); font-size:1.02rem">Signing means minting an on-chain hat: proof you are aligned, and how you become a member. The mission and this creed are permanent.</p>
+        <ol class="creed">
+          <li><b>I contribute.</b><span>Time, energy, or capital. Everyone brings something.</span></li>
+          <li><b>I build in the open.</b><span>I share my work and help others build.</span></li>
+          <li><b>I honor creator ownership.</b><span>Creators own their profit, data, and IP. I take no one's cut.</span></li>
+          <li><b>I govern by contribution.</b><span>My standing comes from what I contribute, not what I hold, and I show up.</span></li>
+          <li><b>I believe in the gift.</b><span>Everyone has one gift the world needs, and given the right resources, we can bring it out in every human.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p><b>Companion documents.</b> The Technical Whitepaper (the mechanism, the math, the contracts) and the Manifesto (the signable creed). All three are living, versioned, and published on-chain. The mission and the creed are permanent. Every other part evolves by the community, in the open, with a logged history.</p>
+      <p class="draft-flag" style="margin-top:1.4rem">Working draft v0.1 - not yet ratified - some figures pending final verification</p>
+    </div>
+  </footer>
+</main>
+</body>
+</html>
