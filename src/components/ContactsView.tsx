@@ -9,6 +9,7 @@ type SortField = "name" | "company" | "category" | "priority" | "whereMet" | "or
 type SortOrder = "asc" | "desc";
 
 const CATEGORIES: CategoryFilter[] = ["All", "Music", "Tech", "Other"];
+const ITEMS_PER_PAGE = 50;
 const TABLE_COLUMNS: Array<{ key: SortField; label: string }> = [
   { key: "name", label: "Name" },
   { key: "company", label: "Company" },
@@ -325,6 +326,8 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showColumnPicker, setShowColumnPicker] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const whereMetOptions = useMemo(() => {
     const opts = new Set<string>();
@@ -354,6 +357,30 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
 
     return result;
   }, [contacts, search, categoryFilter, priorityFilter, whereMetFilter, haseBio, hasHowHelp, sortField, sortOrder]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [search, categoryFilter, priorityFilter, whereMetFilter, haseBio, hasHowHelp]);
+
+  const paginatedContacts = useMemo(() => {
+    const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filtered.slice(startIdx, startIdx + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
+  // Calculate active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (search) count++;
+    if (categoryFilter !== "All") count++;
+    if (priorityFilter !== "all") count++;
+    if (whereMetFilter) count++;
+    if (haseBio) count++;
+    if (hasHowHelp) count++;
+    return count;
+  }, [search, categoryFilter, priorityFilter, whereMetFilter, haseBio, hasHowHelp]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -428,55 +455,207 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
     URL.revokeObjectURL(url);
   };
 
+  const clearAllFilters = () => {
+    setSearch("");
+    setCategoryFilter("All");
+    setPriorityFilter("all");
+    setWhereMetFilter("");
+    setHasBio(false);
+    setHasHowHelp(false);
+    setShowFilters(false);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Controls header */}
-      <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setViewMode("table")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-              viewMode === "table"
-                ? "bg-blue-500/30 text-blue-200 border border-blue-400/50"
-                : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            Table
-          </button>
-          <button
-            onClick={() => setViewMode("cards")}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-              viewMode === "cards"
-                ? "bg-blue-500/30 text-blue-200 border border-blue-400/50"
-                : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            Cards
-          </button>
-        </div>
-        <div className="flex gap-2">
-          {viewMode === "table" && (
+      {/* Search and view mode top bar */}
+      <div className="space-y-3">
+        <input
+          type="text"
+          placeholder="Search contacts by name, superhero, company, or bio..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full px-3.5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent transition"
+        />
+
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+          <div className="flex gap-2">
             <button
-              onClick={() => setShowColumnPicker(!showColumnPicker)}
-              className="px-3 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition"
+              onClick={() => setViewMode("table")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                viewMode === "table"
+                  ? "bg-blue-500/30 text-blue-200 border border-blue-400/50"
+                  : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+              }`}
             >
-              Columns
+              Table
             </button>
-          )}
-          <button
-            onClick={exportToCSV}
-            className="px-3 py-2 rounded-lg text-sm font-medium bg-green-500/30 text-green-200 border border-green-400/50 hover:bg-green-500/40 transition"
-          >
-            Export CSV
-          </button>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-3 py-2 rounded-lg text-sm font-medium bg-blue-500/30 text-blue-200 border border-blue-400/50 hover:bg-blue-500/40 transition"
-          >
-            Add Contact
-          </button>
+            <button
+              onClick={() => setViewMode("cards")}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
+                viewMode === "cards"
+                  ? "bg-blue-500/30 text-blue-200 border border-blue-400/50"
+                  : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              Cards
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition relative ${
+                showFilters
+                  ? "bg-purple-500/30 text-purple-200 border border-purple-400/50"
+                  : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              Filters
+              {activeFiltersCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold rounded-full bg-purple-400/50 text-white">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
+            {viewMode === "table" && (
+              <button
+                onClick={() => setShowColumnPicker(!showColumnPicker)}
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition"
+              >
+                Columns
+              </button>
+            )}
+            <button
+              onClick={exportToCSV}
+              className="px-3 py-2 rounded-lg text-sm font-medium bg-green-500/30 text-green-200 border border-green-400/50 hover:bg-green-500/40 transition"
+            >
+              Export CSV
+            </button>
+            <button
+              onClick={() => setShowAddForm(true)}
+              className="px-3 py-2 rounded-lg text-sm font-medium bg-blue-500/30 text-blue-200 border border-blue-400/50 hover:bg-blue-500/40 transition"
+            >
+              Add Contact
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Collapsible filters panel */}
+      {showFilters && (
+        <div className="p-4 rounded-lg border border-white/10 bg-white/5 space-y-4">
+          {/* Category filter chips */}
+          <div className="space-y-2">
+            <p className="text-xs text-white/50 font-medium uppercase tracking-wide">Category</p>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setCategoryFilter(cat)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                    categoryFilter === cat
+                      ? "bg-blue-500/30 text-blue-200 border border-blue-400/50"
+                      : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Priority filter chips */}
+          <div className="space-y-2">
+            <p className="text-xs text-white/50 font-medium uppercase tracking-wide">Priority</p>
+            <div className="flex flex-wrap gap-2">
+              {["all", "high", "medium", "low"].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPriorityFilter(p as "all" | "high" | "medium" | "low")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition capitalize ${
+                    priorityFilter === p
+                      ? "bg-amber-500/30 text-amber-200 border border-amber-400/50"
+                      : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  {p === "all" ? "All Priorities" : `${p.charAt(0).toUpperCase() + p.slice(1)} Priority`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Where Met filter */}
+          {whereMetOptions.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs text-white/50 font-medium uppercase tracking-wide">Where Met</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setWhereMetFilter("")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                    whereMetFilter === ""
+                      ? "bg-purple-500/30 text-purple-200 border border-purple-400/50"
+                      : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                  }`}
+                >
+                  All
+                </button>
+                {whereMetOptions.map((val) => (
+                  <button
+                    key={val}
+                    onClick={() => setWhereMetFilter(whereMetFilter === val ? "" : val)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                      whereMetFilter === val
+                        ? "bg-purple-500/30 text-purple-200 border border-purple-400/50"
+                        : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {val}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Toggle filters */}
+          <div className="space-y-2">
+            <p className="text-xs text-white/50 font-medium uppercase tracking-wide">Toggles</p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setHasBio(!haseBio)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  haseBio
+                    ? "bg-teal-500/30 text-teal-200 border border-teal-400/50"
+                    : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                Has Bio
+              </button>
+              <button
+                onClick={() => setHasHowHelp(!hasHowHelp)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                  hasHowHelp
+                    ? "bg-teal-500/30 text-teal-200 border border-teal-400/50"
+                    : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+                }`}
+              >
+                Has How Help
+              </button>
+            </div>
+          </div>
+
+          {/* Clear all filters button */}
+          {activeFiltersCount > 0 && (
+            <div className="pt-2 border-t border-white/10">
+              <button
+                onClick={clearAllFilters}
+                className="text-sm text-white/60 hover:text-white/80 transition font-medium"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Column picker */}
       {showColumnPicker && (
@@ -500,123 +679,9 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
         </div>
       )}
 
-      {/* Search box */}
-      <input
-        type="text"
-        placeholder="Search contacts by name, superhero, company, or bio..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full px-3.5 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-transparent transition"
-      />
-
-      {/* Category filter chips */}
-      <div className="flex flex-wrap gap-2">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategoryFilter(cat)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              categoryFilter === cat
-                ? "bg-blue-500/30 text-blue-200 border border-blue-400/50"
-                : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Priority filter chips */}
-      <div className="flex flex-wrap gap-2">
-        {["all", "high", "medium", "low"].map((p) => (
-          <button
-            key={p}
-            onClick={() => setPriorityFilter(p as "all" | "high" | "medium" | "low")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition capitalize ${
-              priorityFilter === p
-                ? "bg-amber-500/30 text-amber-200 border border-amber-400/50"
-                : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            {p === "all" ? "All Priorities" : `${p.charAt(0).toUpperCase() + p.slice(1)} Priority`}
-          </button>
-        ))}
-      </div>
-
-      {/* Where Met filter */}
-      {whereMetOptions.length > 0 && (
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-xs text-white/50">Where Met:</span>
-          <button
-            onClick={() => setWhereMetFilter("")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-              whereMetFilter === ""
-                ? "bg-purple-500/30 text-purple-200 border border-purple-400/50"
-                : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-            }`}
-          >
-            All
-          </button>
-          {whereMetOptions.map((val) => (
-            <button
-              key={val}
-              onClick={() => setWhereMetFilter(whereMetFilter === val ? "" : val)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                whereMetFilter === val
-                  ? "bg-purple-500/30 text-purple-200 border border-purple-400/50"
-                  : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-              }`}
-            >
-              {val}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Toggle filters */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setHasBio(!haseBio)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-            haseBio
-              ? "bg-teal-500/30 text-teal-200 border border-teal-400/50"
-              : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-          }`}
-        >
-          Has Bio
-        </button>
-        <button
-          onClick={() => setHasHowHelp(!hasHowHelp)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-            hasHowHelp
-              ? "bg-teal-500/30 text-teal-200 border border-teal-400/50"
-              : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
-          }`}
-        >
-          Has How Help
-        </button>
-      </div>
-
-      {/* Clear filters */}
-      {(search || categoryFilter !== "All" || priorityFilter !== "all" || whereMetFilter || haseBio || hasHowHelp) && (
-        <button
-          onClick={() => {
-            setSearch("");
-            setCategoryFilter("All");
-            setPriorityFilter("all");
-            setWhereMetFilter("");
-            setHasBio(false);
-            setHasHowHelp(false);
-          }}
-          className="text-sm text-white/50 hover:text-white/70 transition"
-        >
-          Clear all filters
-        </button>
-      )}
-
       {/* Result count */}
       <div className="text-sm text-white/50">
-        {filtered.length} of {contacts.length} contacts
+        Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length} contacts
       </div>
 
       {/* Table view */}
@@ -644,7 +709,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
+              {paginatedContacts.map((c) => (
                 <tr
                   key={c.id}
                   className="border-b border-white/10 hover:bg-white/5 transition cursor-pointer"
@@ -688,7 +753,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
       {/* Card view */}
       {viewMode === "cards" && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((c) => (
+          {paginatedContacts.map((c) => (
             <div
               key={c.id}
               className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-3 hover:bg-white/[0.08] transition cursor-pointer"
@@ -721,34 +786,34 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
                 )}
               </div>
 
-              {c.whereMet && (
-                <div>
-                  <p className="text-xs text-white/40 font-medium">Where met</p>
-                  <p className="text-sm text-white/70">{c.whereMet}</p>
-                </div>
-              )}
-
-              {c.bio && (
-                <div>
-                  <p className="text-xs text-white/40 font-medium">Bio</p>
-                  <p className="text-sm text-white/70 line-clamp-3">{c.bio}</p>
-                </div>
-              )}
-
-              {c.howHelpZao && (
-                <div>
-                  <p className="text-xs text-white/40 font-medium">Can help ZAO</p>
-                  <p className="text-sm text-white/70 line-clamp-3">{c.howHelpZao}</p>
-                </div>
-              )}
+              {c.bio && <p className="text-xs text-white/60 line-clamp-2">{c.bio}</p>}
             </div>
           ))}
         </div>
       )}
 
-      {filtered.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-white/50">No contacts match your filters.</p>
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-4 pt-4">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Previous
+          </button>
+
+          <div className="text-sm text-white/60">
+            Page {currentPage} of {totalPages}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Next
+          </button>
         </div>
       )}
 
@@ -759,6 +824,30 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
           onClose={() => setSelectedContact(null)}
           onUpdate={handleUpdate}
         />
+      )}
+
+      {/* Add form modal - placeholder */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zao-navy rounded-lg border border-white/10 p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-[#f5a623]">Add Contact</h2>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="text-white/60 hover:text-white text-2xl font-light"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-white/60 text-sm mb-4">Add contact form will be implemented here</p>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="w-full px-4 py-2 rounded-lg bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
