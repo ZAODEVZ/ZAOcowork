@@ -15,6 +15,7 @@
 <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <title>The ZAO - Technical Whitepaper</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Technical Whitepaper","description":"Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/technical","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-02","inLanguage":"en-US"}</script>
 <style>
   :root {
     --ground: #141e27;
@@ -237,10 +238,37 @@
   a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 
   .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
 </style>
 
 </head>
 <body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar">
+  <a href="/papers" class="home">Back to Papers</a>
+  <div class="arrows">
+    <a href="/paper" title="Previous: Main Whitepaper">Previous</a>
+    <a href="/papers/manifesto" title="Next: Manifesto">Next</a>
+  </div>
+</div>
 <header class="hero">
   <div class="wrap">
     <p class="eyebrow">Technical Whitepaper - Working Draft v0.1</p>
@@ -914,7 +942,24 @@ Leaderboard Update
     </div>
   </footer>
 </main>
-{TAG}
 <script src="/papers/quote.js"></script>
+<script>
+(function() {
+  var bar = document.getElementById('readProgress');
+  if (!bar) return;
+  function updateProgress() {
+    var h = document.documentElement;
+    var b = document.body;
+    var pos = window.scrollY || window.pageYOffset;
+    var height = Math.max(b.scrollHeight, h.scrollHeight, b.offsetHeight, h.offsetHeight, b.clientHeight, h.clientHeight) - window.innerHeight;
+    var pct = height > 0 ? (pos / height) * 100 : 0;
+    bar.style.setProperty('--progress', pct + '%');
+    bar.style.opacity = pct > 0 && pct < 100 ? '1' : '0';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress, { passive: true });
+  updateProgress();
+})();
+</script>
 </body>
 </html>
