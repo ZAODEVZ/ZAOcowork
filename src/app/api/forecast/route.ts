@@ -10,10 +10,19 @@ import { requireSession } from "@/lib/auth";
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  await requireSession();
+  try {
+    await requireSession();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
   const url = new URL(req.url);
   const brandParam = url.searchParams.get("brand");
   const brand = brandParam && brandParam.trim() ? brandParam.trim() : null;
-  const result = await computeForecast(brand);
-  return NextResponse.json({ ok: true, ...result });
+  try {
+    const result = await computeForecast(brand);
+    return NextResponse.json({ ok: true, ...result });
+  } catch (err) {
+    console.error("Forecast computation failed:", err);
+    return NextResponse.json({ ok: false, error: "Forecast computation failed" }, { status: 500 });
+  }
 }

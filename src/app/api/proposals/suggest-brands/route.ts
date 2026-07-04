@@ -18,14 +18,26 @@ import { createProposal } from "@/lib/proposals";
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  await requireSession();
+  try {
+    await requireSession();
+  } catch {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
   const url = new URL(req.url);
   const taskId = url.searchParams.get("taskId");
   if (!taskId) {
     return NextResponse.json({ ok: false, error: "taskId required" }, { status: 400 });
   }
 
-  const [doc, brands] = await Promise.all([getActions(), listBrands()]);
+  let doc;
+  let brands;
+  try {
+    [doc, brands] = await Promise.all([getActions(), listBrands()]);
+  } catch (err) {
+    console.error("Failed to load actions or brands:", err);
+    return NextResponse.json({ ok: false, error: "Failed to load data" }, { status: 500 });
+  }
+
   const task = doc.items.find((it) => it.id === taskId);
   if (!task) {
     return NextResponse.json({ ok: false, error: `task #${taskId} not found` }, { status: 404 });
@@ -56,14 +68,23 @@ export async function POST(req: NextRequest) {
   // Combine current + suggested, dedupe.
   const proposedBrands = Array.from(new Set([...(task.brands ?? []), ...matched]));
 
-  const created = await createProposal({
-    task_id: taskId,
-    action_type: "set_brands",
-    payload: { brands: proposedBrands, suggested: matched },
-    source: "rule:brand-slug-match",
-    confidence: 0.75,
-    rationale: `Matched slugs in task title/notes: ${matched.join(", ")}`,
-  });
+  let created;
+  try {
+    created = await createProposal({
+      task_id: taskId,
+      action_type: "set_brands",
+      payload: { brands: proposedBrands, suggested: matched },
+      source: "rule:brand-slug-match",
+      confidence: 0.75,
+      rationale: `Matched slugs in task title/notes: ${matched.join(", ")}`,
+    });
+  } catch (err) {
+    console.error("Failed to create proposal:", err);
+    return NextResponse.json({
+      ok: false,
+      error: "Failed to create proposal",
+    }, { status: 500 });
+  }
 
   if (!created) {
     return NextResponse.json({
