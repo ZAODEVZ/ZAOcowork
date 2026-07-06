@@ -63,6 +63,8 @@ export function NavBar({
   const onMeetings = pathname === "/meetings";
   const onCrm = pathname === "/crm";
   const onSettings = pathname === "/settings";
+  const onSummary = pathname === "/summary";
+  const onAgentic = pathname === "/agentic-todos";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
 
@@ -124,6 +126,8 @@ export function NavBar({
               chat: onChat,
               admin: onAdmin,
               settings: onSettings,
+              summary: onSummary,
+              agentic: onAgentic,
             }}
           />
         </div>
@@ -200,7 +204,7 @@ function NavMenu({
   active,
 }: {
   showAdmin: boolean;
-  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean };
+  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; activity: boolean; chat: boolean; admin: boolean; settings: boolean; summary: boolean; agentic: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -246,7 +250,9 @@ function NavMenu({
     active.mine || active.calendar || active.meetings || active.crm || active.activity || active.chat || active.admin || active.settings;
 
   const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean }> = [
+    { href: "/summary", label: "Summary", icon: "", active: active.summary },
     { href: "/my-work", label: "My Work", icon: "🙋", active: active.mine },
+    { href: "/agentic-todos", label: "Agentic Todos", icon: "", active: active.agentic },
     { href: "/calendar", label: "Calendar", icon: "📅", active: active.calendar },
     { href: "/meetings", label: "Meetings", icon: "🗓️", active: active.meetings },
     { href: "/activity", label: "Activity", icon: "📰", active: active.activity, badge: true },
