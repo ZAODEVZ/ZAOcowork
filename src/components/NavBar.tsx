@@ -255,7 +255,7 @@ function NavMenu({
     { href: "/agentic-todos", label: "Agentic Todos", icon: "", active: active.agentic },
     { href: "/calendar", label: "Calendar", icon: "📅", active: active.calendar },
     { href: "/meetings", label: "Meetings", icon: "🗓️", active: active.meetings },
-    { href: "/activity", label: "Activity", icon: "📰", active: active.activity, badge: true },
+    { href: "/activity", label: "Activity / Notifications", icon: "📰", active: active.activity, badge: true },
     { href: "/chat", label: "Assistant", icon: "🤖", active: active.chat },
     { href: "/crm", label: "CRM", icon: "👥", active: active.crm },
     ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
