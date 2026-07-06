@@ -31,7 +31,9 @@
     var rect = sel.getRangeAt(0).getBoundingClientRect();
     var top = rect.bottom + window.scrollY + 8;
     var left = rect.left + window.scrollX + Math.max(0, (rect.width / 2) - 80);
-    left = Math.min(left, window.scrollX + document.documentElement.clientWidth - 190);
+    var btnWidth = 160; // approximate: "Quote on Farcaster" + padding
+    var viewport = window.scrollX + document.documentElement.clientWidth;
+    left = Math.min(left, viewport - btnWidth - 8);
     btn.style.top = top + "px";
     btn.style.left = Math.max(8, left) + "px";
     btn.style.display = "block";
