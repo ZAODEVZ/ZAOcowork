@@ -353,11 +353,10 @@ const loadBoard = cache(async (): Promise<ActionItem[]> => {
     const { data, error } = await db()
       .from("tasks")
       .select(TASK_COLUMNS)
-      // The zaal-personal project is a private, agent-captured list surfaced
-      // only on /agentic-todos (its own reader + inline context capture). Keep
-      // it off the shared board / my-work / activity. getItem() has no such
-      // filter, so /todo/[id] and the addComment action still reach these rows.
-      .neq("project", "zaal-personal")
+      // The board is private to the cowork team roster (team_members login), so
+      // Zaal's personal (project=zaal-personal) items are folded into the shared
+      // board + my-work rather than a separate /agentic-todos surface. They open
+      // in the regular TaskRoom like any other task.
       .order("id", { ascending: true })
       .range(offset, offset + PAGE - 1);
     if (error) throw new Error(`tasks read failed: ${error.message}`);
