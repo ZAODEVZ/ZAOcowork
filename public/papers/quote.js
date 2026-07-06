@@ -43,6 +43,12 @@
       if (sel && sel.rangeCount && !sel.isCollapsed) showFor(sel); else hide();
     }, 10);
   });
+  document.addEventListener("touchend", function () {
+    setTimeout(function () {
+      var sel = window.getSelection();
+      if (sel && sel.rangeCount && !sel.isCollapsed) showFor(sel); else hide();
+    }, 10);
+  });
   document.addEventListener("selectionchange", function () {
     var sel = window.getSelection();
     if (!sel || sel.isCollapsed) hide();

@@ -1,0 +1,98 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-07-02",
+  "papers": [
+    {
+      "id": "whitepaper",
+      "title": "The ZAO Whitepaper",
+      "url": "https://thezao.xyz/paper",
+      "summary": "What The ZAO is, how the Fractal governs, the four lanes it builds, and the open-source agentic future. The vision in plain words.",
+      "description": "A decentralized impact network returning profit, data, and IP to independent artists. This document explains the mission, governance model, and the four core lanes of development.",
+      "version": "0.1",
+      "status": "draft",
+      "sections": [
+        {
+          "id": "section-01",
+          "title": "What The ZAO is"
+        },
+        {
+          "id": "section-02",
+          "title": "What we are against"
+        },
+        {
+          "id": "section-03",
+          "title": "An impact network"
+        },
+        {
+          "id": "section-04",
+          "title": "The Fractal"
+        },
+        {
+          "id": "section-05",
+          "title": "The lanes"
+        },
+        {
+          "id": "section-06",
+          "title": "The agentic future"
+        },
+        {
+          "id": "section-07",
+          "title": "The honest part"
+        },
+        {
+          "id": "section-08",
+          "title": "Why this matters"
+        }
+      ]
+    },
+    {
+      "id": "technical",
+      "title": "The ZAO Technical Whitepaper",
+      "url": "https://thezao.xyz/papers/technical",
+      "summary": "The mechanism: Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal. The proof under the vision.",
+      "description": "Technical specification of Respect governance, on-chain architecture, and monetary policy for the Fractal democracy.",
+      "version": "0.1",
+      "status": "draft"
+    },
+    {
+      "id": "manifesto",
+      "title": "The ZAO Manifesto",
+      "url": "https://thezao.xyz/papers/manifesto",
+      "summary": "The short signable creed. Five commitments. Signing it (an on-chain hat) is how you become a member.",
+      "description": "Five commitments that define membership in The ZAO: I Contribute, I Build in the Open, I Honor Creator Ownership, I Govern by Contribution, I Believe in the Gift.",
+      "version": "1.0",
+      "status": "permanent",
+      "sections": [
+        {
+          "id": "commitment-1",
+          "title": "I Contribute"
+        },
+        {
+          "id": "commitment-2",
+          "title": "I Build in the Open"
+        },
+        {
+          "id": "commitment-3",
+          "title": "I Honor Creator Ownership"
+        },
+        {
+          "id": "commitment-4",
+          "title": "I Govern by Contribution"
+        },
+        {
+          "id": "commitment-5",
+          "title": "I Believe in the Gift"
+        }
+      ]
+    },
+    {
+      "id": "wavewarz",
+      "title": "The WaveWarZ Whitepaper",
+      "url": "https://thezao.xyz/papers/wavewarz",
+      "summary": "WaveWarZ is the flagship music prediction market where artists are paid instantly and the value stays in the ecosystem.",
+      "description": "A music prediction market on Solana where artists battle and fans trade on the outcome. Nearly 98 cents of every dollar traded stays in the ecosystem.",
+      "version": "0.0",
+      "status": "in-progress"
+    }
+  ]
+}

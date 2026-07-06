@@ -15,6 +15,7 @@
 <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/paper","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/paper","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <title>The ZAO - Whitepaper</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Whitepaper","description":"What The ZAO is, how the Fractal governs, the four lanes it builds, and the open-source agentic future.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/paper","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-02","inLanguage":"en-US"}</script>
 <style>
   :root {
     --ground: #141e27;
@@ -58,11 +59,11 @@
     background: var(--ground);
     color: var(--ink);
     font-family: var(--serif);
-    font-size: 1.125rem;
+    font-size: clamp(1rem, 2vw, 1.125rem);
     line-height: 1.7;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 clamp(1rem, 4vw, 1.5rem); }
 
   /* Hero */
   .hero {
@@ -212,10 +213,43 @@
   a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 
   .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  .toc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.5rem; margin: 2rem 0; font-family: var(--sans); }
+  .toc h4 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); margin: 0 0 1rem; font-weight: 600; }
+  .toc ul { list-style: none; padding: 0; margin: 0; }
+  .toc li { margin: 0.5rem 0; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 0.95rem; display: block; padding: 0.3rem 0; }
+  .toc a:hover { text-decoration: underline; }
+  .toc li.sub { margin-left: 1rem; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+    .toc { padding: 1rem; margin: 1.5rem 0; }
+  }
 </style>
 
 </head>
 <body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar">
+  <a href="/papers" class="home">Back to Papers</a>
+  <div class="arrows">
+    <a href="/papers" title="Papers home">Home</a>
+    <a href="/papers/technical" title="Next: Technical Whitepaper">Next</a>
+  </div>
+</div>
 <header class="hero">
   <div class="wrap">
     <p class="eyebrow">Whitepaper - Working Draft v0.1</p>
@@ -229,8 +263,28 @@
   </div>
 </header>
 
+<!-- Next step: Add public/farcaster.json manifest for Farcaster account association signature. This requires the account owner (Zaal) to sign with their Farcaster account to prove ownership of the papers collection. See: https://docs.farcaster.xyz/reference/schemas/frames/casting-action -->
+
+<div style="padding: clamp(2rem, 6vh, 3.5rem) 0; border-bottom: 1px solid var(--line);">
+  <div class="wrap">
+    <div class="toc">
+      <h4>Contents</h4>
+      <ul>
+        <li><a href="#section-01">What The ZAO is</a></li>
+        <li><a href="#section-02">What we are against</a></li>
+        <li><a href="#section-03">An impact network</a></li>
+        <li><a href="#section-04">The Fractal</a></li>
+        <li><a href="#section-05">The lanes</a></li>
+        <li><a href="#section-06">The agentic future</a></li>
+        <li><a href="#section-07">The honest part</a></li>
+        <li><a href="#section-08">Why this matters</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 <main>
-  <section>
+  <section id="section-01">
     <div class="wrap">
       <span class="num">01 - What The ZAO is</span>
       <p class="lead">The ZAO is a decentralized impact network for musicians, builders, and creators. We exist for one reason: to bring the profit, the data, and the ownership of creative work back to the people who make it. Not a slice of it. As close to all of it as we can get, with no fees taken from what an artist earns.</p>
@@ -239,7 +293,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="section-02">
     <div class="wrap">
       <span class="num">02 - What we are against</span>
       <h2>We are against gatekeeping. Not one kind of it. Four.</h2>
@@ -257,7 +311,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="section-03">
     <div class="wrap">
       <span class="num">03 - An impact network</span>
       <h2>We did not invent a new machine. We are cultivating a network.</h2>
@@ -275,7 +329,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="section-04">
     <div class="wrap">
       <span class="num">04 - The Fractal</span>
       <h2>How The ZAO governs itself</h2>
@@ -287,7 +341,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="section-05">
     <div class="wrap">
       <span class="num">05 - The lanes</span>
       <h2>What the network builds</h2>
@@ -300,7 +354,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="section-06">
     <div class="wrap">
       <span class="num">06 - The agentic future</span>
       <h2>Open-source, blockchain, agents, and how you align</h2>
@@ -317,7 +371,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="section-07">
     <div class="wrap">
       <span class="num">07 - The honest part</span>
       <h2>What is hard about this</h2>
@@ -332,7 +386,7 @@
     </div>
   </section>
 
-  <section class="closer">
+  <section class="closer" id="section-08">
     <div class="wrap">
       <span class="num" style="text-align:center">08 - Why this matters</span>
       <p class="big">Not new governance technology. A new governance culture.</p>
@@ -365,7 +419,24 @@
     </div>
   </footer>
 </main>
-{TAG}
 <script src="/papers/quote.js"></script>
+<script>
+(function() {
+  var bar = document.getElementById('readProgress');
+  if (!bar) return;
+  function updateProgress() {
+    var h = document.documentElement;
+    var b = document.body;
+    var pos = window.scrollY || window.pageYOffset;
+    var height = Math.max(b.scrollHeight, h.scrollHeight, b.offsetHeight, h.offsetHeight, b.clientHeight, h.clientHeight) - window.innerHeight;
+    var pct = height > 0 ? (pos / height) * 100 : 0;
+    bar.style.setProperty('--progress', pct + '%');
+    bar.style.opacity = pct > 0 && pct < 100 ? '1' : '0';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress, { passive: true });
+  updateProgress();
+})();
+</script>
 </body>
 </html>

@@ -29,12 +29,12 @@
   :root[data-theme="dark"]{--ground:#141e27;--surface:#1b2732;--ink:#e8e4c4;--ink-soft:rgba(232,228,196,0.70);--ink-faint:rgba(232,228,196,0.45);--accent:#f5a623;--line:rgba(232,228,196,0.14);}
   :root[data-theme="light"]{--ground:#f3efe2;--surface:#faf7ec;--ink:#1a2530;--ink-soft:rgba(26,37,48,0.72);--ink-faint:rgba(26,37,48,0.45);--accent:#b06f13;--line:rgba(26,37,48,0.13);}
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--serif); font-size:1.125rem; line-height:1.7; -webkit-font-smoothing:antialiased; }
-  .wrap { max-width: 46rem; margin:0 auto; padding:0 1.5rem; }
-  header.hero { border-bottom:1px solid var(--line); padding: clamp(3.5rem,12vh,6rem) 0 clamp(2rem,6vh,3rem); }
-  .eyebrow { font-family:var(--sans); font-size:0.72rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 1.2rem; }
-  h1 { font-family:var(--sans); font-weight:800; letter-spacing:-0.03em; font-size:clamp(3rem,11vw,5rem); line-height:0.95; margin:0 0 1.2rem; }
-  .lede { font-size:clamp(1.2rem,3vw,1.5rem); line-height:1.4; max-width:34rem; margin:0; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--serif); font-size:clamp(1rem,2vw,1.125rem); line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width: 46rem; margin:0 auto; padding:0 clamp(1rem,4vw,1.5rem); }
+  header.hero { border-bottom:1px solid var(--line); padding: clamp(2.5rem,10vh,6rem) 0 clamp(1.5rem,5vh,3rem); }
+  .eyebrow { font-family:var(--sans); font-size:clamp(0.65rem,1.5vw,0.72rem); letter-spacing:0.22em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 1.2rem; }
+  h1 { font-family:var(--sans); font-weight:800; letter-spacing:-0.03em; font-size:clamp(2.2rem,10vw,5rem); line-height:0.95; margin:0 0 1.2rem; }
+  .lede { font-size:clamp(1.1rem,2.8vw,1.5rem); line-height:1.4; max-width:34rem; margin:0; }
   .lede b { color:var(--accent); font-weight:600; }
   main { padding: clamp(2rem,6vh,3.5rem) 0 4rem; }
   .papers { list-style:none; padding:0; margin:0; display:grid; gap:1.1rem; }
@@ -52,7 +52,12 @@
   .note { font-family:var(--sans); font-size:0.9rem; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:1rem 1.2rem; margin:1.6rem 0 0; }
   footer { padding:2.5rem 0 4rem; font-family:var(--sans); font-size:0.82rem; color:var(--ink-faint); }
   footer a { color:var(--accent); text-decoration:none; }
+  .read-progress { position:fixed; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform:scaleX(var(--progress, 0)); transform-origin:left; transition:opacity 0.2s ease-out; z-index:9998; pointer-events:none; opacity:0; }
+  @media (max-width:640px) { .paper h2 { font-size:1.2rem; } }
 </style>
+
+<body>
+<div class="read-progress" id="readProgress"></div>
 
 <header class="hero">
   <div class="wrap">
@@ -112,3 +117,23 @@
   </footer>
 </main>
 <script src="/papers/quote.js"></script>
+<script>
+(function() {
+  var bar = document.getElementById('readProgress');
+  if (!bar) return;
+  function updateProgress() {
+    var h = document.documentElement;
+    var b = document.body;
+    var pos = window.scrollY || window.pageYOffset;
+    var height = Math.max(b.scrollHeight, h.scrollHeight, b.offsetHeight, h.offsetHeight, b.clientHeight, h.clientHeight) - window.innerHeight;
+    var pct = height > 0 ? (pos / height) * 100 : 0;
+    bar.style.setProperty('--progress', pct + '%');
+    bar.style.opacity = pct > 0 && pct < 100 ? '1' : '0';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress, { passive: true });
+  updateProgress();
+})();
+</script>
+</body>
+</html>

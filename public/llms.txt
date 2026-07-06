@@ -1,0 +1,62 @@
+The ZAO Papers - Index
+
+The ZAO publishes four core papers that document the mission, governance model, technical architecture, and member creed.
+
+PAPER 1: The ZAO Whitepaper
+URL: https://thezao.xyz/paper
+Status: Working Draft v0.1
+Summary: What The ZAO is, how the Fractal governs, the four lanes it builds, and the open-source agentic future. The vision in plain words.
+
+Sections:
+- What The ZAO is
+- What we are against
+- An impact network
+- The Fractal
+- The lanes
+- The agentic future
+- The honest part
+- Why this matters
+
+PAPER 2: The ZAO Technical Whitepaper
+URL: https://thezao.xyz/papers/technical
+Status: Working Draft v0.1
+Summary: The mechanism - Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal. The proof under the vision.
+
+Focus areas:
+- Respect as a soulbound reputation token
+- The Six Phases of the Respect distribution cycle
+- The Fibonacci Reward Curve
+- OREC - Optimistic Execution with commitment-and-reveal
+- Smart contract architecture on Optimism
+- Comparison to other governance models
+
+PAPER 3: The ZAO Manifesto
+URL: https://thezao.xyz/papers/manifesto
+Status: Permanent (Version 1.0)
+Summary: The short signable creed. Five commitments. Signing it (an on-chain hat) is how you become a member. The part you actually agree to.
+
+Five Commitments:
+1. I Contribute - bring something, time, energy, or capital
+2. I Build in the Open - share work, help others, make knowledge free
+3. I Honor Creator Ownership - creators own profit, data, and IP
+4. I Govern by Contribution - standing comes from what you actually do
+5. I Believe in the Gift - every human has a gift the world needs
+
+PAPER 4: The WaveWarZ Whitepaper
+URL: https://thezao.xyz/papers/wavewarz
+Status: In Progress
+Summary: WaveWarZ is the flagship music prediction market where artists are paid instantly and the value stays in the ecosystem.
+
+Overview:
+- Music prediction market on Solana
+- Artists battle, fans trade on outcomes
+- 98% of traded value stays in the ecosystem
+- Artists paid instantly
+- Whitepaper currently being written
+
+---
+
+All papers are living documents. The mission and the creed are permanent; everything else evolves by the community, in the open, with a logged history.
+
+Published at: https://thezao.xyz/papers
+Discuss on Farcaster: https://farcaster.xyz/~/channel/zao
