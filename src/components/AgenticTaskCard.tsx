@@ -7,8 +7,7 @@ import { VoiceButton } from "@/components/quickadd/VoiceButton";
 // A single agentic-todo card that reads clean and lets you drop context or a
 // voice note straight onto the task, in place. Context is stored as a normal
 // task comment (via the addComment server action, silent so it does not ping
-// the team), so it shows up everywhere the task does. Voice uses the browser
-// Web Speech API (VoiceButton) - the transcript lands in the same box.
+// the team). Voice uses the browser Web Speech API (VoiceButton).
 
 export interface ContextNote {
   id: string;
@@ -33,6 +32,7 @@ function when(iso?: string): string {
 
 export function AgenticTaskCard({
   id,
+  num,
   title,
   notes,
   due,
@@ -40,9 +40,11 @@ export function AgenticTaskCard({
   category,
   important,
   isNew,
+  dim,
   comments,
 }: {
   id: string;
+  num: number;
   title: string;
   notes: string | null;
   due: string | null;
@@ -50,12 +52,14 @@ export function AgenticTaskCard({
   category: string | null;
   important: boolean;
   isNew: boolean;
+  dim?: boolean;
   comments: ContextNote[];
 }) {
   const [text, setText] = useState("");
   const [list, setList] = useState<ContextNote[]>(comments);
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [openBox, setOpenBox] = useState(false);
   const overdue = due && status !== "done" && new Date(due) < new Date();
 
   function save() {
@@ -77,16 +81,16 @@ export function AgenticTaskCard({
         { id: `local-${prev.length}`, content, displayName: "You", createdAt: new Date().toISOString() },
       ]);
       setText("");
+      setOpenBox(false);
     });
   }
 
-  function onVoice(t: string) {
-    setText((prev) => (prev ? `${prev} ${t}` : t));
-  }
-
   return (
-    <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-3">
-      <div className="flex items-start gap-2">
+    <div className={`rounded-2xl bg-white/[0.04] border border-white/10 p-4 space-y-2.5 ${dim ? "opacity-60" : ""}`}>
+      <div className="flex items-start gap-2.5">
+        <span className="mt-0.5 flex-shrink-0 inline-flex items-center justify-center min-w-[1.7rem] h-6 rounded-md bg-violet-600/25 text-violet-200 text-xs font-semibold px-1.5">
+          {num}
+        </span>
         <div className="flex-1 min-w-0">
           <div className="text-[15px] font-semibold text-white/90 leading-snug">
             {important ? <span className="text-amber-300" aria-hidden="true">* </span> : null}
@@ -111,7 +115,7 @@ export function AgenticTaskCard({
       </div>
 
       {list.length > 0 ? (
-        <div className="space-y-1.5 border-t border-white/5 pt-2.5">
+        <div className="space-y-1.5 border-t border-white/5 pt-2 pl-[2.4rem]">
           {list.map((c) => (
             <div key={c.id} className="text-[13px] text-white/75 leading-snug">
               <span className="text-white/85">{c.content}</span>
@@ -121,28 +125,41 @@ export function AgenticTaskCard({
         </div>
       ) : null}
 
-      <div className="flex items-end gap-2">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save();
-          }}
-          rows={2}
-          placeholder="Add context or memory... (or tap the mic)"
-          className="flex-1 resize-none rounded-lg bg-black/25 border border-white/10 focus:border-white/25 outline-none px-3 py-2 text-sm text-white/90 placeholder:text-white/30"
-        />
-        <VoiceButton onTranscript={onVoice} disabled={pending} />
+      {openBox ? (
+        <div className="pl-[2.4rem] space-y-2">
+          <div className="flex items-end gap-2">
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === "Enter") save();
+              }}
+              rows={2}
+              autoFocus
+              placeholder="Add context or memory... (or tap the mic)"
+              className="flex-1 resize-none rounded-lg bg-black/25 border border-white/10 focus:border-white/25 outline-none px-3 py-2 text-sm text-white/90 placeholder:text-white/30"
+            />
+            <VoiceButton onTranscript={(t) => setText((p) => (p ? `${p} ${t}` : t))} disabled={pending} />
+            <button
+              type="button"
+              onClick={save}
+              disabled={pending || !text.trim()}
+              className="h-9 px-3 rounded-lg text-sm font-medium border border-violet-400/40 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30 transition disabled:opacity-40"
+            >
+              {pending ? "..." : "Add"}
+            </button>
+          </div>
+          {err ? <div className="text-[11px] text-red-300">{err}</div> : null}
+        </div>
+      ) : (
         <button
           type="button"
-          onClick={save}
-          disabled={pending || !text.trim()}
-          className="h-9 px-3 rounded-lg text-sm font-medium border border-violet-400/40 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30 transition disabled:opacity-40"
+          onClick={() => setOpenBox(true)}
+          className="ml-[2.4rem] text-[12px] text-white/45 hover:text-white/80 transition"
         >
-          {pending ? "..." : "Add"}
+          + add context / voice note
         </button>
-      </div>
-      {err ? <div className="text-[11px] text-red-300">{err}</div> : null}
+      )}
     </div>
   );
 }
