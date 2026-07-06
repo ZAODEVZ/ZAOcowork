@@ -30,8 +30,7 @@ const GROUPS: Group[] = [
     accent: "bg-violet-400",
     links: [
       { href: "/board", label: "Board", desc: "The full Kanban across every brand." },
-      { href: "/my-work", label: "My Work", desc: "Tasks assigned to you, mentions, reviews." },
-      { href: "/agentic-todos", label: "Agentic Todos", desc: "Tasks captured by the agents, grouped by priority." },
+      { href: "/my-work", label: "My Work", desc: "Your tasks, mentions, and reviews - including personal items." },
       { href: "/shipped", label: "Shipped", desc: "Everything already done and archived." },
     ],
   },
