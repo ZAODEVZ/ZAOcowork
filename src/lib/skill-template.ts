@@ -3,7 +3,10 @@
 // recipient's Claude can call the API immediately — but it only ever reaches
 // them through a one-time claim, never a long-lived shared file.
 
-export const ZAO_API_URL = "https://thezao.xyz";
+// MUST be the www subdomain: the non-www apex 307-redirects and the redirect
+// STRIPS the Authorization header, so any bot-token call to the apex gets a
+// spurious 401. This broke onboarding Iman's Claude (2026-07-07). www is canonical.
+export const ZAO_API_URL = "https://www.thezao.xyz";
 
 export function buildSkillMarkdown(token: string, name: string): string {
   return `---
