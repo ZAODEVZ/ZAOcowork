@@ -108,9 +108,17 @@ type Filters = {
   // Empty array = no brand constraint. Schema already supports tags via
   // tasks.brands text[] (doc 713 follow-up).
   brands: string[];
+  // Doc 983: cross-cutting theme (single-select) + judgment-routing owner.
+  theme: string;
+  nextOwner: string;
   mineOnly: boolean;
   agingOnly: boolean;
 };
+
+// Doc 983 taxonomy - keep in sync with the auto-tagger (metadata.themes /
+// metadata.next_owner).
+const THEME_OPTIONS = ["web3", "ai", "music", "events", "growth", "governance", "research", "ops"];
+const NEXT_OWNER_OPTIONS = ["me", "agent", "review", "blocked"];
 
 const EMPTY_FILTERS: Filters = {
   search: "",
@@ -119,6 +127,8 @@ const EMPTY_FILTERS: Filters = {
   priority: "",
   phase: "",
   brands: [],
+  theme: "",
+  nextOwner: "",
   mineOnly: true,
   agingOnly: false,
 };
@@ -163,6 +173,10 @@ const VIEW_PRESETS: SavedView[] = [
   { name: "My P1s", filters: { mineOnly: true, priority: "P1" } },
   { name: "All P1s", filters: { mineOnly: false, priority: "P1" } },
   { name: "Aging", filters: { mineOnly: false, agingOnly: true } },
+  // Doc 983: judgment-routing views - the real question with parallel agents.
+  { name: "Needs me", filters: { mineOnly: false, nextOwner: "me" } },
+  { name: "Agent working", filters: { mineOnly: false, nextOwner: "agent" } },
+  { name: "Ready to review", filters: { mineOnly: false, nextOwner: "review" } },
 ];
 
 function viewMatches(current: Filters, view: Partial<Filters>): boolean {
@@ -652,6 +666,9 @@ export function Board({
       if (filters.category && it.category !== filters.category) return false;
       if (filters.priority && it.priority !== filters.priority) return false;
       if (filters.phase && it.phase !== filters.phase) return false;
+      // Doc 983: theme (metadata.themes overlap) + next-owner (judgment routing).
+      if (filters.theme && !(it.themes ?? []).includes(filters.theme)) return false;
+      if (filters.nextOwner && (it.nextOwner ?? "") !== filters.nextOwner) return false;
       // URL-driven brand tab takes precedence over localStorage filters.brands.
       // Single-brand match - a task whose `brands` array contains urlBrand.
       if (urlBrand) {
@@ -728,6 +745,8 @@ export function Board({
     filters.priority ||
     filters.phase ||
     filters.brands.length > 0 ||
+    filters.theme ||
+    filters.nextOwner ||
     filters.mineOnly ||
     filters.agingOnly ||
     !!urlBrand;
@@ -1190,6 +1209,18 @@ function FilterBar({
             onChange={(v) => set({ phase: v })}
             options={["", ...PHASES]}
             placeholder="DMAIC phase"
+          />
+          <SelectPill
+            value={filters.nextOwner}
+            onChange={(v) => set({ nextOwner: v })}
+            options={["", ...NEXT_OWNER_OPTIONS]}
+            placeholder="Needs"
+          />
+          <SelectPill
+            value={filters.theme}
+            onChange={(v) => set({ theme: v })}
+            options={["", ...THEME_OPTIONS]}
+            placeholder="Theme"
           />
         </div>
       )}

@@ -177,6 +177,13 @@ export type ActionItem = {
   // Ecosystem brand tags - empty array = no brand assigned. Multiple brands
   // allowed for cross-brand tasks. Canonical names defined in lib/brands.ts.
   brands: string[];
+  // Cross-cutting theme tags (web3/ai/music/events/growth/governance/research)
+  // from the auto-tagger, stored in metadata.themes. Doc 983.
+  themes?: string[];
+  // Judgment-routing axis: who the next move belongs to. me = Zaal's hands-on,
+  // agent = a terminal/agent is working it, review = agent output awaiting Zaal,
+  // blocked = waiting on an external. From metadata.next_owner. Doc 983.
+  nextOwner?: "me" | "agent" | "review" | "blocked";
   // Operational workspace extensions
   taskType?: TaskType;
   requiresApproval?: boolean;
