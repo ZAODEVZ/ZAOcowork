@@ -9,6 +9,7 @@ import {
   setMemberActive,
   setMemberRole,
   setMemberTelegram,
+  setMemberTeam,
   type TeamRole,
 } from "@/lib/team";
 import {
@@ -111,6 +112,24 @@ export async function setRoleAction(form: FormData): Promise<void> {
     action: "set_role",
     detail: `role -> ${role}`,
     metadata: { role },
+  });
+  revalidatePath("/admin");
+}
+
+export async function setTeamAction(form: FormData): Promise<void> {
+  const actor = await requireAdmin();
+  const id = String(form.get("id") ?? "").trim();
+  if (!id) bouncedErr("missing id");
+  const primary = String(form.get("primary_team") ?? "").trim() || null;
+  const secondary = String(form.get("secondary_team") ?? "").trim() || null;
+  await setMemberTeam(id, primary, secondary);
+  await logAudit({
+    actor: userLabel(actor),
+    entity_type: "user",
+    entity_id: id,
+    action: "set_team",
+    detail: `team -> primary:${primary ?? "-"} secondary:${secondary ?? "-"}`,
+    metadata: { primary_team: primary, secondary_team: secondary },
   });
   revalidatePath("/admin");
 }
