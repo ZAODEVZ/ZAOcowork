@@ -42,6 +42,26 @@ export default async function HomePage() {
     })
     .slice(0, 6);
 
+  // "Start here today": what actually needs Zaal now - overdue first, then due
+  // today, each group by priority (P0/P1 float up) then by deadline. This is the
+  // jump-in moment on the front page.
+  const byPriorityThenDue = (a: ActionItem, b: ActionItem) => {
+    const pr = priRank(a.priority) - priRank(b.priority);
+    if (pr !== 0) return pr;
+    return (dueKey(a) ?? "") < (dueKey(b) ?? "") ? -1 : 1;
+  };
+  const overdueItems = mine
+    .filter((t) => {
+      const d = dueKey(t);
+      return d !== null && d < todayKey;
+    })
+    .sort(byPriorityThenDue);
+  const dueToday = mine.filter((t) => dueKey(t) === todayKey).sort(byPriorityThenDue);
+  const startHere = [...overdueItems, ...dueToday].slice(0, 5);
+  // If nothing is dated for today, fall back to the next-up by deadline so the
+  // hero is never empty when there's real work.
+  const nextUp = startHere.length === 0 ? myTop.slice(0, 3) : [];
+
   const now = Date.now();
   const upcoming = meetings
     .filter((m) => new Date(m.endsAt).getTime() >= now)
@@ -73,6 +93,66 @@ export default async function HomePage() {
           </div>
           <NavBar isAdmin={await isAdmin(user)} isLead={isLead(user)} brands={navBrands} />
         </header>
+
+        {/* Start here today - the jump-in moment */}
+        <section className="rounded-2xl bg-gradient-to-br from-amber-500/[0.12] to-transparent border border-amber-400/25 px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-sm font-semibold text-amber-100">Start here today</span>
+              {overdueItems.length > 0 && (
+                <span className="text-[11px] text-red-300 font-medium">
+                  {overdueItems.length} overdue
+                </span>
+              )}
+              {dueToday.length > 0 && (
+                <span className="text-[11px] text-amber-200/80">{dueToday.length} due today</span>
+              )}
+            </div>
+            <Link href="/my-work" className="text-xs text-amber-200/60 hover:text-amber-100">
+              my work →
+            </Link>
+          </div>
+          {startHere.length === 0 && nextUp.length === 0 ? (
+            <p className="text-sm text-white/45 py-3">
+              Nothing due today - you&apos;re clear. Pick up anything from the board below.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {(startHere.length > 0 ? startHere : nextUp).map((t) => {
+                const d = dueKey(t);
+                const isOverdue = d !== null && d < todayKey;
+                const isToday = d === todayKey;
+                return (
+                  <Link
+                    key={t.id}
+                    href={`/board?task=${t.id}`}
+                    className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-white/10 bg-black/25 hover:bg-white/[0.07] hover:border-amber-400/30 transition group"
+                  >
+                    <span
+                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${
+                        isOverdue
+                          ? "bg-red-500/20 text-red-200 border border-red-500/40"
+                          : isToday
+                            ? "bg-amber-500/20 text-amber-200 border border-amber-500/40"
+                            : "bg-white/10 text-white/60 border border-white/15"
+                      }`}
+                    >
+                      {isOverdue ? "OVERDUE" : isToday ? "TODAY" : "NEXT"}
+                    </span>
+                    <span className="flex-1 text-[15px] text-white/90 font-medium truncate group-hover:text-white">
+                      {t.title}
+                    </span>
+                    {t.priority && (
+                      <span className="text-[10px] text-white/40 flex-shrink-0">{t.priority}</span>
+                    )}
+                    <span className="text-white/30 group-hover:text-amber-200/70 flex-shrink-0">→</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
         {/* At-a-glance stats */}
         <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -174,6 +254,11 @@ export default async function HomePage() {
 function dueKey(t: ActionItem): string | null {
   const m = String(t.due ?? "").match(/^(\d{4}-\d{2}-\d{2})/);
   return m ? m[1] : null;
+}
+
+function priRank(p: string | null | undefined): number {
+  const m = String(p ?? "").toUpperCase().match(/P([0-9])/);
+  return m ? Number(m[1]) : 5;
 }
 
 function statusChip(status: string): string {
