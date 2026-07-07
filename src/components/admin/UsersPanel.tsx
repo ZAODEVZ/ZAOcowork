@@ -8,6 +8,7 @@ import {
   resetPasswordAction,
   setActiveAction,
   setRoleAction,
+  setTeamAction,
   revokeClaudeTokenAction,
   shareClaudeSecurelyAction,
   setTelegramAction,
@@ -19,6 +20,8 @@ import {
 // hardcoded admin override for them so any DB-side accident is recoverable.
 
 const ROLES: TeamRole[] = ["admin", "lead", "worker"];
+// Team routing (doc 989): the brands a member can be assigned primary/secondary.
+const TEAMS = ["The ZAO", "ZAO Devz", "ZAOstock", "WaveWarZ", "ZABAL Games", "COC Concertz", "ZOE", "Bonfire", "Juke"];
 
 function isFounder(m: TeamMember): boolean {
   const slug = (m.legacy_owner ?? "").toLowerCase();
@@ -45,6 +48,7 @@ export function UsersPanel({
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Login slug</th>
               <th className="px-3 py-2 font-medium">Role</th>
+              <th className="px-3 py-2 font-medium">Teams</th>
               <th className="px-3 py-2 font-medium">Password</th>
               <th className="px-3 py-2 font-medium">Telegram</th>
               <th className="px-3 py-2 font-medium">Claude access</th>
@@ -164,6 +168,31 @@ function UserRow({ member, hasClaude }: { member: TeamMember; actorLabel: string
     });
   }
 
+  // Team routing (doc 989): primary + secondary team pickers.
+  const [pTeam, setPTeam] = useState<string>(member.primary_team ?? "");
+  const [sTeam, setSTeam] = useState<string>(member.secondary_team ?? "");
+  const [teamSaving, startTeam] = useTransition();
+  useEffect(() => setPTeam(member.primary_team ?? ""), [member.primary_team]);
+  useEffect(() => setSTeam(member.secondary_team ?? ""), [member.secondary_team]);
+
+  function changeTeam(primary: string, secondary: string) {
+    const prevP = pTeam, prevS = sTeam;
+    setPTeam(primary);
+    setSTeam(secondary);
+    const fd = new FormData();
+    fd.set("id", member.id);
+    fd.set("primary_team", primary);
+    fd.set("secondary_team", secondary);
+    startTeam(async () => {
+      try {
+        await setTeamAction(fd);
+      } catch {
+        setPTeam(prevP);
+        setSTeam(prevS); // revert on failure (e.g. columns not migrated yet)
+      }
+    });
+  }
+
   return (
     <tr className="border-b border-white/5 last:border-b-0 hover:bg-white/[0.03]">
       <td className="px-3 py-2 text-white/90">{member.name}</td>
@@ -181,6 +210,34 @@ function UserRow({ member, hasClaude }: { member: TeamMember; actorLabel: string
             </option>
           ))}
         </select>
+      </td>
+      <td className="px-3 py-2">
+        <div className="flex flex-col gap-1">
+          <select
+            value={pTeam}
+            onChange={(e) => changeTeam(e.target.value, sTeam)}
+            disabled={teamSaving}
+            title="Primary team"
+            className="rounded-md bg-[#0b1220] border border-white/10 px-2 py-1 text-xs text-white/85 disabled:opacity-60"
+          >
+            <option value="">- primary -</option>
+            {TEAMS.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select
+            value={sTeam}
+            onChange={(e) => changeTeam(pTeam, e.target.value)}
+            disabled={teamSaving}
+            title="Secondary team"
+            className="rounded-md bg-[#0b1220] border border-white/10 px-2 py-1 text-[11px] text-white/60 disabled:opacity-60"
+          >
+            <option value="">- secondary -</option>
+            {TEAMS.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
       </td>
       <td className="px-3 py-2 text-xs text-white/60">
         {editingPwd ? (

@@ -27,6 +27,10 @@ export interface TeamMember {
   password_set_by: string | null;
   has_password: boolean;
   created_at: string;
+  // Team routing (doc 989): the brand/team this member primarily + secondarily
+  // works. The board defaults a member's view to these; everything else collapses.
+  primary_team: string | null;
+  secondary_team: string | null;
 }
 
 let cachedClient: SupabaseClient | null = null;
@@ -44,7 +48,7 @@ function db(): SupabaseClient {
 }
 
 const SELECT_COLUMNS =
-  "id, name, legacy_owner, telegram_id, telegram_username, email, role, active, password_set_at, password_set_by, password_hash, created_at";
+  "id, name, legacy_owner, telegram_id, telegram_username, email, role, active, password_set_at, password_set_by, password_hash, created_at, primary_team, secondary_team";
 
 interface RawRow {
   id: string;
@@ -59,6 +63,8 @@ interface RawRow {
   password_set_by: string | null;
   password_hash: string | null;
   created_at: string;
+  primary_team: string | null;
+  secondary_team: string | null;
 }
 
 function rowToMember(row: RawRow): TeamMember {
@@ -75,7 +81,26 @@ function rowToMember(row: RawRow): TeamMember {
     password_set_by: row.password_set_by,
     has_password: !!row.password_hash,
     created_at: row.created_at,
+    primary_team: row.primary_team ?? null,
+    secondary_team: row.secondary_team ?? null,
   };
+}
+
+/**
+ * Set a member's primary/secondary team (doc 989 team routing). Empty string
+ * clears. Requires the primary_team/secondary_team columns (see the migration
+ * in the PR that added this).
+ */
+export async function setMemberTeam(
+  id: string,
+  primary_team: string | null,
+  secondary_team: string | null,
+): Promise<void> {
+  const { error } = await db()
+    .from("team_members")
+    .update({ primary_team: primary_team || null, secondary_team: secondary_team || null })
+    .eq("id", id);
+  if (error) throw new Error(`setMemberTeam failed: ${error.message}`);
 }
 
 export async function listTeamMembers(): Promise<TeamMember[]> {
