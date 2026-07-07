@@ -940,6 +940,7 @@ export function Board({
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             depCounts={depCounts}
+            defaultCollapsed={activeMobileStatus === "DONE"}
           />
         </div>
       </div>
@@ -992,6 +993,7 @@ export function Board({
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             depCounts={depCounts}
+            defaultCollapsed={s === "DONE"}
           />
         ))}
       </div>
@@ -1779,6 +1781,7 @@ function Column({
   selectedIds,
   onToggleSelect,
   depCounts,
+  defaultCollapsed,
 }: {
   status: BoardStatus;
   items: ActionItem[];
@@ -1790,10 +1793,14 @@ function Column({
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
   depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
+  defaultCollapsed?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const visible = expanded ? items : items.slice(0, 25);
-  const hiddenCount = items.length - visible.length;
+  // Doc 983 / UX cleanup: DONE is an archive, not active work - collapse it by
+  // default so it stops burying the board (347+ done rows). One click reveals it.
+  const [collapsed, setCollapsed] = useState(Boolean(defaultCollapsed));
+  const visible = collapsed ? [] : expanded ? items : items.slice(0, 25);
+  const hiddenCount = collapsed ? 0 : items.length - visible.length;
   const pendingCount = items.reduce(
     (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
     0,
@@ -1830,6 +1837,16 @@ function Column({
               {items.length}/{WIP_LIMIT}
               {overWip && <span className="ml-1" aria-hidden>⚠</span>}
             </span>
+          ) : defaultCollapsed ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              className="text-xs text-white/50 hover:text-white/90 transition flex items-center gap-1"
+              title={collapsed ? "Show completed" : "Hide completed"}
+            >
+              {items.length}
+              <span className="text-[9px]" aria-hidden>{collapsed ? "▸" : "▾"}</span>
+            </button>
           ) : (
             <span className="text-xs text-white/40">{items.length}</span>
           )}
@@ -1839,6 +1856,19 @@ function Column({
       {/* Per-column "+ add item" removed in favor of a single QuickAdd at the
           top of the board (Cmd+K modal + inline bar + voice + NL parse). */}
 
+      {collapsed ? (
+        items.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            className="rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-white/45 hover:bg-white/5 hover:text-white/80 transition text-left"
+          >
+            {items.length} completed - hidden. Show
+          </button>
+        ) : (
+          <div className="text-xs text-white/25 italic px-1 py-2">Nothing done yet.</div>
+        )
+      ) : (
       <div className="flex flex-col gap-2">
         {visible.map((it) => (
           <Card
@@ -1864,6 +1894,7 @@ function Column({
           <div className="text-xs text-white/30 italic px-1 py-2">No items.</div>
         )}
       </div>
+      )}
     </div>
   );
 }

@@ -30,13 +30,11 @@ export function ForecastWidget({
       </div>
     );
   }
+  // UX cleanup: a widget that announces it is unreliable is noise. Until there
+  // are 6+ weeks of throughput, hide the forecast entirely rather than showing a
+  // low-confidence box that the reader has to mentally discard every visit.
   if (forecast.warning) {
-    return (
-      <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-4">
-        <div className="text-sm font-semibold text-amber-200">Forecast (low confidence)</div>
-        <div className="text-xs text-amber-200/75 mt-1">{forecast.warning}</div>
-      </div>
-    );
+    return null;
   }
 
   // Tiny inline sparkline. SVG width 96, height 24.
