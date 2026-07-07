@@ -266,6 +266,11 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (typeof meta.videoUrl === "string") item.videoUrl = meta.videoUrl;
   // Doc 009 public layer: public_override (null=inherit, true=show, false=hide)
   if (row.public_override !== undefined) item.publicOverride = row.public_override;
+  // Doc 983: theme tags + judgment-routing owner (auto-tagger, metadata jsonb)
+  if (Array.isArray(meta.themes)) item.themes = (meta.themes as string[]).filter((t) => typeof t === "string");
+  if (meta.next_owner === "me" || meta.next_owner === "agent" || meta.next_owner === "review" || meta.next_owner === "blocked") {
+    item.nextOwner = meta.next_owner;
+  }
   return item;
 }
 
