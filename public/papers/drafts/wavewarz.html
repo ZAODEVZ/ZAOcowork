@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta property="og:type" content="website">
 <meta property="og:title" content="WaveWarZ Whitepaper (DRAFT)">
-<meta property="og:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta property="og:description" content="Live-traded music battles. Two artists head to head, fans trade the outcome on a bonding curve, artists get paid instantly, 98.5% of every trade stays in the ecosystem.">
 <meta property="og:image" content="https://thezao.xyz/papers-og.png">
 <meta property="og:url" content="https://thezao.xyz/papers/drafts/wavewarz">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The ZAO Technical Whitepaper">
-<meta name="twitter:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta name="twitter:title" content="WaveWarZ Whitepaper (DRAFT)">
+<meta name="twitter:description" content="Live-traded music battles. Two artists head to head, fans trade the outcome on a bonding curve, artists get paid instantly, 98.5% of every trade stays in the ecosystem.">
 <meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
 <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <title>The ZAO - WaveWarZ Whitepaper (DRAFT)</title>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Technical Whitepaper","description":"Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/technical","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-02","inLanguage":"en-US"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"WaveWarZ Whitepaper","description":"Live-traded music battles on Solana and Base: mechanics, tokenomics, partner network, and roadmap.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/wavewarz","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
 <style>
   :root {
     --ground: #141e27;
@@ -266,30 +266,88 @@
 <main>
   <div class="wrap">
     <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
-    <p class="eyebrow">WaveWarZ - Whitepaper (draft v0.1)</p>
+    <p class="eyebrow">WaveWarZ - Whitepaper (draft v0.2)</p>
     <h1>WaveWarZ</h1>
-    <p class="thesis">Live-traded music battles. Two artists go head to head, fans trade predictions on the outcome and earn in real time. WaveWarZ is The ZAO's always-on front door - the place outsiders discover the network.</p>
+    <p class="thesis">Music as a head-to-head sport with onchain settlement. Two artists battle, fans trade the outcome on a bonding curve, and <b>98.5% of every dollar staked stays with the artists and the traders</b> - not the house.</p>
+
+    <section><h2>The problem</h2>
+    <p>Streaming pays artists $0.003 to $0.005 per play. A million plays is $3,000 to $5,000, paid 30 to 90 days late, after labels and platforms take 70 to 87 percent of the revenue. The top one percent of artists build careers on this model; almost everyone else earns pennies and waits months to see them.</p>
+    <p>WaveWarZ does not try to fix streaming. It builds a different game next to it: a live, tradable market where a battle settles in about two hours and the artist gets paid the moment a trade happens, not a quarter later.</p></section>
+
     <section><h2>What it is</h2>
-    <p>WaveWarZ is a prediction-market-style music battle platform on Solana mainnet, with a Base testnet (Base Sepolia, live February 2026) and a Base-to-Solana bridge so Base users can join. Two artists battle; fans buy into the outcome on a bonding curve. It turns a music competition into a live, tradable market where the crowd's conviction is the score.</p></section>
+    <p>WaveWarZ is a prediction-market-style music battle platform. It runs on Solana mainnet, with Base L2 contracts live on the Base Sepolia testnet since February 27, 2026, so EVM-native fans and builders can eventually reach it without a Solana bridge. Two artists battle; fans buy into whichever side they think will win using ephemeral, bonding-curve-priced tokens that exist only for the duration of that battle. It turns a music competition into a live market where the crowd's conviction, not a label's marketing budget, sets the score.</p></section>
+
     <section><h2>How a battle works</h2>
-    <p>Main events are artist versus artist, multiple rounds, streamed on X Spaces, YouTube, and Retake. Quick battles are song versus song, run on weekday evenings (around 8:30pm EST), with special events and tournaments on Sundays.</p>
-    <p>Settlement uses a 2-of-3 judging system: a human judge, an X poll, and an on-chain SOL vote. Quick battles resolve on a poll plus trading charts plus an AI judge. The mix keeps outcomes both human and verifiable.</p></section>
-    <section><h2>Economics</h2>
-    <p>Artists earn roughly one percent per trade, paid instantly as the market moves. The platform keeps a small fee and most of the value stays in the ecosystem, flowing to the artists and the people who show up. The design goal is that participating pays the creators, not just the house.</p></section>
+    <p><strong>Main Events</strong> are artist versus artist: three rounds, twenty minutes per round, roughly two hours total, streamed across X Spaces, YouTube, Retake, and Pump.fun. <strong>Quick Battles</strong> are song versus song with thirty-second final trading windows, run weeknights around 8:30pm EST, with special events and tournaments on Sundays. The full weekly schedule runs eleven shows: a Monday-through-Friday 11am EST community AMA, the 8:30pm EST Quick Battle trading session, and Sunday 8pm EST specials.</p>
+    <p>Settlement is a triple-judge system, two of three wins:</p>
+    <ul class="gates">
+      <li><b>Human Judge</b><span>Expert evaluation of the performance.</span></li>
+      <li><b>X Poll</b><span>Live community vote on X.</span></li>
+      <li><b>SOL Vote</b><span>Whichever side's trading pool carries more SOL.</span></li>
+    </ul>
+    <p>Quick Battles resolve faster: Poll plus trading charts plus DJ Wavy, WaveWarZ's AI judge, standing in for the human judge on the faster cadence.</p></section>
+
+    <section><h2>Tokenomics</h2>
+    <p>Every trade pays the artist instantly, onchain. At settlement, the losing pool gets redistributed with a bias toward keeping value inside the ecosystem rather than extracting it.</p>
+    <div class="table-wrapper"><table>
+      <tr><th>Flow</th><th>Share</th><th>Notes</th></tr>
+      <tr><td>Artist, per trade</td><td>1.0% per side</td><td>Paid instantly, automatic, onchain</td></tr>
+      <tr><td>Platform, per trade</td><td>0.5%</td><td>Operations</td></tr>
+      <tr><td>Trader retention</td><td>98.5%</td><td>Stays in the ecosystem</td></tr>
+      <tr><td>Winning artist, at settlement</td><td>+5% of loser pool</td><td>Bonus</td></tr>
+      <tr><td>Losing artist, at settlement</td><td>+2% of loser pool</td><td>Consolation</td></tr>
+      <tr><td>Platform, at settlement</td><td>+3% of loser pool</td><td>Settlement fee</td></tr>
+      <tr><td>Losing traders, at settlement</td><td>50% of loser pool refunded</td><td>Partial recovery, not a total loss</td></tr>
+      <tr><td>Winning traders, at settlement</td><td>40% of loser pool</td><td>Reward</td></tr>
+    </table></div>
+    <p class="note">Break-even per battle is roughly $500 in trading volume; current matches typically run $800 to $2,500. Bonding-curve pricing on Base uses a square-root-of-x integral (Babylonian method for square roots, Newton's method for cube roots), settled in WETH or ETH; Solana transaction cost is effectively free at roughly $0.00025 per transaction.</p></section>
+
+    <section><h2>Chains and contracts</h2>
+    <p>Solana mainnet remains the primary chain, running on an Anchor/Rust program. Base Sepolia is the EVM testnet, deployed February 27, 2026, with five Solidity/Foundry contracts: WaveWarzBase (core battle mechanics), EphemeralBattleToken (the per-battle tokens described above), WaveWarzMarketplace (trading battle positions), WaveWarzMusicNFT, and an interface contract. A mainnet date for Base has not been set; it is pending a contract security review.</p>
+    <p class="note">The Solana program ID published in WaveWarZ's original whitepaper is <code>9TUfEHvk5fN5vogtQyrefgNqzKy2Bqb4nWVhSFUg2fYo</code> - treat as unconfirmed until the team verifies it is still the live production program before building any direct onchain reads against it.</p></section>
+
+    <section><h2>New product lines</h2>
+    <p>Two verticals have opened up beyond the core battle format. A <strong>16-Artist Bracket Tournament</strong> runs single-elimination with instant per-round SOL payouts, open for registration via X. An <strong>AI Artist Tournament</strong>, sized at 8 or 16 slots depending on signups, is a community-judged pilot for AI-generated artists only, using the same payout structure as human battles - a step toward battles an autonomous agent could enter and fund on its own.</p>
+    <p>WaveWarZ Africa, announced May 4, 2026 with RAM SongChain, proposes per-country battle leagues as the platform's first geographic expansion beyond a US-centric audience. It has been announced but is not yet live.</p></section>
+
+    <section><h2>Distribution network</h2>
+    <p>WaveWarZ reaches its audience through a network of partners that has grown from zero named partnerships to seven in the past several months:</p>
+    <div class="lane"><span class="tag">Coinflow</span><p>Fiat on-ramp (ISV), so fans can trade without already holding SOL. Live.</p></div>
+    <div class="lane"><span class="tag">Juke</span><p>Audio rooms integration, extending WaveWarZ battles into live audio spaces. Live.</p></div>
+    <div class="lane"><span class="tag">Magnetiq</span><p>IRL connection NFTs at ecosystem events. Live.</p></div>
+    <div class="lane"><span class="tag">Empire Builder</span><p>Farcaster mini-app integration with ZABAL rewards. Live.</p></div>
+    <div class="lane"><span class="tag">Neynar</span><p>EVM contract review support for the Base build. Active.</p></div>
+    <div class="lane"><span class="tag">RAM / SongChain</span><p>Partner for WaveWarZ Africa's per-country battle leagues. Announced.</p></div>
+    <div class="lane"><span class="tag">Privy</span><p>Onboarding flow, built and ready, awaiting activation.</p></div>
+    <p>Battles are streamed across X Spaces, YouTube, Retake, and Pump.fun, and the full app is embedded inside ZAO OS at /wavewarz alongside the Intelligence (leaderboards, claim tool) and Analytics (volume charts) dashboards.</p></section>
+
     <section><h2>Role in The ZAO</h2>
-    <p>WaveWarZ is the always-on front door - the gravity well. Outsiders, often founders with their own ecosystems, arrive and discover The ZAO through it. It is a top-of-funnel magnet, not a deal-closer or a rails product. ZABAL Games is the parallel front door for builders; both feed the same community.</p></section>
-    <section><h2>Distribution</h2>
-    <p>WaveWarZ reaches its audience through a network of partners including Coinflow, Juke, Magnetiq, Empire Builder, Neynar, RAM / SongChain, and Privy. The battles are streamed across X Spaces, YouTube, and Retake, and the app is embedded inside ZAO OS at /wavewarz.</p></section>
-    <section><h2>Team</h2>
-    <p>Hurric4n3ike leads as founder, developer, and MC. Candytoybox (Samantha) runs design, marketing, and CC0 art. Zaal (BetterCallZaal) drives ecosystem strategy and partnerships.</p></section>
-    <section><h2>Roadmap - the 24-hour protocol</h2>
-    <p>In design: an always-on model with a roughly 23-hour entry queue and a short live settlement each cycle, enterable by a person or by an AI agent via x402 on Base. This turns WaveWarZ from scheduled shows into a continuous protocol anyone or any agent can play at any hour. Not yet live.</p></section>
+    <p>WaveWarZ is The ZAO's always-on front door - the gravity well. Outsiders, often founders with their own ecosystems, arrive through WaveWarZ and discover The ZAO from there; it is a top-of-funnel magnet, not a deal-closer or a rails product. ZABAL Games plays the parallel front-door role for builders, and both feed the same community. Zaal (BetterCallZaal) works WaveWarZ as Director of Ecosystem Strategy and Partnerships, the connective role that brought most of the seven distribution partners above into the fold.</p></section>
+
     <section><h2>Traction</h2>
-    <p>As of a May 2026 snapshot, WaveWarZ had run roughly 980 battles with about 458 SOL of cumulative volume and artist payouts flowing. These are point-in-time figures - the live dashboards linked from wavewarz.com carry the current numbers.</p></section>
+    <p>As of a late-May 2026 snapshot from the WaveWarZ Intelligence dashboard: 979 total battles (43 Main Events, 805 Quick Battles, 131 special and tournament battles), 458 SOL of cumulative trading volume, 7.76 SOL paid out to artists, and 3.65 SOL of platform revenue. These are point-in-time figures - the live dashboards linked from wavewarz.com and embedded in ZAO OS carry the current numbers.</p></section>
+
+    <section><h2>Roadmap</h2>
+    <ol class="fivec">
+      <li><b>Foundation</b> - done. 979 battles shipped, the seven-partner network locked in, three dashboards live, the eleven-show weekly ritual running.</li>
+      <li><b>Market expansion</b> - in progress. Africa announced, Coinflow live, deep ZAO integration, AI-artist tournament in pilot.</li>
+      <li><b>Scale</b> - not yet. The 16-Artist Bracket Tournament is the next scale event; no celebrity-tier partnerships yet.</li>
+      <li><b>Market leadership</b> - not yet. Depends on Base reaching mainnet, the AI-artist line sustaining, and the Africa launch actually going live.</li>
+    </ol></section>
+
+    <section><h2>Team</h2>
+    <p>Hurric4n3ike leads as founder, developer, and MC. Candytoybox (Samantha) runs design, marketing, and CC0 art. Zaal (BetterCallZaal) is Director of Ecosystem Strategy and Partnerships.</p></section>
+
+    <section><h2>Risks, honestly</h2>
+    <p>Prediction-market mechanics sit in an unsettled regulatory space, and the Africa launch adds new jurisdictions to think through. Two live chains mean two smart-contract attack surfaces to secure rather than one. Volume is denominated in SOL (and, on Base, ETH/WETH), so crypto-market volatility affects both trading activity and payout value. The roster of active artists is real but not huge - roughly 43 and holding, rotation rather than net growth - so artist adoption and retention still matter more than they will once the base is bigger.</p></section>
+
+    <section><h2>What's next / how to get involved</h2>
+    <p><strong>Artists</strong> register for the 16-Artist Bracket Tournament or the AI Artist Tournament via X @WaveWarZ. <strong>Fans and traders</strong> show up for the Monday-through-Friday 11am EST AMA or the 8:30pm EST Quick Battle trading session on X Spaces and YouTube. <strong>Builders and agent developers</strong> can watch the Base testnet contracts and the x402 agent-payment direction - a battle format one day enterable by an autonomous agent, not just a person, is the long-term shape of this. <strong>Ecosystem partners</strong> looking to plug into the distribution network can reach the team the same way the current seven did: through The ZAO.</p></section>
+
     <section><h2>Find it</h2>
     <p>wavewarz.com, with intelligence and analytics dashboards linked from there. On X: @WaveWarZ. On Farcaster: the /wavewarz channel. Embedded in ZAO OS at /wavewarz.</p></section>
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap"><p class="draft-flag">Draft v0.2, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body></html>
