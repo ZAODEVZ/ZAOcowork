@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>The ZAO - Draft Papers (internal)</title>
+<style>
+  :root {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --ground:#f3efe2; --surface:#faf7ec; --ink:#1a2530; --ink-soft:rgba(26,37,48,0.72); --ink-faint:rgba(26,37,48,0.45); --accent:#b06f13; --line:rgba(26,37,48,0.13); }
+  }
+  :root[data-theme="dark"]{--ground:#141e27;--surface:#1b2732;--ink:#e8e4c4;--ink-soft:rgba(232,228,196,0.70);--ink-faint:rgba(232,228,196,0.45);--accent:#f5a623;--line:rgba(232,228,196,0.14);}
+  :root[data-theme="light"]{--ground:#f3efe2;--surface:#faf7ec;--ink:#1a2530;--ink-soft:rgba(26,37,48,0.72);--ink-faint:rgba(26,37,48,0.45);--accent:#b06f13;--line:rgba(26,37,48,0.13);}
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--serif); font-size:clamp(1rem,2vw,1.125rem); line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width: 46rem; margin:0 auto; padding:0 clamp(1rem,4vw,1.5rem); }
+  header.hero { border-bottom:1px solid var(--line); padding: clamp(2.5rem,10vh,6rem) 0 clamp(1.5rem,5vh,3rem); }
+  .eyebrow { font-family:var(--sans); font-size:clamp(0.65rem,1.5vw,0.72rem); letter-spacing:0.22em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 1.2rem; }
+  h1 { font-family:var(--sans); font-weight:800; letter-spacing:-0.03em; font-size:clamp(2.2rem,10vw,5rem); line-height:0.95; margin:0 0 1.2rem; }
+  .lede { font-size:clamp(1.1rem,2.8vw,1.5rem); line-height:1.4; max-width:34rem; margin:0; }
+  .lede b { color:var(--accent); font-weight:600; }
+  main { padding: clamp(2rem,6vh,3.5rem) 0 4rem; }
+  .papers { list-style:none; padding:0; margin:0; display:grid; gap:1.1rem; }
+  .paper { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:1.5rem 1.6rem; }
+  .paper .num { font-family:var(--sans); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  .paper h2 { font-family:var(--sans); font-weight:700; letter-spacing:-0.01em; font-size:1.4rem; margin:0.3rem 0 0.5rem; }
+  .paper p { margin:0 0 1.1rem; color:var(--ink-soft); font-size:1.02rem; }
+  .actions { display:flex; gap:0.7rem; flex-wrap:wrap; }
+  .btn { font-family:var(--sans); font-size:0.9rem; font-weight:600; text-decoration:none; padding:0.55rem 1.1rem; border-radius:9px; border:1px solid var(--accent); }
+  .btn.read { background:var(--accent); color:#141e27; }
+  a.btn:hover { opacity:0.9; }
+  a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+  .note { font-family:var(--sans); font-size:0.9rem; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:1rem 1.2rem; margin:1.6rem 0 0; }
+  footer { padding:2.5rem 0 4rem; font-family:var(--sans); font-size:0.82rem; color:var(--ink-faint); }
+  @media (max-width:640px) { .paper h2 { font-size:1.2rem; } }
+</style>
+
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">The ZAO - Draft Papers (internal, unpublished)</p>
+    <h1>Drafts</h1>
+    <p class="lede">Working v0.2 drafts, deepened from thin v0.1 stubs. <b>Not published</b> and not linked from the public papers page - this index exists so Zaal can read through all of them in one place before deciding what to publish.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <ul class="papers">
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>WaveWarZ</h2>
+        <p>Live-traded music battles: mechanics, tokenomics, chains/contracts, partner network, roadmap.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/wavewarz.html">Read</a></div>
+      </li>
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>ZABAL Games</h2>
+        <p>Builder front door: timeline, mentor/Bonfire mechanics, Respect + Hats Protocol credential, partnerships.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/zabalgamez.html">Read</a></div>
+      </li>
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>ZAO Festivals</h2>
+        <p>Event history (ZAO-PALOOZA, ZAO-CHELLA), ZAOville and ZAOstock logistics, funding stack, roadmap.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/zao-festivals.html">Read</a></div>
+      </li>
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>PoidH</h2>
+        <p>On-chain bounty mechanics, round history, ZAO pipeline integration, ERC20 fork roadmap.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/poidh.html">Read</a></div>
+      </li>
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>Zuke</h2>
+        <p>Live audio rooms architecture, recap/clip pipeline into ZAOVideoEditor, WaveWarZ integration.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/zuke.html">Read</a></div>
+      </li>
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>COC Concertz</h2>
+        <p>Show history and artist profiles, metaverse/livestream format, tech stack, ecosystem integration.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/coc-concertz.html">Read</a></div>
+      </li>
+      <li class="paper">
+        <span class="num">Draft - v0.2</span>
+        <h2>ZAO Newsletter</h2>
+        <p>Daily cadence and voice, 190-issue streak, Paragraph/ZOE agent tech stack, roadmap.</p>
+        <div class="actions"><a class="btn read" href="/papers/drafts/zao-newsletter.html">Read</a></div>
+      </li>
+    </ul>
+    <p class="note">Every draft is sourced from its ICM context box plus ZAO OS research docs, with a Sources section at the bottom of each page. None are publish-ready as-is - each PR lists its own gaps. Individual PRs are open on ZAODEVZ/ZAOcowork for review; this page is just a reading copy.</p>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      Internal - not indexed, not linked from thezao.xyz/papers.
+    </div>
+  </footer>
+</main>
+</body>
+</html>
