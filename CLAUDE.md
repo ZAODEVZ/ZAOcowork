@@ -184,3 +184,10 @@ Schema is managed by `supabase/migrations/NNN_*.sql` (single source of truth). A
 - **Phase 2 — Supabase migration: ✅ done.** `data.ts` runs on Supabase; the old `data/actions.json` / GitHub-Contents path is retired (`legacy_source` tags pre-migration rows).
 - **Phase 3 — Bot API (`/api/v1/*`): ✅ done.** Bearer-token control plane (doc 800) for the bot fleet.
 - **Phase 4 — Hermes / agent coordination: in progress.** Telegram agent, fleet heartbeats/events/commands; remaining work is daily summaries + broader agent task-assignment.
+
+## ICM Context Boxes (AI-readable ZAO context)
+
+Fetch a box to load grounded context on any ZAO project or person:
+- `curl -s https://useicm.com/api/objects/<id>/llm.txt` ; directory https://thezao.xyz/list
+- Start box: **zao-assistant** `icm_-hsPHePpqX01RovoB_SEqA` (links to thezao, bettercallzaal, zabalgamez, wavewarz, farcaster, fractal, poidh, zuke, zao-festivals, coc-concertz, zao-newsletter, loop-engineering, milk-road).
+- Source of truth: `research/identity/icm-boxes/` in ZAOOS.
