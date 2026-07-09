@@ -267,10 +267,10 @@
   <div class="wrap">
     <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
     <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://docs.google.com/document/d/1o0-QfQvcJLXFiBLQp5FXEWHYnmMiAkrwZuj-uI8OskQ/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
-    <p class="eyebrow">Zuke - Whitepaper (draft v0.2)</p>
+    <p class="eyebrow">Zuke - Whitepaper (draft v0.3)</p>
     <h1>Zuke</h1>
     <p class="thesis">The ZAO's audio-spaces app - <b>live audio rooms where the community talks, wired into the content pipeline.</b> Where ephemeral moments become permanent assets.</p>
-    
+
     <section>
       <span class="num">1. Problem & Context</span>
       <h2>Why live audio matters (and why it disappears)</h2>
@@ -281,14 +281,14 @@
     <section>
       <span class="num">2. What It Is</span>
       <h2>Architecture & Tech Stack</h2>
-      <p>Zuke is a <strong>Next.js application</strong> (repo: <a href="https://github.com/ZAODEVZ/Zuke">ZAODEVZ/Zuke</a>) that wraps and extends <strong>Juke</strong> - nickysap's Farcaster-native live audio application (juke.audio). It runs at <strong>zuke.thezao.com</strong>.</p>
+      <p>Zuke is a <strong>Next.js application</strong> (repo: <a href="https://github.com/ZAODEVZ/Zuke">ZAODEVZ/Zuke</a>) that wraps and extends <strong>Juke</strong> - a Farcaster-native live audio application (juke.audio), using LiveKit for audio transport and SIWF (Sign In With Farcaster) for auth. It runs at <strong>zuke.thezao.com</strong>.</p>
       <h3>Core dependencies</h3>
       <ul class="fivec">
-        <li><b>Juke</b> - The underlying live audio room engine. Uses LiveKit for the audio transport layer and SIWF (Sign In With Farcaster) for authentication. Created and maintained by nickysap.</li>
-        <li><b>Zaal</b> - The ZAO community host who operates and schedules Zuke spaces on behalf of The ZAO.</li>
-        <li><b>LiveKit</b> - WebRTC-based audio infrastructure powering the actual room.</li>
-        <li><b>Next.js</b> - Web framework running Zuke's UI, space management, and recording orchestration.</li>
-        <li><b>SIWF</b> - Authentication layer, allowing hosts and participants to sign in with their Farcaster identity.</li>
+        <li><b>Juke</b> - The underlying live audio room engine (juke.audio). Provides real-time audio spaces with participant management, multi-part recordings via webhook delivery, and a public API for creating/managing rooms. Created by nickysap. Uses LiveKit for audio transport and SIWF for authentication.</li>
+        <li><b>LiveKit</b> - Open-source WebRTC infrastructure. Juke uses LiveKit for real-time audio streaming and recording coordination. LiveKit is a Selective Forwarding Unit (SFU) that orchestrates peer-to-peer audio connections.</li>
+        <li><b>SIWF</b> - Sign In With Farcaster. Standard authentication layer enabling hosts and participants to sign in with their Farcaster identity. Based on the EIP-4361 "Sign in With Ethereum" standard.</li>
+        <li><b>Supabase</b> - PostgreSQL database and storage backend for Zuke. Stores space metadata, participant records, and recordings in Supabase's public storage bucket.</li>
+        <li><b>Next.js</b> - Web framework for Zuke's UI, space management, and recording orchestration. Deployed on Vercel.</li>
       </ul>
     </section>
 
@@ -297,22 +297,23 @@
       <h2>The Recording & Processing Pipeline</h2>
       <p>Zuke's core job is to capture live audio and route it into the ZAO's content machinery. The flow:</p>
       <h3>Phase 1: Room Management</h3>
-      <p>Zaal (or an authorized ZAO operator) creates a live space directly in Zuke. Zuke provisions a Juke room, opens it for participants, and streams the audio through LiveKit. Participants authenticate with SIWF and join the room. The audio is <strong>continuously recorded</strong> for the duration of the session.</p>
-      <h3>Phase 2: Post-Production</h3>
-      <p>When the space closes, Zuke's pipeline kicks in:</p>
+      <p>Zaal (or an authorized ZAO operator) creates a live space directly in Zuke by calling Juke's API. Juke provisions the room and opens it for participants. Participants authenticate with SIWF and join the room. The audio streams through LiveKit. Juke continuously records the audio as multi-part chunks, and sends a <code>recording.ready</code> webhook to Zuke each time a part completes.</p>
+      <h3>Phase 2: Recording & Storage</h3>
+      <p>Zuke receives Juke's webhooks and stores recording metadata in Supabase (`juke_recordings` table). Recordings can come from multiple sources:</p>
       <ul class="fivec">
-        <li><b>Import & Durability</b> - Zuke can also import existing X Space recordings and treat them identically to native Juke recordings. This ensures durability: a conversation that happened elsewhere can be captured and put through the same machinery.</li>
-        <li><b>Recap & Snippet Generation</b> - The system generates textual recaps and identifies highlight clips from the raw recording.</li>
-        <li><b>Space Lifecycle</b> - Zuke has API-level hooks to create new spaces and end existing ones, allowing automated orchestration of the room cycle.</li>
-        <li><b>Transport Evolution</b> - Currently, Zuke uses 100ms as part of its recording stack. A multi-provider path is in active development, moving toward a cleaner abstraction (harmonized with HMS - Huddl Media Services). This keeps Zuke insulated from future changes in any single provider.</li>
+        <li><b>Juke Recordings</b> - Native spaces recorded by Juke via its <code>recording.ready</code> webhook (now multi-part, one row per segment).</li>
+        <li><b>X Space Imports</b> - Finished X (Twitter) Spaces can be imported as recordings. Zuke cannot ingest a live X Space, but once it ends, the audio can be downloaded (via yt-dlp, SpacesDown, or similar), uploaded, and processed identically to a native Juke recording.</li>
+        <li><b>Host Uploads</b> - Zaal or authorized hosts can upload audio directly via `POST /api/recordings/upload`.</li>
+        <li><b>Snippets</b> - Clipped segments of parent recordings via `POST /api/recordings/snippet` (does not re-encode; streams the parent file with media-fragment seeking).</li>
       </ul>
-      <h3>Phase 3: Distribution</h3>
-      <p>Once recorded and processed, Zuke recordings become the headwater of the ZAO content pipeline. They feed:</p>
+      <h3>Phase 3: Recap & Downstream Processing</h3>
+      <p>Once recorded and stored, Zuke exposes space data via a single API endpoint: <code>GET /api/recordings/recap?spaceId={id}</code>. This endpoint returns audio URLs, participant Farcaster identities (resolved via Neynar), host info, and timing metadata - everything a renderer needs to transform the raw recording into polished content.</p>
+      <p>Zuke itself performs no rendering (serverless has no ffmpeg; multi-hour renders are impractical). Instead, it routes recordings downstream to two independent renderers:</p>
       <ul class="fivec">
-        <li><b>ZAOVideoEditor</b> - Transforms space recordings into YouTube-ready long-form videos with editing, graphics, and proper metadata.</li>
-        <li><b>Clip Pipeline (Research doc 992)</b> - Extracts highlight moments from recordings and turns them into short-form clips, each with a POIDH clip bounty. This rewards creators for their moments.</li>
+        <li><b>ZAOVideoEditor</b> - Transforms space recordings into YouTube-ready long-form videos. Renders an audiogram (branded 1080p card + live waveform), transcribes audio, and generates SRT captions. Takes minutes to render. One command: `python scripts/space_to_youtube.py --space-id {id} --zuke-base https://zuke.thezao.com`.</li>
+        <li><b>juke-space-recap (by 99darwin)</b> - Remotion-based pipeline that turns a recording into a polished recap video with per-guest PFPs, rolling captions, waveform visualization, and speaker intro cards. Uses Deepgram transcription. Takes 3-6 hours to render. Includes human-in-the-loop step for matching spoken names to Farcaster @handles.</li>
       </ul>
-      <div class="stat">One live space becomes multiple assets: a full YouTube video, a set of short clips, and a batch of bounties paid to artists who created standout moments.</div>
+      <div class="stat">One live space becomes multiple assets: a full YouTube video (minutes), a per-guest recap video (hours), and a batch of short-form clips with POIDH bounties (via the clip pipeline).</div>
     </section>
 
     <section>
@@ -322,7 +323,7 @@
       <p>Without Zuke, live audio is ephemeral and unrewarded. With it, every space creates:</p>
       <ul class="fivec">
         <li><b>Permanent Record</b> - The conversation exists forever, searchable and shareable.</li>
-        <li><b>Attribution</b> - Speakers and artists are named and tied to their moments.</li>
+        <li><b>Attribution</b> - Speakers and artists are named and tied to their moments via Farcaster identity resolution.</li>
         <li><b>Monetization Path</b> - Recaps and clips become bounties. Short-form content drives distribution. YouTube videos drive awareness.</li>
         <li><b>Network Effect</b> - More people participate in live spaces because they know they'll reach a broader audience downstream. This accelerates ZAO community growth.</li>
         <li><b>Content Library</b> - The ZAO builds a durable archive of its culture and knowledge, available for remixing, education, and reference.</li>
@@ -336,15 +337,19 @@
       <ul class="lane">
         <li class="lane">
           <div class="tag">Juke Creator</div>
-          <p><strong>nickysap</strong> - Built and maintains Juke (juke.audio), the Farcaster-native live audio app that powers the room infrastructure. Juke is the foundation on which Zuke is built.</p>
+          <p><strong>nickysap</strong> - Built and maintains Juke (juke.audio), the Farcaster-native live audio application. Juke provides the room infrastructure, multi-part recording via webhooks, and LiveKit integration that Zuke depends on.</p>
         </li>
         <li class="lane">
           <div class="tag">ZAO Space Host</div>
-          <p><strong>Zaal</strong> - The ZAO community host and operator. Zaal uses Zuke to create and host ZAO spaces and is responsible for scheduling and moderating them.</p>
+          <p><strong>Zaal</strong> - The ZAO community host and operator. Zaal uses Zuke to create, schedule, and host ZAO spaces on behalf of the community.</p>
+        </li>
+        <li class="lane">
+          <div class="tag">Recap Renderer</div>
+          <p><strong>99darwin</strong> - Maintains juke-space-recap, the Remotion pipeline that transforms Zuke recordings into per-guest PFP recap videos with captions and speaker cards.</p>
         </li>
         <li class="lane">
           <div class="tag">Repository</div>
-          <p><strong>ZAODEVZ/Zuke</strong> - The Zuke codebase lives here. Actively maintained; last push 2026-07-09.</p>
+          <p><strong>ZAODEVZ/Zuke</strong> - The Zuke codebase lives here. Actively maintained; last push 2026-07-09. Multi-provider recording support and X Space import capability shipped as of 2026-06-21.</p>
         </li>
       </ul>
     </section>
@@ -355,19 +360,23 @@
       <p>Zuke does not exist in isolation. It is wired into the broader ZAO content ecosystem.</p>
       <div class="lane">
         <div class="tag">Upstream: Juke (Farcaster)</div>
-        <p>Juke.audio hosts the actual live rooms. Zuke wraps the Juke experience and adds recording, recap generation, and downstream routing. The relationship is: <em>Juke provides the room; Zuke provides the durability and production layer.</em></p>
+        <p>Juke.audio hosts the actual live rooms and handles audio recording. Zuke wraps the Juke experience and adds durable storage (Supabase), multi-source recording ingest (native, X Space import, manual upload), and downstream routing. The relationship is: <em>Juke provides the room and records the audio; Zuke provides the durability layer, API, and downstream connections.</em></p>
       </div>
       <div class="lane">
         <div class="tag">Downstream: ZAOVideoEditor</div>
-        <p>Zuke recordings are fed into ZAOVideoEditor, which transforms them into polished, long-form YouTube content. This is where Zuke recordings reach the broadest audience.</p>
+        <p>Zuke recordings are fed into ZAOVideoEditor, which transforms them into polished, long-form YouTube content with captions and metadata. Query Zuke's recap endpoint; render in minutes.</p>
+      </div>
+      <div class="lane">
+        <div class="tag">Downstream: juke-space-recap (99darwin)</div>
+        <p>Remotion-based renderer for per-guest recap videos with PFPs, captions, and speaker intros. Queries the same Zuke recap endpoint; takes 3-6 hours including transcription and human labeling.</p>
       </div>
       <div class="lane">
         <div class="tag">Downstream: Clip Pipeline (Doc 992)</div>
-        <p>Short-form clips are extracted from Zuke recordings via the clip pipeline. Each clip is attached to a POIDH bounty, incentivizing the identification and extraction of high-value moments. This turns ephemeral comments into rewarded contributions.</p>
+        <p>Short-form clips are extracted from Zuke recordings via the clip pipeline. Each clip is attached to a POIDH bounty, incentivizing the identification and extraction of high-value moments.</p>
       </div>
       <div class="lane">
         <div class="tag">Hosting</div>
-        <p>Live at <strong>zuke.thezao.com</strong>. Built on Next.js and deployed via Vercel (vercel.app). Repository at <a href="https://github.com/ZAODEVZ/Zuke">github.com/ZAODEVZ/Zuke</a>.</p>
+        <p>Live at <strong>zuke.thezao.com</strong>. Built on Next.js and deployed via Vercel. Repository at <a href="https://github.com/ZAODEVZ/Zuke">github.com/ZAODEVZ/Zuke</a>. Database and recording storage on Supabase.</p>
       </div>
     </section>
 
@@ -378,19 +387,19 @@
       <p>As of July 2026, Zuke is live and in active use by The ZAO community. The core capabilities are in production:</p>
       <ul class="fivec">
         <li><b>Zuke Spaces</b> - Live audio rooms, fully integrated with Juke and recording on all sessions.</li>
-        <li><b>Recording Pipeline</b> - Captures all live conversations and stores them for downstream processing.</li>
-        <li><b>Recap Generation</b> - Automatic generation of text summaries from recorded spaces.</li>
-        <li><b>Clip Extraction</b> - Identification of high-value moments within recordings.</li>
+        <li><b>Recording Pipeline</b> - Multi-source recording ingest: native Juke recordings, X Space imports, host uploads, and snippet clipping.</li>
+        <li><b>Recap Endpoint</b> - `GET /api/recordings/recap?spaceId={id}` exposes audio URLs, participant identities, and metadata to downstream renderers.</li>
+        <li><b>Farcaster Identity Resolution</b> - Participant PFPs and @handles resolved via Neynar for recap generation.</li>
       </ul>
       <h3>In Progress</h3>
-      <p>Multi-provider transport abstraction - moving from 100ms toward a cleaner seam that supports HMS (Huddl Media Services) and other providers. This makes the system more resilient and decouples Zuke from any single vendor.</p>
+      <p>Authentication and casting improvements for v1 - transitioning from admin password authentication to Farcaster SIWN (Sign In With Neynar) for broader access, plus integration with ZAO signer for automatic casting of space announcements to @thezao.</p>
       <h3>Known Open Questions</h3>
       <p>The following remain unsolved or partially solved:</p>
       <ul class="fivec">
-        <li><b>Scaling</b> - As ZAO spaces grow in frequency and size, Zuke's recording and processing infrastructure must scale. The multi-provider work is partly driven by this need.</li>
+        <li><b>Scaling</b> - As ZAO spaces grow in frequency and size, multi-part recording coordination and downstream rendering must scale. Supabase and Vercel handle current load; future infrastructure needs TBD.</li>
         <li><b>Moderation</b> - Who moderates live spaces? What are the rules? How are abuse and harassment handled? These policies are in formation.</li>
         <li><b>Monetization Timing</b> - POIDH clip bounties are the primary monetization path, but the timing, sizing, and discovery of those bounties is still being optimized.</li>
-        <li><b>Attribution</b> - Ensuring that all speakers and contributors to moments in recordings are properly credited and can be rewarded is still a work in progress.</li>
+        <li><b>Real-Time X Space Ingest</b> - Currently Zuke can only import finished X Spaces (no live re-broadcast). Real-time X Space stream ingest is a separate engineering problem, deferred for now.</li>
       </ul>
     </section>
 
@@ -406,8 +415,12 @@
         <div class="a">Yes. The clip pipeline is designed to identify and extract highlight moments from Zuke recordings. Clipped moments become POIDH bounties, and the creator of the clip (and the featured speakers) are rewarded.</div>
       </div>
       <div class="faq">
+        <div class="q">Can I render a Zuke space to YouTube or create a recap video?</div>
+        <div class="a">Yes. Query `GET /api/recordings/recap?spaceId={id}` to get audio URLs and participant metadata, then use ZAOVideoEditor (for YouTube) or juke-space-recap (for per-guest PFP recaps) to render the final video. See the repos for setup and usage.</div>
+      </div>
+      <div class="faq">
         <div class="q">Can I access the Zuke codebase?</div>
-        <div class="a">Yes. The repo is public at <a href="https://github.com/ZAODEVZ/Zuke">ZAODEVZ/Zuke</a>. Contributions and feedback are welcome.</div>
+        <div class="a">Yes. The repo is public at <a href="https://github.com/ZAODEVZ/Zuke">ZAODEVZ/Zuke</a>. Contributions and feedback are welcome. See setup-zuke.md for provisioning and deployment instructions.</div>
       </div>
       <div class="faq">
         <div class="q">How do I report a bug or suggest a feature?</div>
@@ -418,19 +431,22 @@
     <section>
       <span class="num">Sources & References</span>
       <h2>Sourced From</h2>
-      <p>This whitepaper is grounded in the following primary sources:</p>
+      <p>This whitepaper is grounded in the following primary and verified sources:</p>
       <ul class="fivec">
-        <li><b>ICM Context Box: Zuke (ZAO Spaces)</b> - useicm.com/api/objects/icm_RF7Y6H1bkbn5NujhB2pI0A/llm.txt. Primary reference for Zuke's architecture, Juke dependency, recording pipeline, and downstream connections to ZAOVideoEditor and the clip pipeline (doc 992).</li>
-        <li><b>GitHub Repository: ZAODEVZ/Zuke</b> - github.com/ZAODEVZ/Zuke. The canonical Zuke codebase. Last active commit 2026-07-09. Repository metadata confirms Next.js implementation and Vercel deployment.</li>
-        <li><b>Juke Reference</b> - juke.audio. Farcaster-native live audio app by nickysap. LiveKit transport, SIWF authentication. Foundation for Zuke's room infrastructure.</li>
-        <li><b>Related: ZAOVideoEditor</b> - Downstream consumer of Zuke recordings. Transforms them into YouTube-ready long-form video.</li>
+        <li><b>GitHub Repository: ZAODEVZ/Zuke</b> - github.com/ZAODEVZ/Zuke. The canonical Zuke codebase and documentation. README.md, setup-zuke.md, docs/recap.md. Repository metadata confirms Next.js + Supabase + Vercel deployment. Recent commits detail multi-source recording ingest and X Space import (merged 2026-06-21) and API documentation updates (2026-07-09).</li>
+        <li><b>Juke: Live Audio on Farcaster</b> - juke.audio. Official Juke documentation. Confirms LiveKit audio transport, SIWF authentication, multi-part recording via webhook, and public API/developer features.</li>
+        <li><b>LiveKit Documentation</b> - docs.livekit.io. Confirms LiveKit is open-source WebRTC infrastructure (written in Go using Pion), operates as an SFU (Selective Forwarding Unit), and provides recording and adaptive quality capabilities.</li>
+        <li><b>Farcaster Documentation: Sign In with Farcaster (SIWF)</b> - docs.farcaster.xyz/developers/siwf. Confirms SIWF is the standard Farcaster authentication protocol, based on EIP-4361 standard.</li>
+        <li><b>ICM Context Box: Zuke (ZAO Spaces)</b> - Primary ZAO internal reference for Zuke's architecture, Juke dependency, recording pipeline, and downstream connections to ZAOVideoEditor and clip pipeline.</li>
+        <li><b>Related: ZAOVideoEditor</b> - Downstream consumer of Zuke recordings. Transforms them into YouTube-ready long-form video with audiograms and captions.</li>
+        <li><b>Related: juke-space-recap (99darwin)</b> - github.com/99darwin/juke-space-recap. Remotion-based renderer for per-guest recap videos. Queries Zuke's recap endpoint.</li>
         <li><b>Related: Clip Pipeline (Research doc 992)</b> - Downstream consumer of Zuke recordings. Extracts highlights and attaches POIDH bounties.</li>
         <li><b>Related: The ZAO (thezao.xyz)</b> - The broader decentralized music/creator ecosystem to which Zuke belongs.</li>
       </ul>
     </section>
 
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.2, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap"><p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body>
