@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="POIDH @ ZAO Whitepaper (DRAFT)">
+<meta property="og:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta property="og:image" content="https://thezao.xyz/papers-og.png">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/poidh">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The ZAO Technical Whitepaper">
+<meta name="twitter:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<title>The ZAO - POIDH @ ZAO Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Technical Whitepaper","description":"Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/technical","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-02","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
+</style>
+
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers" class="home">Back to Papers</a><span class="arrows"><a href="/papers" title="Papers home">Home</a></span></div>
+<main>
+  <div class="wrap">
+    <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
+    <p class="eyebrow">POIDH @ ZAO - Whitepaper (draft v0.1)</p>
+    <h1>POIDH @ ZAO</h1>
+    <p class="thesis">Bounties that turn attention into work. The ZAO posts creative and clip-up bounties on poidh - a public task, an open pot, a clear bar - and pays out on-chain to whoever clears it.</p>
+    <section><h2>What it is</h2>
+    <p>poidh ("pics or it didn't happen") is an on-chain bounty platform on Base, founded by Kenny. The ZAO runs clip-up and creative bounties on it: someone does a task - clip a video, make an ad - posts it publicly, and submits the link to claim the reward on Base. Style note: lowercase "poidh".</p></section>
+    <section><h2>How the ZAO runs a bounty</h2>
+    <p>The ZAO uses a We-Them-Media (WTM) audition format: a clear "the bar", a scoring rubric, a single judge, an explicit deadline, and an open pot that anyone can top up. Every bounty runs past Kenny first. The operational home is the zpoidh repo (github.com/bettercallzaal/zpoidh) - round pages, brand kits, and judging records live there.</p></section>
+    <section><h2>Live threads (2026)</h2>
+    <p>"Best ad for ZABAL Gamez" (bounty 1180), a clip-up and creative promo. A POIDH x Unlock Protocol clipping bounty with Kenny and the Unlock DAO - sparked small, open pot. The ZABAL Gamez x POIDH fireside collectible tied to the Unlock event. All of it feeds the clipper pipeline (research doc 992): recordings become clip candidates become poidh bounties.</p></section>
+    <section><h2>Why it matters</h2>
+    <p>Bounties are how The ZAO converts a live moment into distributed creative labor - and pays for it transparently, on-chain, to anyone who shows up and clears the bar. It is the reward layer that closes the loop from a Zuke space to a clip to a paid creator.</p></section>
+    <section><h2>Find it</h2>
+    <p>poidh.xyz and the zpoidh repo. On Farcaster: the /poidh channel.</p></section>
+  </div>
+  <footer><div class="wrap"><p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+</main>
+<script src="/papers/quote.js"></script>
+</body></html>
