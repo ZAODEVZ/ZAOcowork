@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Zuke Whitepaper (DRAFT)">
-<meta property="og:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta property="og:description" content="The ZAO's audio-spaces app - live audio rooms where the community talks, recorded and wired into the content pipeline.">
 <meta property="og:image" content="https://thezao.xyz/papers-og.png">
 <meta property="og:url" content="https://thezao.xyz/papers/drafts/zuke">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The ZAO Technical Whitepaper">
-<meta name="twitter:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta name="twitter:title" content="Zuke Whitepaper (DRAFT)">
+<meta name="twitter:description" content="The ZAO's audio-spaces app - live audio rooms where the community talks, recorded and wired into the content pipeline.">
 <meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
 <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <title>The ZAO - Zuke Whitepaper (DRAFT)</title>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Technical Whitepaper","description":"Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/technical","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-02","inLanguage":"en-US"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Zuke Whitepaper","description":"The ZAO's audio-spaces app - live audio rooms where the community talks, recorded and wired into the content pipeline.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/zuke","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-09","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
 <style>
   :root {
     --ground: #141e27;
@@ -266,21 +266,171 @@
 <main>
   <div class="wrap">
     <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
-    <p class="eyebrow">Zuke - Whitepaper (draft v0.1)</p>
+    <p class="eyebrow">Zuke - Whitepaper (draft v0.2)</p>
     <h1>Zuke</h1>
-    <p class="thesis">The ZAO's audio-spaces app - live audio rooms for the community, built on Juke and wired to record. Where the network talks live, and where the content pipeline begins.</p>
-    <section><h2>What it is</h2>
-    <p>Zuke is a Next.js app (repo: ZAODEVZ/Zuke) that hosts and records The ZAO's live audio spaces. It runs at zuke.thezao.com and is built on Juke - nickysap's Farcaster-native live audio app (juke.audio, LiveKit transport, SIWF auth). Zaal hosts ZAO spaces on Juke; Zuke wraps them, records them, and turns the raw audio into something the rest of the network can use.</p></section>
-    <section><h2>The recordings pipeline</h2>
-    <p>Zuke can import X Space recordings, generate recaps and snippets, and create or end Juke spaces directly. A multi-provider transport path is in progress - moving off 100ms toward a cleaner seam. The point is durability: a live conversation should not evaporate when the room closes.</p></section>
-    <section><h2>How it connects</h2>
-    <p>Zuke recordings are the headwater of the ZAO content pipeline. They feed ZAOVideoEditor, which turns spaces into YouTube-ready videos, and they feed the clip pipeline that turns moments into POIDH clip bounties. One live space becomes a video, a set of clips, and a batch of bounties - the network's talk turned into distribution and reward.</p></section>
-    <section><h2>Why it matters</h2>
-    <p>Live audio is where a community actually forms - but on most platforms it disappears. Zuke keeps it, and routes it into the machinery that returns value to the artists and members who showed up. It is the front of the funnel for everything downstream.</p></section>
-    <section><h2>Find it</h2>
-    <p>zuke.thezao.com. Built on Juke (juke.audio) on Farcaster.</p></section>
+    <p class="thesis">The ZAO's audio-spaces app - <b>live audio rooms where the community talks, wired into the content pipeline.</b> Where ephemeral moments become permanent assets.</p>
+    
+    <section>
+      <span class="num">1. Problem & Context</span>
+      <h2>Why live audio matters (and why it disappears)</h2>
+      <p>In most platforms, live audio conversations evaporate the moment the room closes. On Farcaster (the ZAO's home), live audio is where the community actually forms - unscripted, immediate, full-bandwidth human connection. But that signal gets lost. There's no recording. No way to remix it. No way to reward the artists who created it. No distribution layer to extend its reach.</p>
+      <p>The ZAO needs a way to keep those moments, route them into production, and make them valuable. That is Zuke.</p>
+    </section>
+
+    <section>
+      <span class="num">2. What It Is</span>
+      <h2>Architecture & Tech Stack</h2>
+      <p>Zuke is a <strong>Next.js application</strong> (repo: <a href="https://github.com/ZAODEVZ/Zuke">ZAODEVZ/Zuke</a>) that wraps and extends <strong>Juke</strong> - nickysap's Farcaster-native live audio application (juke.audio). It runs at <strong>zuke.thezao.com</strong>.</p>
+      <h3>Core dependencies</h3>
+      <ul class="fivec">
+        <li><b>Juke</b> - The underlying live audio room engine. Uses LiveKit for the audio transport layer and SIWF (Sign In With Farcaster) for authentication. Created and maintained by nickysap.</li>
+        <li><b>Zaal</b> - The ZAO community host who operates and schedules Zuke spaces on behalf of The ZAO.</li>
+        <li><b>LiveKit</b> - WebRTC-based audio infrastructure powering the actual room.</li>
+        <li><b>Next.js</b> - Web framework running Zuke's UI, space management, and recording orchestration.</li>
+        <li><b>SIWF</b> - Authentication layer, allowing hosts and participants to sign in with their Farcaster identity.</li>
+      </ul>
+    </section>
+
+    <section>
+      <span class="num">3. How It Works</span>
+      <h2>The Recording & Processing Pipeline</h2>
+      <p>Zuke's core job is to capture live audio and route it into the ZAO's content machinery. The flow:</p>
+      <h3>Phase 1: Room Management</h3>
+      <p>Zaal (or an authorized ZAO operator) creates a live space directly in Zuke. Zuke provisions a Juke room, opens it for participants, and streams the audio through LiveKit. Participants authenticate with SIWF and join the room. The audio is <strong>continuously recorded</strong> for the duration of the session.</p>
+      <h3>Phase 2: Post-Production</h3>
+      <p>When the space closes, Zuke's pipeline kicks in:</p>
+      <ul class="fivec">
+        <li><b>Import & Durability</b> - Zuke can also import existing X Space recordings and treat them identically to native Juke recordings. This ensures durability: a conversation that happened elsewhere can be captured and put through the same machinery.</li>
+        <li><b>Recap & Snippet Generation</b> - The system generates textual recaps and identifies highlight clips from the raw recording.</li>
+        <li><b>Space Lifecycle</b> - Zuke has API-level hooks to create new spaces and end existing ones, allowing automated orchestration of the room cycle.</li>
+        <li><b>Transport Evolution</b> - Currently, Zuke uses 100ms as part of its recording stack. A multi-provider path is in active development, moving toward a cleaner abstraction (harmonized with HMS - Huddl Media Services). This keeps Zuke insulated from future changes in any single provider.</li>
+      </ul>
+      <h3>Phase 3: Distribution</h3>
+      <p>Once recorded and processed, Zuke recordings become the headwater of the ZAO content pipeline. They feed:</p>
+      <ul class="fivec">
+        <li><b>ZAOVideoEditor</b> - Transforms space recordings into YouTube-ready long-form videos with editing, graphics, and proper metadata.</li>
+        <li><b>Clip Pipeline (Research doc 992)</b> - Extracts highlight moments from recordings and turns them into short-form clips, each with a POIDH clip bounty. This rewards creators for their moments.</li>
+      </ul>
+      <div class="stat">One live space becomes multiple assets: a full YouTube video, a set of short clips, and a batch of bounties paid to artists who created standout moments.</div>
+    </section>
+
+    <section>
+      <span class="num">4. Why It Matters</span>
+      <h2>The Connection to The ZAO Flywheel</h2>
+      <p>Zuke sits at a critical junction in The ZAO ecosystem. It is not primarily a social app or a performance venue. It is <strong>production infrastructure</strong> - the capture point for the community's unscripted creative energy.</p>
+      <p>Without Zuke, live audio is ephemeral and unrewarded. With it, every space creates:</p>
+      <ul class="fivec">
+        <li><b>Permanent Record</b> - The conversation exists forever, searchable and shareable.</li>
+        <li><b>Attribution</b> - Speakers and artists are named and tied to their moments.</li>
+        <li><b>Monetization Path</b> - Recaps and clips become bounties. Short-form content drives distribution. YouTube videos drive awareness.</li>
+        <li><b>Network Effect</b> - More people participate in live spaces because they know they'll reach a broader audience downstream. This accelerates ZAO community growth.</li>
+        <li><b>Content Library</b> - The ZAO builds a durable archive of its culture and knowledge, available for remixing, education, and reference.</li>
+      </ul>
+      <p><em>Zuke makes The ZAO's live audio scalable and economically productive.</em></p>
+    </section>
+
+    <section>
+      <span class="num">5. Team & People</span>
+      <h2>Who Is Behind It</h2>
+      <ul class="lane">
+        <li class="lane">
+          <div class="tag">Juke Creator</div>
+          <p><strong>nickysap</strong> - Built and maintains Juke (juke.audio), the Farcaster-native live audio app that powers the room infrastructure. Juke is the foundation on which Zuke is built.</p>
+        </li>
+        <li class="lane">
+          <div class="tag">ZAO Space Host</div>
+          <p><strong>Zaal</strong> - The ZAO community host and operator. Zaal uses Zuke to create and host ZAO spaces and is responsible for scheduling and moderating them.</p>
+        </li>
+        <li class="lane">
+          <div class="tag">Repository</div>
+          <p><strong>ZAODEVZ/Zuke</strong> - The Zuke codebase lives here. Actively maintained; last push 2026-07-09.</p>
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <span class="num">6. Distribution & Partners</span>
+      <h2>Integrations & Connections</h2>
+      <p>Zuke does not exist in isolation. It is wired into the broader ZAO content ecosystem.</p>
+      <div class="lane">
+        <div class="tag">Upstream: Juke (Farcaster)</div>
+        <p>Juke.audio hosts the actual live rooms. Zuke wraps the Juke experience and adds recording, recap generation, and downstream routing. The relationship is: <em>Juke provides the room; Zuke provides the durability and production layer.</em></p>
+      </div>
+      <div class="lane">
+        <div class="tag">Downstream: ZAOVideoEditor</div>
+        <p>Zuke recordings are fed into ZAOVideoEditor, which transforms them into polished, long-form YouTube content. This is where Zuke recordings reach the broadest audience.</p>
+      </div>
+      <div class="lane">
+        <div class="tag">Downstream: Clip Pipeline (Doc 992)</div>
+        <p>Short-form clips are extracted from Zuke recordings via the clip pipeline. Each clip is attached to a POIDH bounty, incentivizing the identification and extraction of high-value moments. This turns ephemeral comments into rewarded contributions.</p>
+      </div>
+      <div class="lane">
+        <div class="tag">Hosting</div>
+        <p>Live at <strong>zuke.thezao.com</strong>. Built on Next.js and deployed via Vercel (vercel.app). Repository at <a href="https://github.com/ZAODEVZ/Zuke">github.com/ZAODEVZ/Zuke</a>.</p>
+      </div>
+    </section>
+
+    <section>
+      <span class="num">7. Current Status & Roadmap</span>
+      <h2>Where Zuke Is Now & What's Next</h2>
+      <h3>Shipped & Active</h3>
+      <p>As of July 2026, Zuke is live and in active use by The ZAO community. The core capabilities are in production:</p>
+      <ul class="fivec">
+        <li><b>Zuke Spaces</b> - Live audio rooms, fully integrated with Juke and recording on all sessions.</li>
+        <li><b>Recording Pipeline</b> - Captures all live conversations and stores them for downstream processing.</li>
+        <li><b>Recap Generation</b> - Automatic generation of text summaries from recorded spaces.</li>
+        <li><b>Clip Extraction</b> - Identification of high-value moments within recordings.</li>
+      </ul>
+      <h3>In Progress</h3>
+      <p>Multi-provider transport abstraction - moving from 100ms toward a cleaner seam that supports HMS (Huddl Media Services) and other providers. This makes the system more resilient and decouples Zuke from any single vendor.</p>
+      <h3>Known Open Questions</h3>
+      <p>The following remain unsolved or partially solved:</p>
+      <ul class="fivec">
+        <li><b>Scaling</b> - As ZAO spaces grow in frequency and size, Zuke's recording and processing infrastructure must scale. The multi-provider work is partly driven by this need.</li>
+        <li><b>Moderation</b> - Who moderates live spaces? What are the rules? How are abuse and harassment handled? These policies are in formation.</li>
+        <li><b>Monetization Timing</b> - POIDH clip bounties are the primary monetization path, but the timing, sizing, and discovery of those bounties is still being optimized.</li>
+        <li><b>Attribution</b> - Ensuring that all speakers and contributors to moments in recordings are properly credited and can be rewarded is still a work in progress.</li>
+      </ul>
+    </section>
+
+    <section>
+      <span class="num">8. How to Participate</span>
+      <h2>Getting Involved</h2>
+      <div class="faq">
+        <div class="q">I want to host a ZAO space in Zuke. What do I do?</div>
+        <div class="a">Connect with Zaal (the ZAO space host) or reach out through The ZAO community channels. Zaal manages scheduling and host access for Zuke spaces.</div>
+      </div>
+      <div class="faq">
+        <div class="q">I found a great moment in a recording. Can I clip it?</div>
+        <div class="a">Yes. The clip pipeline is designed to identify and extract highlight moments from Zuke recordings. Clipped moments become POIDH bounties, and the creator of the clip (and the featured speakers) are rewarded.</div>
+      </div>
+      <div class="faq">
+        <div class="q">Can I access the Zuke codebase?</div>
+        <div class="a">Yes. The repo is public at <a href="https://github.com/ZAODEVZ/Zuke">ZAODEVZ/Zuke</a>. Contributions and feedback are welcome.</div>
+      </div>
+      <div class="faq">
+        <div class="q">How do I report a bug or suggest a feature?</div>
+        <div class="a">File an issue on the GitHub repository or reach out to The ZAO engineering team through official channels.</div>
+      </div>
+    </section>
+
+    <section>
+      <span class="num">Sources & References</span>
+      <h2>Sourced From</h2>
+      <p>This whitepaper is grounded in the following primary sources:</p>
+      <ul class="fivec">
+        <li><b>ICM Context Box: Zuke (ZAO Spaces)</b> - useicm.com/api/objects/icm_RF7Y6H1bkbn5NujhB2pI0A/llm.txt. Primary reference for Zuke's architecture, Juke dependency, recording pipeline, and downstream connections to ZAOVideoEditor and the clip pipeline (doc 992).</li>
+        <li><b>GitHub Repository: ZAODEVZ/Zuke</b> - github.com/ZAODEVZ/Zuke. The canonical Zuke codebase. Last active commit 2026-07-09. Repository metadata confirms Next.js implementation and Vercel deployment.</li>
+        <li><b>Juke Reference</b> - juke.audio. Farcaster-native live audio app by nickysap. LiveKit transport, SIWF authentication. Foundation for Zuke's room infrastructure.</li>
+        <li><b>Related: ZAOVideoEditor</b> - Downstream consumer of Zuke recordings. Transforms them into YouTube-ready long-form video.</li>
+        <li><b>Related: Clip Pipeline (Research doc 992)</b> - Downstream consumer of Zuke recordings. Extracts highlights and attaches POIDH bounties.</li>
+        <li><b>Related: The ZAO (thezao.xyz)</b> - The broader decentralized music/creator ecosystem to which Zuke belongs.</li>
+      </ul>
+    </section>
+
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap"><p class="draft-flag">Draft v0.2, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
 </main>
 <script src="/papers/quote.js"></script>
-</body></html>
+</body>
+</html>
