@@ -16,48 +16,20 @@ interface Box {
 
 // Source of truth for box content: bettercallzaal/ZAOOS research/identity/icm-boxes/
 const BOXES: Box[] = [
-  {
-    name: "The ZAO",
-    id: "thezao",
-    handle: "thezao",
-    desc: "The decentralized impact network (ZAO = ZTalent Artist Organization) - mission, Respect/Fractal governance, production lanes.",
-    hash: "icm_wkJvcyrDUl999kJdqUB_dg",
-  },
-  {
-    name: "Zaal (BetterCallZaal)",
-    id: "bettercallzaal",
-    handle: "bettercallzaal",
-    desc: "Founder of The ZAO - who he is, what he runs, how he operates, links.",
-    hash: "icm_07XkRrWam3vO9u5nbJEahg",
-  },
-  {
-    name: "ZABAL Games",
-    id: "zabalgamez",
-    handle: "zabalgamez",
-    desc: "The ZAO's 3-month build-a-thon - tracks, the June/July/August arc, how to enter.",
-    hash: "icm_PiCDHNNZ3WZpNoF59OA8Dw",
-  },
-  {
-    name: "WaveWarZ",
-    id: "wavewarz",
-    handle: "wavewarz",
-    desc: "Live-traded music battles - artists battle, fans trade and earn. A ZAO front door.",
-    hash: "icm_dMc9jOsP91lAjxkGFhoxDg",
-  },
-  {
-    name: "ZAO Assistant",
-    id: "zao-assistant",
-    handle: "zao-assistant",
-    desc: "The AI operator layer - what it can do, the operating rules, where context lives. Point a fresh assistant here.",
-    hash: "icm_3_kBodVZqijpMtjXSqGBXw",
-  },
-  {
-    name: "Farcaster (knowledge)",
-    id: "farcaster",
-    handle: "farcaster",
-    desc: "General Farcaster protocol knowledge - the Neynar era, the primitives - plus the ZAO's Farcaster footprint.",
-    hash: "icm_bnMUjrLlbSpcYLiuZ-V_NQ",
-  },
+  { name: "The ZAO", handle: "thezao", hash: "icm_ohb0F_XOYDz9Tw_w4yX3PA", desc: "The decentralized impact network (ZAO = ZTalent Artist Organization) - mission, Respect/Fractal governance, production lanes." },
+  { name: "Zaal (BetterCallZaal)", handle: "bettercallzaal", hash: "icm_r1ZHKeAdS9UNt4oz7n6HRA", desc: "Founder of The ZAO - who he is, what he runs, how he operates, links." },
+  { name: "ZABAL Games", handle: "zabalgamez", hash: "icm_6EcindcuwxlkMO7-lT83cQ", desc: "The ZAO's 3-month build-a-thon - tracks, the June/July/August arc, how to enter." },
+  { name: "WaveWarZ", handle: "wavewarz", hash: "icm_RxT9r-_IjG1U9kxOniSzFQ", desc: "Live-traded music battles - artists battle, fans trade and earn. A ZAO front door." },
+  { name: "ZAO Festivals", handle: "zao-festivals", hash: "icm_5JRCZhz7S4C3yo5c27ElNA", desc: "The IRL live-culture arm - ZAOstock (Oct 3 2026, Ellsworth ME), ZAOville, ZAO-PALOOZA, ZAO-CHELLA." },
+  { name: "COC Concertz", handle: "coc-concertz", hash: "icm_PmXTIAro8llyOv9LCJ-LZw", desc: "The ZAO's live concert series - numbered editions putting independent artists on stage." },
+  { name: "The ZAO Newsletter", handle: "zao-newsletter", hash: "icm_C2TnmeXV0tcs6QkGbc2sGA", desc: "The daily build log on Paragraph - the strict voice + how it runs." },
+  { name: "Zuke (ZAO Spaces)", handle: "zuke", hash: "icm_RF7Y6H1bkbn5NujhB2pI0A", desc: "The ZAO's audio-spaces app (Juke-integrated) - hosts + records community spaces." },
+  { name: "Fractal + Respect", handle: "fractal", hash: "icm_4YDB03ZKwFxsSumnzeYh0A", desc: "ZAO governance - Respect (soulbound), the weekly Respect Game, OREC on-chain execution." },
+  { name: "POIDH @ ZAO", handle: "poidh", hash: "icm_1CRn7Oyvee1jDSK9kje7dw", desc: "ZAO's on-chain clip-up + creative bounties on Base (with Kenny's POIDH)." },
+  { name: "ZAO Assistant", handle: "zao-assistant", hash: "icm_-hsPHePpqX01RovoB_SEqA", desc: "The AI operator layer - capabilities, operating rules, where context lives. Point a fresh assistant here." },
+  { name: "Farcaster (knowledge)", handle: "farcaster", hash: "icm_IrttNJQlfVyaC1hFkPmW-w", desc: "General Farcaster protocol knowledge (the Neynar era) + the ZAO's Farcaster footprint." },
+  { name: "Loop Engineering (knowledge)", handle: "loop-engineering", hash: "icm_7knlj4KZlzS8wqumf-8A0w", desc: "How autonomous agents run - the 5 loops, the Karpathy method - mapped to how ZAO runs ZOE." },
+  { name: "Milk Road (reference)", handle: "milk-road", hash: "icm_OGk1tBJqRQe9kpsIK3yxSw", desc: "The crypto newsletter's growth/monetization playbook, studied for The ZAO Newsletter." },
 ];
 
 const humanUrl = (hash: string) => `https://useicm.com/icm/${hash}`;
@@ -126,7 +98,7 @@ export default function ListPage() {
           </p>
           <pre className="mt-3 overflow-x-auto rounded-lg bg-black/40 p-3 font-mono text-xs text-slate-200">
 {`Use thezao as my shareable context box:
-https://useicm.com/icm/icm_wkJvcyrDUl999kJdqUB_dg
+https://useicm.com/icm/icm_ohb0F_XOYDz9Tw_w4yX3PA
 Read it first, then use it as context for this conversation.`}
           </pre>
         </div>
