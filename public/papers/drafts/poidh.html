@@ -4,18 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta property="og:type" content="website">
-<meta property="og:title" content="POIDH @ ZAO Whitepaper (DRAFT)">
-<meta property="og:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta property="og:title" content="poidh @ The ZAO Whitepaper (DRAFT)">
+<meta property="og:description" content="An on-chain bounty platform that turns creative moments into paid work. The ZAO runs transparent, open-pot bounties on Base.">
 <meta property="og:image" content="https://thezao.xyz/papers-og.png">
 <meta property="og:url" content="https://thezao.xyz/papers/drafts/poidh">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="The ZAO Technical Whitepaper">
-<meta name="twitter:description" content="Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.">
+<meta name="twitter:title" content="poidh @ The ZAO Whitepaper">
+<meta name="twitter:description" content="An on-chain bounty platform that turns creative moments into paid work. The ZAO runs transparent, open-pot bounties on Base.">
 <meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
 <meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
 <meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
-<title>The ZAO - POIDH @ ZAO Whitepaper (DRAFT)</title>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The ZAO Technical Whitepaper","description":"Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/technical","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-02","dateModified":"2026-07-02","inLanguage":"en-US"}</script>
+<title>The ZAO - poidh Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"poidh @ The ZAO","description":"An on-chain bounty platform that turns creative moments into paid work. The ZAO runs transparent, open-pot bounties on Base.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/poidh","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-09","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
 <style>
   :root {
     --ground: #141e27;
@@ -266,21 +266,140 @@
 <main>
   <div class="wrap">
     <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
-    <p class="eyebrow">POIDH @ ZAO - Whitepaper (draft v0.1)</p>
-    <h1>POIDH @ ZAO</h1>
-    <p class="thesis">Bounties that turn attention into work. The ZAO posts creative and clip-up bounties on poidh - a public task, an open pot, a clear bar - and pays out on-chain to whoever clears it.</p>
-    <section><h2>What it is</h2>
-    <p>poidh ("pics or it didn't happen") is an on-chain bounty platform on Base, founded by Kenny. The ZAO runs clip-up and creative bounties on it: someone does a task - clip a video, make an ad - posts it publicly, and submits the link to claim the reward on Base. Style note: lowercase "poidh".</p></section>
-    <section><h2>How the ZAO runs a bounty</h2>
-    <p>The ZAO uses a We-Them-Media (WTM) audition format: a clear "the bar", a scoring rubric, a single judge, an explicit deadline, and an open pot that anyone can top up. Every bounty runs past Kenny first. The operational home is the zpoidh repo (github.com/bettercallzaal/zpoidh) - round pages, brand kits, and judging records live there.</p></section>
-    <section><h2>Live threads (2026)</h2>
-    <p>"Best ad for ZABAL Gamez" (bounty 1180), a clip-up and creative promo. A POIDH x Unlock Protocol clipping bounty with Kenny and the Unlock DAO - sparked small, open pot. The ZABAL Gamez x POIDH fireside collectible tied to the Unlock event. All of it feeds the clipper pipeline (research doc 992): recordings become clip candidates become poidh bounties.</p></section>
-    <section><h2>Why it matters</h2>
-    <p>Bounties are how The ZAO converts a live moment into distributed creative labor - and pays for it transparently, on-chain, to anyone who shows up and clears the bar. It is the reward layer that closes the loop from a Zuke space to a clip to a paid creator.</p></section>
-    <section><h2>Find it</h2>
-    <p>poidh.xyz and the zpoidh repo. On Farcaster: the /poidh channel.</p></section>
+    <p class="eyebrow">poidh @ The ZAO - Whitepaper (draft v0.2)</p>
+    <h1>poidh @ The ZAO</h1>
+    <p class="thesis">An on-chain bounty platform that turns <b>live creative moments into paid work</b>. The ZAO posts clip-up and creative bounties on poidh - a public task, a transparent reward pool, a clear bar - and pays out directly on Base to whoever delivers.</p>
+
+    <section>
+      <h2>What it is</h2>
+      <p>poidh ("pics or it didn't happen") is an on-chain bounty platform running on Base, founded by Kenny. Bounties are funded in ETH, judged transparently, and paid directly to creators' wallets on-chain. The ZAO uses it to run structured creative and clip-up bounties - someone records video, clips it, makes an ad, or produces media - posts it publicly, and submits proof to claim the reward.</p>
+      <p class="lead">Style note: lowercase "poidh". The platform is at poidh.xyz. The canonical ops home is the zpoidh repository on GitHub.</p>
+    </section>
+
+    <section>
+      <h2>Why it exists</h2>
+      <p>Bounties solve a hard problem: how do you turn a single live moment - a music session, a conversation, a recording - into work for many people, fairly compensate them, and keep the whole pipeline transparent?</p>
+      <p>A traditional workflow loses value at each step: session happens, gets recorded, sits. Weeks later someone clips it, maybe or maybe not. The clipper has to guess what's good, does unpaid work hoping for visibility. A creator makes an ad or promo, has no guarantee it will be used or that they will get paid fairly.</p>
+      <p>poidh closes that loop. The ZAO can post a bounty <em>the same day</em> a session happens, with a clear bar (this is what we want), a transparent reward pot (anyone can see the ETH), and a deadline. Creators show up, do the work, post proof, and if they clear the bar they get paid on-chain within days. No speculation, no delays, no negotiation. The bar is the contract.</p>
+    </section>
+
+    <section>
+      <h2>How a bounty works</h2>
+      <h3>The format</h3>
+      <p>The ZAO runs bounties in the We-Them-Media (WTM) audition format:</p>
+      <ul class="fivec">
+        <li><b>The bar:</b> Exact criteria for what passes. (e.g., "60 second clip, under 1 minute of editing, original episode audio only, clear dialog, no competing background music")</li>
+        <li><b>A scoring rubric:</b> How judges rank submissions above the bar. (e.g., "Pacing", "Originality", "Audio quality")</li>
+        <li><b>A single judge:</b> One clear decision-maker, not a committee. (Zaal, Kenny, a curator)</li>
+        <li><b>An explicit deadline:</b> No rolling submissions. Bounty closes at a specific date and time, UTC.</li>
+        <li><b>An open pot:</b> The base reward is posted, but anyone - Zaal, sponsors, the community - can add more ETH to the pot at any time.</li>
+      </ul>
+      <p>Every bounty The ZAO drafts runs past Kenny first. Once live on poidh, submissions arrive, are tracked on a leaderboard, and when the deadline hits, the judge's decision is final and paid directly on-chain.</p>
+
+      <h3>The chain</h3>
+      <p>poidh runs on Base (Ethereum L2). All rewards are in ETH. When a bounty is won, the ETH settlement happens directly: the creator's wallet receives the funds without intermediaries. This is why The ZAO can pay out reliably and transparently - no banking delays, no dispute resolution - the ledger is public.</p>
+      <p class="note">The live PoidhV2 contract only accepts native ETH as reward; it does not support arbitrary ERC20 tokens. This is a deliberate design choice to keep the protocol simple and settlement instant.</p>
+
+      <h3>Rounds</h3>
+      <p>The ZAO runs bounties in numbered rounds. Each round has a theme, a deadline, and lives in the zpoidh repository under <code>rounds/r[N]/</code>. The round folder holds: the bounty spec, the brand kit (fonts, logos, promo audio), judging pages, and the resolved payouts once winners are announced.</p>
+    </section>
+
+    <section>
+      <h2>Live activity (as of July 2026)</h2>
+      <div class="stat">
+        <b>Round 3 - Best ad for ZABAL Gamez</b>
+        <span>Closed June 14, 2026. Winner: @femmie (claim 6749). Fully resolved and paid out on-chain.</span>
+        <span class="src">zpoidh repository, rounds/r3/, poidh bounty 1180</span>
+      </div>
+      <div class="stat">
+        <b>Round 4 - ZABAL Gamez open pot</b>
+        <span>Live and open. Cast June 15, 2026. Closes Friday July 31, 2026. 2 claims logged as of July 8, 2026. Open-split split format - ongoing contributions welcome.</span>
+        <span class="src">zpoidh repository, rounds/r4/, poidh bounty 1249</span>
+      </div>
+      <div class="stat">
+        <b>Round 5 - poidh x Unlock Protocol clipping bounty</b>
+        <span>Drafting. Collaborates with Kenny and Unlock DAO. Not yet cast or deployed. Planned to integrate with the Unlock fireside collectible.</span>
+        <span class="src">zpoidh repository, rounds/r5/</span>
+      </div>
+      <p>All rounds feed the clipper pipeline: session recordings become clip candidates, which become poidh bounty briefs, which turn into paid work for creators.</p>
+    </section>
+
+    <section>
+      <h2>Integration with The ZAO ecosystem</h2>
+      <p>poidh is one layer in The ZAO's media workflow. Sessions produce recordings. Those recordings get clipped. Bounties fund the clipping. Good clips become content for WaveWarZ, fan clips, or ecosystem promotions.</p>
+      <p>In practice: a Zuke space happens. Within a day, The ZAO posts a bounty: "Best 60-second clip from yesterday's session." Creators clip the recording, submit, and if they win they get paid in ETH on-chain. The winning clip then gets distributed via The ZAO's content channels or archived in the clipper library for future use.</p>
+      <p>This is the first phase of tightening The ZAO's creator loop: from live moment -> clip -> bounty -> payment -> reuse.</p>
+    </section>
+
+    <section>
+      <h2>Operations and best practices</h2>
+      <p>The zpoidh repository is the canonical home for all ZAO-issued poidh bounty metadata, including:</p>
+      <ul class="fivec">
+        <li><b>Bounty specs:</b> Complete bar, rubric, brand assets, promo audio (stored in rounds/r[N]/)</li>
+        <li><b>Brand kits:</b> Logos, fonts, color palette, promotional audio (60s MP3s with consistent audio treatment)</li>
+        <li><b>Judging records:</b> Submissions, judge notes, winner identification, and on-chain settlement proof</li>
+        <li><b>Best practices:</b> Canonical guidelines for audio treatment (e.g., no competing background music under dialog, binaural beat acceptable), video length, and submission format</li>
+        <li><b>Leaderboard:</b> Public feed of all claims and winners in JSON format, updated as rounds close</li>
+      </ul>
+      <p>Before drafting any new bounty, review the best practices document (zpoidh/docs/bounty-best-practices.html) and the ZAO bounty playbook (research doc 625). Every submission must meet the hard bar before scoring begins.</p>
+    </section>
+
+    <section>
+      <h2>Traction and outcomes</h2>
+      <p>As of July 2026, the poidh x ZAO collaboration has achieved:</p>
+      <ul class="fivec">
+        <li><b>3 complete rounds:</b> R1 (Hannah Farm Drop clip-up), R2 (Best 60s ZABAL Gamez promo from Episode 19), R3 (Best ad for ZABAL Gamez - fully resolved, winner paid on-chain)</li>
+        <li><b>On-chain payouts:</b> Multiple creators have received ETH direct to wallet. Settlement is verified on Base and transparent in zpoidh judging records.</li>
+        <li><b>Ecosystem integrations:</b> Round 3 brand kit rebuilt for ZABAL Gamez (12 files). Round 5 in collaboration with Unlock Protocol and Kenny. poidh referenced from BetterCallZaal nexus, ZABAL Games site, and ZAO research library.</li>
+        <li><b>Content pipeline:</b> Clip-ups from bounties feed back into WaveWarZ and ZAO content distribution</li>
+        <li><b>Session closeout:</b> 2026-05-31 session shipped zpoidh repository, R3 bounty live + fully resolved, best practices documented, brand kit production-ready</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Technical roadmap</h2>
+      <h3>Near-term</h3>
+      <p><b>Round 5 launch:</b> poidh x Unlock Protocol clipping bounty. Planned to be sparked small with an open pot, allowing community top-ups. Tied to an Unlock fireside collectible event.</p>
+      <p><b>Leaderboard automation:</b> Live JSON feed (poidh-leaderboard.json) already deployed. Additional data surfaces may include claim-to-payout timing and judge notes.</p>
+
+      <h3>Future (not committed)</h3>
+      <p><b>ERC20 bounty support:</b> A fork of PoidhV2 (poidh-v2-contracts) has been prepared to support bounties funded in any ERC20 token, not just ETH. This would allow The ZAO to fund bounties in its own tokens if desired. The fork is not deployed or integrated into poidh.xyz yet, and remains on a feature branch in the BetterCallZaal organization.</p>
+      <p><b>Batch judging:</b> Tooling for judges to review multiple submissions side-by-side and compare scores before final settlement.</p>
+    </section>
+
+    <section>
+      <h2>Open questions and considerations</h2>
+      <p><b>Scalability of judging:</b> As bounty volume increases, the single-judge model may become a bottleneck. Rotating judges or rubric-based scoring (where qualified community members can pre-score) might relieve this.</p>
+      <p><b>Dispute resolution:</b> If a creator disagrees with judging, there is no formal appeal process today - the judge's decision is final and on-chain settlement is immediate. This is deliberate for speed, but may need a small review layer if stakes grow.</p>
+      <p><b>Token economics:</b> Bounty sizing (what rewards attract quality work vs. overpaying for commoditized submissions) is still being discovered round-to-round. No formal pricing model yet.</p>
+      <p><b>Geographic and timezone coverage:</b> All deadlines are UTC, but submission times, judge availability, and creator timezones span globally. Async workflows are resilient but may miss live-moment urgency.</p>
+    </section>
+
+    <section>
+      <h2>Get involved</h2>
+      <p><b>For creators:</b> Watch the /poidh channel on Farcaster for bounty announcements. Check poidh.xyz for live bounties. Read the best practices before submitting. All submissions happen on-chain; if you have a Base wallet, you can claim.</p>
+      <p><b>For The ZAO and partners:</b> Draft a new bounty by following the template in zpoidh/rounds/_template/. Have Kenny review the spec before casting. Use the canonical brand kit and best practices checklist. Publish the bounty to poidh.xyz and announce in the /poidh channel.</p>
+      <p><b>For contributors:</b> Improvements to the bounty spec format, judging UX, or leaderboard feeds can be submitted as PRs to zpoidh. Documentation updates should cite the source (research doc number or zpoidh folder path).</p>
+    </section>
+
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.2, 2026-07-09 - not published</p>
+    <p><b>Sources:</b></p>
+    <ul style="list-style: none; padding: 0; margin: 1rem 0; font-size: 0.95rem; color: var(--ink-soft);">
+      <li>- ICM context box (poidh): https://useicm.com/api/objects/icm_1CRn7Oyvee1jDSK9kje7dw/llm.txt - Kenny's framing, platform details, live threads (2026)</li>
+      <li>- zpoidh repository README: github.com/bettercallzaal/zpoidh - Rounds history, session closeout (2026-05-31), brand kit status, leaderboard feed</li>
+      <li>- zpoidh/docs/bounty-best-practices.html - Canonical bar, audio rules, format specs</li>
+      <li>- zpoidh/docs/erc20-bounty-fork.md - PoidhV2 technical details, ERC20 fork status, contract behavior</li>
+      <li>- Research doc 625 (ZAOOS): poidh-zao-bounty-playbook - ZAO bounty mechanics and playbook</li>
+      <li>- Research doc 768 (ZAOOS): poidh-bounty-best-practices-zabalgames-r3 - R3-specific audio rules and submission format</li>
+      <li>- Research doc 992 (ZAOOS): clipper pipeline - How bounties feed recordings-to-clips workflow</li>
+      <li>- poidh.xyz - Live bounty pages and current round status</li>
+      <li>- BetterCallZaal poidh hub: bettercallzaal.com/poidh.html - Surfaces and bounty links</li>
+      <li>- Farcaster /poidh channel - Live community announcements and submissions</li>
+    </ul>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body></html>
