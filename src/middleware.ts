@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // public (renders a landing page when no session, the board when logged in -
 // see src/app/page.tsx). /login + /api/login obviously have to stay public
 // since that's where you go to get a session in the first place.
-const PUBLIC_PATHS = new Set(["/", "/login"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/list"]);
 // /api/github/webhook (doc 763 F3): hit by GitHub's bot, no session.
 // Auth is HMAC inside the route handler (X-Hub-Signature-256).
 // /api/digest (doc 764 F6): hit by VPS cron with Bearer auth, no session.
