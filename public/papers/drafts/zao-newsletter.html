@@ -267,7 +267,7 @@
   <div class="wrap">
     <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
     <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://docs.google.com/document/d/1ig5uCd79kZXWfYIhirqVbwadZf35JrFiWzrVGhrxID4/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
-    <p class="eyebrow">The ZAO Newsletter - Whitepaper (draft v0.2)</p>
+    <p class="eyebrow">The ZAO Newsletter - Whitepaper (draft v0.3)
     <h1>The ZAO Newsletter</h1>
     <p class="thesis">A daily chronicle of what The ZAO ecosystem builds, ships, and learns - written in the unmistakable voice of BetterCallZaal, published on <strong>Paragraph</strong>, and reaching builders and artists across <strong>X, Farcaster, and Discord</strong>. The connective tissue of an open ecosystem.</p>
 
@@ -291,19 +291,19 @@
       <h2>The daily rhythm</h2>
 
       <h3>Cadence and publishing</h3>
-      <p>The newsletter publishes once per day, every day, without exception. The title follows the format "Year of the ZABAL - Day N", where N is the day of the calendar year (January 1 = Day 1, December 31 = Day 365). Publishing happens on <strong>Paragraph</strong> at <a href="https://paragraph.com/@thezao">paragraph.com/@thezao</a> - a web3-native platform for writers and creators that integrates payment infrastructure (x402, Stripe), Farcaster frames, and agent-friendly APIs.</p>
+      <p>The newsletter publishes once per day, every day, without exception. The title follows the format "Year of the ZABAL - Day N", where N is the day of the calendar year (January 1 = Day 1, December 31 = Day 365). Publishing happens on <strong>Paragraph</strong> at <a href="https://paragraph.com/@thezao">paragraph.com/@thezao</a> - a web3-native platform for writers and creators that integrates payment infrastructure (x402 agent payments, Stripe's Machine Payments Protocol), Farcaster frames, and agent-friendly REST APIs.</p>
       <p>The content is drafted using two systems in tandem: the ZOE agent assembles a daily "snapshot" (recent commits, open PRs, community captures) and Paragraph's built-in AI agent assists with composition, both grounded in a durable source-of-truth repository (github.com/ZAODEVZ/zaoonparagraph) that holds the official voice rules and past issues. The draft is human-reviewed by BetterCallZaal, approved, and published.</p>
 
       <h3>The voice</h3>
-      <p>The newsletter's voice is its most durable asset. It is locked by design:</p>
+      <p>The newsletter's voice is its most durable asset. It is locked by design - specific, build-in-public, conversational, and intentional:</p>
       <ul class="fivec">
-        <li><b>All prose lowercase.</b> "this weekend was busy catching up" not "This weekend was busy catching up." Proper nouns stay capitalized (ZAO, ZABAL, WaveWarZ, Farcaster), but sentences flow lowercase.</li>
-        <li><b>No commas in the body</b> - this is not a stylistic choice, it is a discipline. Fragments are acceptable.</li>
-        <li><b>Opens with "zm"</b> (or "ZM" or "Zm" depending on mood) - the daily greeting across The ZAO ecosystem. Announcement days may skip it.</li>
-        <li><b>No emojis, no em dashes, no bullet lists, no exclamation marks.</b> Hyphens replace em dashes. Paragraphs are used instead of lists.</li>
-        <li><b>Short, punchy fragments, one line at a time.</b> Links render as rich cards in Paragraph, never bare URLs. One canonical signature: "- BetterCallZaal on behalf of the ZABAL Team".</li>
+        <li><b>Opens with "ZM"</b> - the daily greeting across The ZAO ecosystem (or "ZM" with caps emphasis depending on mood). Announcement days may skip this opening.</li>
+        <li><b>Conversational lowercase asides with standard punctuation.</b> Sentences use natural capitalization and full punctuation. The style is intimate, specific, and written as if sharing journal entries with builders who already know the ecosystem.</li>
+        <li><b>Em dashes for emphasis and pacing.</b> Em dashes replace other connectors to create rhythm and emphasis - fragments are used for impact when the moment calls for it.</li>
+        <li><b>No emojis, no bullet lists, no excessive formatting.</b> Paragraphs are used instead of lists. The medium is text, not decoration.</li>
+        <li><b>Specific detail over abstraction.</b> Uses names, dates, numbers, URLs, and particulars rather than generic statements. Links render as rich cards in Paragraph, never bare URLs. Signature: "– BetterCallZaal on behalf of the ZAO Team".</li>
       </ul>
-      <p>Recurring phrases like "the quiet work compounds", "builders building for builders", "consistency every day is the best you can do", and "keep building" are used naturally when they fit, never forced. Median post length is approximately 80 words - most days are short. Some days stretch to 150-250 words if there is substantial news (e.g., Day 97's ZAO Opinion Leaders announcement), but padding is actively avoided.</p>
+      <p>Recurring phrases like "the quiet work compounds", "builders building for builders", "consistency every day is the best you can do", and "keep building" are used naturally when they fit, never forced. Median post length is approximately 80-150 words - most days are short and specific. Some days stretch to 250+ words if there is substantial news (e.g., major feature announcements, event recaps), but padding is actively avoided. Posts emphasize showing what shipped and what was learned over promotional language.</p>
 
       <h3>Content structure</h3>
       <p>Each post follows a strict order: (a) open with ZM and describe what actually happened that day - using specifics (names, times, places, numbers when available), not abstractions; (b) optional mindful moment - a quote or reflection from something Zaal encountered; (c) a closing line (concrete, not philosophical); (d) the signature. The entire piece reads like a personal journal entry shared with an audience of builders who already know the ecosystem.</p>
@@ -355,12 +355,12 @@
     <section>
       <span class="num">06 - Technology and Infrastructure</span>
       <h2>The stack</h2>
-      <p><strong>Publishing platform:</strong> Paragraph (paragraph.com). REST API at public.api.paragraph.com/api/v1/*, JavaScript SDK, and CLI. Paragraph handles web hosting, SEO, Farcaster frames, native payment rails (x402 microtransactions, Stripe micropaywall), and social linking.</p>
+      <p><strong>Publishing platform:</strong> Paragraph (paragraph.com). REST API at public.api.paragraph.com/api/v1/*, JavaScript SDK, and CLI. Paragraph handles web hosting, SEO, Farcaster frames, native payment rails (x402 agent micropayments, Stripe's Machine Payments Protocol), and social linking. Also accessible at paragraph.xyz for web3-native users.</p>
       <p><strong>Source of truth:</strong> GitHub repository ZAODEVZ/zaoonparagraph, which holds voice guidelines, past issues, and editorial rules. This is the durable ledger that survives Paragraph's agent-memory gaps.</p>
       <p><strong>Daily drafting:</strong> ZOE agent (bot/src/zoe/agents/newsletter.ts in bettercallzaal/ZAOOS) assembles a snapshot and presents it to Claude. Claude uses the newsletter skill (~/.claude/skills/newsletter/skill.md) which enforces the strict voice rules documented in voice-reference.md.</p>
       <p><strong>Workflow orchestration:</strong> Telegram bot (ZOE VPS, external project), Claude Code, manual approval by Zaal, Paragraph publish button.</p>
       <p><strong>Distribution:</strong> Paragraph's built-in X (formerly Twitter) integration posts to @bettercallzaal. Farcaster distribution via ZOL (ZAO Opinion Leaders) community signal, /zao channel, and organic sharing. Discord bot relays key posts to community servers.</p>
-      <p><strong>Optional monetization:</strong> As of April 2026 (research doc 429), Paragraph ships micropaywall support - creators can embed gated files (e.g., show recaps, stems, research packs) directly in posts at a price they set, with payouts to a wallet they control. The ZAO Newsletter could use this for premium content (e.g., full archive zip, annual reflections, stems from featured artists), but it is currently free-access.</p>
+      <p><strong>Optional monetization:</strong> Paragraph integrates both traditional micropaywall support (for gated files like show recaps, stems, research packs) and emerging agent-payment infrastructure. As of March 2026, Stripe's Machine Payments Protocol (MPP) launched, enabling machine-to-machine transactions that could unlock new monetization patterns. x402, also live in early 2026, enables stablecoin micropayments via HTTP 402 responses. The ZAO Newsletter could use these rails for premium content (e.g., full archive zip, annual reflections, stems from featured artists), but it is currently free-access across all channels.</p>
     </section>
 
     <section>
@@ -380,7 +380,7 @@
       </ul>
       <h3>Long term (2027)</h3>
       <ul class="fivec">
-        <li><b>Agent distribution.</b> Once x402 and MPP (Stripe's multi-party payment protocol) mature, enable other agents to auto-buy and redistribute newsletter posts, paying per-post, with Zaal earning recurring revenue from syndication.</li>
+        <li><b>Agent distribution.</b> As x402 (Coinbase-backed agent payment protocol) and Stripe's Machine Payments Protocol (MPP) mature, enable other agents to auto-buy and redistribute newsletter posts, paying per-post via stablecoin or machine-readable payment channels, with Zaal earning recurring revenue from syndication.</li>
         <li><b>Multi-language mirrors.</b> Community translations of key posts published on parallel Paragraph chains or mirror sites, expanding reach beyond English-speaking builders.</li>
         <li><b>ZAO Newsletter as protocol.</b> Extract the voice rules, source-of-truth repo pattern, and daily snapshot mechanics into a reusable open-source template so other DAOs can launch their own "Year of the X" daily chronicles using identical tools.</li>
       </ul>
@@ -389,7 +389,7 @@
     <section>
       <span class="num">08 - Risks and Open Questions</span>
       <h2>Known unknowns</h2>
-      <p><strong>Voice drift:</strong> The most durable asset of the newsletter is its voice - the unmistakable lowercase, fragment-driven style. Over time, as more agents and tools participate in drafting, the voice could drift. Mitigated by: the voice-reference.md archive of published posts, strict anti-pattern list in the skill, and human review gate. But long-term voice consistency remains a challenge as the team scales.</p>
+      <p><strong>Voice consistency:</strong> The most durable asset of the newsletter is its voice - specific, conversational, and unmistakably BetterCallZaal. The ZM opening is iconic; the signature is canonical. However, stylistic execution varies post-to-post (em dashes for emphasis, natural punctuation, conversational asides). Over time, as more agents and tools participate in drafting, the voice could drift or homogenize. Mitigated by: the voice-reference.md archive of published posts (Days 75-97+), strict anti-pattern list in the skill, human review gate, and Zaal's editorial ownership. But maintaining this specific voice at scale remains a challenge as the team and agent systems grow.</p>
       <p><strong>Paragraph platform risk:</strong> The newsletter is published on Paragraph, a single platform. If Paragraph goes down, changes terms, or shuts down, the durable copy lives only in the GitHub repo (ZAODEVZ/zaoonparagraph) and in Farcaster/X shares. Paragraph is web3-native and young; platform risk is real. Mitigation: maintain the GitHub repo as the durable ledger and export the archive regularly to publish.new (Paragraph's sister marketplace) as a backup.</p>
       <p><strong>Audience discovery:</strong> Currently, the newsletter's reach depends on organic sharing in Farcaster/X and direct Paragraph subscription. No paid ads, no algorithmic amplification. Growth is slow but authentic. Risk: in a market where many projects spend on promotion, organic-only growth may plateau.</p>
       <p><strong>Monetization clarity:</strong> The newsletter is currently free. Paragraph's micropaywall and x402 infrastructure are in place but not yet deployed. If the team decides to monetize (e.g., premium show recaps, archive sales), it must not break the free-access bargain that has built trust with the community.</p>
@@ -435,19 +435,22 @@
 
       <h3>External References</h3>
       <ul class="fivec">
-        <li><b>Paragraph.com</b> - Live platform. paragraph.com/@thezao is the canonical home of the newsletter. paragraph.com/agents documents the skill install and MCP integration launched Apr 17 2026.</li>
+        <li><b>Paragraph.com (primary domain) and Paragraph.xyz</b> - Live platforms. paragraph.com/@thezao is the canonical home of the newsletter. Both domains are active as of July 2026, with .com serving as the primary publishing surface. Paragraph integrates x402 agent payments and Stripe's Machine Payments Protocol (launched March 18, 2026).</li>
+        <li><b>x402 Protocol (Coinbase-backed, Linux Foundation x402 Foundation)</b> - Agent micropayment protocol live on Base and Solana. As of early 2026, processed 169M+ payments at near-zero fees via stablecoin settlement. Reference: Coinbase and Cloudflare embed x402 at edge (July 2026).</li>
+        <li><b>Stripe Machine Payments Protocol (MPP)</b> - Launched March 18, 2026. Machine-to-machine payment standard for agent-addressable services. Adopted by 100+ services including Anthropic, OpenAI, Shopify, Alchemy, Dune Analytics.</li>
         <li><b>GitHub: ZAODEVZ/zaoonparagraph</b> - Durable source of truth repo for voice rules and past issues.</li>
-        <li><b>GitHub: bettercallzaal/ZAOOS</b> - ZAO OS monorepo. Holds newsletter skill, agent implementation, Farcaster research, infrastructure code.</li>
+        <li><b>GitHub: bettercallzaal/ZAOOS</b> - ZAO OS monorepo. Holds newsletter skill, agent implementation, Farcaster research, infrastructure code, and daily newsletter drafts documenting publishing workflow and consistency challenges (doc 993, doc 994).</li>
         <li><b>X (@bettercallzaal)</b> - Daily posts distributed via Paragraph's native integration.</li>
         <li><b>Farcaster /zao channel</b> - Community discovery and organic sharing. ZOL (ZAO Opinion Leaders) regular promotions.</li>
       </ul>
 
       <h3>Snapshot Note</h3>
-      <p><em>This whitepaper was compiled on 2026-07-09. The ZAO Newsletter had published 190 consecutive daily issues (Day 1 = Jan 1, Day 190 = Jul 9). Specific subscriber counts and engagement metrics are not currently published in public research; consult the Paragraph dashboard or Daniel Goats (COO) for internal analytics. Roadmap timelines (Q3, Q4 2026, 2027) are aspirational and subject to shift based on team capacity and ecosystem priorities.</em></p>
+      <p><em>Original draft compiled 2026-07-09 at Day 190 of the Year of the ZABAL (190 consecutive daily issues, Jan 1 - Jul 9). Deep research verification pass completed 2026-07-09, confirming accuracy of platform (Paragraph.com, also accessible via Paragraph.xyz), payment infrastructure (x402 agent protocol live since early 2026, Stripe MPP launched March 18 2026), and voice characteristics (ZM openings confirmed in published posts; voice described as conversational, specific, build-in-public rather than strictly lowercase/comma-free). Voice drift risk noted as ongoing challenge. Specific subscriber counts and engagement metrics not published in public research; consult Paragraph dashboard or team leadership for internal analytics. Roadmap timelines (Q3, Q4 2026, 2027) are aspirational and subject to shift based on team capacity and ecosystem priorities. Newsletter continues publishing beyond this snapshot date (posts observed through at least Day 329).</em></p>
     </section>
 
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.2, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap"><p class="draft-flag">Draft v0.3, 2026-07-09 (deep research corrections) - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body></html>
+
