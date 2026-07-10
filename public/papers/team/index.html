@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>The ZAO - Team (internal)</title>
+<style>
+  :root {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --ground:#f3efe2; --surface:#faf7ec; --ink:#1a2530; --ink-soft:rgba(26,37,48,0.72); --ink-faint:rgba(26,37,48,0.45); --accent:#b06f13; --line:rgba(26,37,48,0.13); }
+  }
+  :root[data-theme="dark"]{--ground:#141e27;--surface:#1b2732;--ink:#e8e4c4;--ink-soft:rgba(232,228,196,0.70);--ink-faint:rgba(232,228,196,0.45);--accent:#f5a623;--line:rgba(232,228,196,0.14);}
+  :root[data-theme="light"]{--ground:#f3efe2;--surface:#faf7ec;--ink:#1a2530;--ink-soft:rgba(26,37,48,0.72);--ink-faint:rgba(26,37,48,0.45);--accent:#b06f13;--line:rgba(26,37,48,0.13);}
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--serif); font-size:clamp(1rem,2vw,1.125rem); line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width: 46rem; margin:0 auto; padding:0 clamp(1rem,4vw,1.5rem); }
+  header.hero { border-bottom:1px solid var(--line); padding: clamp(2.5rem,10vh,6rem) 0 clamp(1.5rem,5vh,3rem); }
+  .eyebrow { font-family:var(--sans); font-size:clamp(0.65rem,1.5vw,0.72rem); letter-spacing:0.22em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 1.2rem; }
+  h1 { font-family:var(--sans); font-weight:800; letter-spacing:-0.03em; font-size:clamp(2.2rem,10vw,5rem); line-height:0.95; margin:0 0 1.2rem; }
+  .lede { font-size:clamp(1.1rem,2.8vw,1.5rem); line-height:1.4; max-width:34rem; margin:0; }
+  .lede b { color:var(--accent); font-weight:600; }
+  main { padding: clamp(2rem,6vh,3.5rem) 0 4rem; }
+  .people { list-style:none; padding:0; margin:0; display:grid; gap:1.1rem; }
+  .person { background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:1.5rem 1.6rem; }
+  .person .num { font-family:var(--sans); font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+  .person h2 { font-family:var(--sans); font-weight:700; letter-spacing:-0.01em; font-size:1.4rem; margin:0.3rem 0 0.5rem; }
+  .person p { margin:0 0 1.1rem; color:var(--ink-soft); font-size:1.02rem; }
+  .tag { display:inline-block; font-family:var(--sans); font-size:0.78rem; font-weight:600; padding:0.25rem 0.7rem; border-radius:999px; margin-bottom:0.7rem; }
+  .tag.rich { background:rgba(245,166,35,0.16); color:var(--accent); }
+  .tag.light { background:rgba(232,228,196,0.10); color:var(--ink-soft); }
+  .tag.empty { background:rgba(232,228,196,0.06); color:var(--ink-faint); }
+  .actions { display:flex; gap:0.7rem; flex-wrap:wrap; }
+  .btn { font-family:var(--sans); font-size:0.9rem; font-weight:600; text-decoration:none; padding:0.55rem 1.1rem; border-radius:9px; border:1px solid var(--accent); }
+  .btn.read { background:var(--accent); color:#141e27; }
+  .btn.soon { border-color:var(--line); color:var(--ink-faint); pointer-events:none; }
+  a.btn:hover { opacity:0.9; }
+  a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:4px; }
+  .note { font-family:var(--sans); font-size:0.9rem; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:1rem 1.2rem; margin:1.6rem 0 0; }
+  footer { padding:2.5rem 0 4rem; font-family:var(--sans); font-size:0.82rem; color:var(--ink-faint); }
+  @media (max-width:640px) { .person h2 { font-size:1.2rem; } }
+</style>
+
+<body>
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">The ZAO - Team (internal, unpublished)</p>
+    <h1>The People</h1>
+    <p class="lede">Every profile below becomes its own paper - who they are, their lane, their activity right now, and the story of how Zaal met them. This page is the roster and the build queue, not the finished thing.</p>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <ul class="people">
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>JANGO (Django / JANGOUU)</h2>
+        <span class="tag light">Deep-researched - needs your call</span>
+        <p>Real handle: jangouuforever. This is Zaal's origin-story figure - musician met in college (2018/19), "the seed of The ZAO." Still making music (EP Dec 2025) but zero documented 2026 ZAO activity; doc 722f tags him "Historical/Alumni." The activity-out-of-10 for this one has to come from Zaal directly, not more research.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Samantha (Candy)</h2>
+        <span class="tag rich">Refreshed 2026-07-10 - doc 229</span>
+        <p>WaveWarZ co-founder, ZID 2, candytoybox.com. Marketing, design, agentic automation - matches "AI and design." Site + WaveWarZ dashboard live and current; her own public output (Medium, GitHub, X) unverifiable this pass (blocked/stale) - platform's alive, her trail is quiet.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Iman</h2>
+        <span class="tag rich">Deep-researched 2026-07-10 - doc 229</span>
+        <p>ZAO Devz lead. Owns the cowork-zaodevz bot and the entire VPS (runs ZOE, Farscout, every ecosystem bot). Zambia-based, WaveWarZ Zambia regional lead, composer on the Cipher release. Zero public social presence anywhere - fully ecosystem-embedded, no outward face.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Jose (Cabrera / Joseph Goats)</h2>
+        <span class="tag rich">Deep-researched 2026-07-10 - doc 229</span>
+        <p>Venezuelan sound engineer, onboarded as paid contributor June 2026 ($100/mo USDC). Giveth fundraiser, $8,259 raised for earthquake relief + the Huöttöja indigenous community. COC Concertz performer. Credited as Whitepaper editor.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Tyler</h2>
+        <span class="tag rich">Refreshed 2026-07-10 - doc 229 (correction inside)</span>
+        <p>Magnetiq co-founder, Chief Connection Officer (not COO). Correction: his real site is magnetiq.xyz, not magnetiq.io - that's an unrelated Italian company. ZABAL Connector, Proof of Meet for ZAO Stock. Company actively shipping (blog posts this week).</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Dcoop</h2>
+        <span class="tag rich">Refreshed 2026-07-10 - doc 229</span>
+        <p>DMV hip-hop artist, WaveWarZ battler. New since May: founder of The VEC (DMV hip-hop collective) and launched DropDedGorgez NFT (Apr 2026). ZAOStock Oct 3 confirmed as performer; ZAOVille still has no confirmed date/venue.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Ohnahji</h2>
+        <span class="tag rich">Refreshed 2026-07-10 - doc 229</span>
+        <p>Education pillar, Ohnahji University founder. Genuinely active - Twitch/X/Instagram (3.5K followers) all posting in 2026. ohnahjiu.com has been SSL-broken for 2+ months though, worth fixing before it's in a public profile.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>ThyRev (Thy Revolution)</h2>
+        <span class="tag rich">Deep-researched 2026-07-10 - doc 229</span>
+        <p>Bigger than "ops team member" - he's the founder and lead of COC Concertz, the same paper this session deep-researched. UK-based, locked ZABAL Games mentor. Active as of July 8 (X Space with Zaal + POIDH's Kenny).</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Metamu</h2>
+        <span class="tag light">Deep-researched 2026-07-10 - doc 229</span>
+        <p>Not empty after all - ZABAL Opinion Leader (top 3, SongJam leaderboard, Mar 2026), ranked #5-6 on the Empire Builder / ZABAL holders leaderboard. No public socials found under this handle, but real engagement signal inside the ecosystem itself.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Nemesis</h2>
+        <span class="tag light">Deep-researched 2026-07-10 - doc 229</span>
+        <p>Thin. One real mention: friend of Ram (Zambia dev), was prepping a cross-Africa X-Spaces show as of May 2026, nothing documented since. No public socials found - still needs Zaal for anything more.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+      <li class="person">
+        <span class="num">Roster - cowork account</span>
+        <h2>Shawn</h2>
+        <span class="tag empty">Deep-researched 2026-07-10 - LOW confidence, doc 229</span>
+        <p>Admin-tier (same as Zaal/Iman/Jose/Samantha/Tyler) but no full name in any ZAO doc. Research proposed a match to Shawn Porter (Web3 Metal founder) - that's inferred from a bare first-name search, not documented anywhere internally. Do not publish without confirming with Zaal directly.</p>
+        <div class="actions"><a class="btn soon">Profile coming soon</a></div>
+      </li>
+    </ul>
+    <p class="note"><b>Not on this list, but they show up a lot in the wider research</b> (doc 229): AttaBotty, DaNici, Hurric4n3Ike, Maceo, Swarthy Hatter - all have full profiles already, but none of them have a cowork-tracker account, so they weren't pulled into this roster. Say the word if any of them should get a paper too.</p>
+    <p class="note"><b>2026-07-10:</b> all 11 people got a deep research pass (loop-until-dry per person, ZAO OS research doc 229 has the full write-up: <a href="https://github.com/bettercallzaal/ZAOOS/pull/1207" target="_blank" rel="noopener">PR #1207</a>). Every card above now reflects real findings, not placeholders. Two things still need Zaal directly, not more research: JANGO/Django's current activity level, and confirming (or denying) the proposed Shawn identity match.</p>
+    <p class="note">Process: each card graduates to a real paper (own URL, same design system as the rest of /papers) once it has a lane, an activity read, and the "how we met" story - that last part is the one thing no research pass can supply.</p>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      Internal - not indexed, not linked from thezao.xyz/papers.
+    </div>
+  </footer>
+</main>
+</body>
+</html>

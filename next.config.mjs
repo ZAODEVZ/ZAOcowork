@@ -8,6 +8,7 @@ const nextConfig = {
       { source: '/papers/technical', destination: '/papers/technical.html' },
       { source: '/papers/manifesto', destination: '/papers/manifesto.html' },
       { source: '/papers/drafts', destination: '/papers/drafts/index.html' },
+      { source: '/papers/team', destination: '/papers/team/index.html' },
       // Main whitepaper reading page (kept; the /papers index links to it)
       { source: '/paper', destination: '/paper.html' },
     ];
