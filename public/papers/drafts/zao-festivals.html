@@ -251,7 +251,17 @@
   .nav-bar .arrows { display: flex; gap: 0.5rem; }
   .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
 
-  @media (max-width: 640px) {
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
+
+    @media (max-width: 640px) {
     h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
     h3 { font-size: 0.95rem; }
     .num { font-size: 0.65rem; }
@@ -288,10 +298,10 @@
     <section>
       <span class="num">3 - The Events</span>
       <h2>Past and Upcoming</h2>
-      <p><strong>ZAO-PALOOZA</strong> (April 2024, New York City). First ZAO in-real-life meetup, tied to NFT NYC 2024. Twelve artists performed; the event broke even. A Manifold collectible was minted as proof of participation. This was the proof-of-concept that showed the community could organize live.</p>
-      <p><strong>ZAO-CHELLA</strong> (December 6, 2024, Miami). Ten artists, set during Art Basel Miami Week. Organized by AttaBotty and DaNici. Run-of-show: 4pm networking, 6pm WaveWarZ LIVE rematch battle on stage, 7pm feature performances, 11pm close. Featured AR art installations and trading cards. Sponsored by Student $LOANZ Token. Streamed and captured as content. Instagram profile @zaofestivals grew to 246 followers and 65 posts as of June 2026.</p>
-      <p><strong>ZAOville</strong> (July 2026, Washington DC metropolitan area). A day-party artist showcase at Dcoop's residence, organized in collaboration with his VT collective. Mid-size event (86 of 100 RSVPs confirmed as of late May 2026). Lineup: Dcoop (opener), Ashley, Eleven, John Clark, Profit, and Lion's Den (headliner). Features a viral content window with peak day-party energy (3-4:30pm), outdoor music performances (6-8pm), and a close with fire-spin light show and glow-stick pool experience. Serves as a dry run for content capture and production workflows ahead of ZAOstock. Dcoop raised $1,000 seed funding via a hackathon win.</p>
-      <p><strong>ZAOstock</strong> (October 3, 2026, Ellsworth, Maine). The flagship festival and the event the entire 2026 production lane is built around. Community-run music and culture festival with a budget in the low five figures (estimates range $5-25k). Tied into the Art of Ellsworth and Maine Craft Weekend cultural calendar. Distributed team structure with dedicated Operations, Finance, and Design rosters. Announced partners include Heart of Ellsworth (venue and Maine Craft Weekend promotion), Fractured Atlas (501(c)(3) fiscal sponsorship), Black Moon Public House (after-party venue), and Wallace Events (tent rental and weather backup). ZAOstock is expected to graduate into its own repository and operational structure as it matures.</p>
+      <p><strong>ZAO-PALOOZA</strong> (April 2024, New York City). First ZAO in-real-life meetup, tied to NFT NYC 2024. Twelve artists performed<sup class="cite"><a href="#ref4">[4]</a></sup>; the event broke even<sup class="cite"><a href="#ref4">[4]</a></sup>. A Manifold collectible was minted as proof of participation. This was the proof-of-concept that showed the community could organize live.</p>
+      <p><strong>ZAO-CHELLA</strong> (December 6, 2024, Miami)<sup class="cite"><a href="#ref4">[4]</a></sup>. Ten artists, set during Art Basel Miami Week<sup class="cite"><a href="#ref4">[4]</a></sup>. Organized by AttaBotty and DaNici<sup class="cite"><a href="#ref4">[4]</a></sup>. Run-of-show: 4pm networking, 6pm WaveWarZ LIVE rematch battle on stage, 7pm feature performances, 11pm close. Featured AR art installations and trading cards. Sponsored by Student $LOANZ Token<sup class="cite"><a href="#ref4">[4]</a></sup>. Streamed and captured as content. Instagram profile @zaofestivals grew to 246 followers and 65 posts as of June 2026.</p>
+      <p><strong>ZAOville</strong> (July 2026, Washington DC metropolitan area)<sup class="cite"><a href="#ref3">[3]</a></sup>. A day-party artist showcase at Dcoop's residence, organized in collaboration with his VT collective. Mid-size event (86 of 100 RSVPs confirmed as of late May 2026<sup class="cite"><a href="#ref6">[6]</a></sup>). Lineup: Dcoop (opener), Ashley, Eleven, John Clark, Profit, and Lion's Den (headliner). Features a viral content window with peak day-party energy (3-4:30pm), outdoor music performances (6-8pm), and a close with fire-spin light show and glow-stick pool experience. Serves as a dry run for content capture and production workflows ahead of ZAOstock. Dcoop raised $1,000 seed funding via a hackathon win<sup class="cite"><a href="#ref3">[3]</a></sup>.</p>
+      <p><strong>ZAOstock</strong> (October 3, 2026, Ellsworth, Maine)<sup class="cite"><a href="#ref1">[1]</a></sup>. The flagship festival and the event the entire 2026 production lane is built around. Community-run music and culture festival with a budget in the low five figures (estimates range $5-25k)<sup class="cite"><a href="#ref7">[7]</a></sup>. Tied into the Art of Ellsworth and Maine Craft Weekend cultural calendar<sup class="cite"><a href="#ref1">[1]</a></sup>. Distributed team structure with dedicated Operations, Finance, and Design rosters. Announced partners include Heart of Ellsworth (venue and Maine Craft Weekend promotion), Fractured Atlas (501(c)(3) fiscal sponsorship), Black Moon Public House (after-party venue), and Wallace Events (tent rental and weather backup)<sup class="cite"><a href="#ref2">[2]</a></sup>. ZAOstock is expected to graduate into its own repository and operational structure as it matures.</p>
     </section>
 
     <section>
@@ -305,8 +315,8 @@
       </ul>
       <p><strong>Funding & Sponsorship.</strong> Festivals use a layered fundraising stack:</p>
       <ul class="fivec">
-        <li><b>Fiscal Sponsorship.</b> Fractured Atlas, a 501(c)(3) nonprofit, provides tax-deductible sponsorship containers so corporate sponsors receive compliance benefits.</li>
-        <li><b>Crypto-Native Fundraising.</b> Giveth (decentralized donor platform, open-source crypto donation platform) and Mirror (on-chain fundraising posts, acquired by Paragraph May 2024 but continues operation) for community donations. Cask or Gitcoin ALLO for grants.</li>
+        <li><b>Fiscal Sponsorship.</b> Fractured Atlas, a 501(c)(3) nonprofit<sup class="cite"><a href="#ref2">[2]</a></sup>, provides tax-deductible sponsorship containers so corporate sponsors receive compliance benefits.</li>
+        <li><b>Crypto-Native Fundraising.</b> Giveth (decentralized donor platform, open-source crypto donation platform) and Mirror (on-chain fundraising posts, acquired by Paragraph May 2024 but continues operation)<sup class="cite"><a href="#ref2">[2]</a></sup> for community donations. Cask or Gitcoin ALLO for grants.</li>
         <li><b>Direct Sponsorship.</b> Outreach to local businesses, impact funds, and Web3 projects aligned with artist values (e.g., Student $LOANZ Token sponsored ZAO-CHELLA).</li>
         <li><b>Artist Payment Splits.</b> 0xSplits for transparent, on-chain distribution of ticket revenue and sponsorship proceeds directly to performing artists - no intermediary.</li>
         <li><b>Attendance Tokens.</b> POAPs (Proof of Attendance Protocols) minted for each attendee, creating a verifiable, persistent record and digital collectible.</li>
@@ -320,7 +330,7 @@
       <h2>Track Record & Growth</h2>
       <p><strong>Past Events (2024).</strong> Two fully executed events with documented outcomes: ZAO-PALOOZA (April, 12 artists, break-even economics) and ZAO-CHELLA (December, 10 artists, sponsorship-backed, social proof via @zaofestivals). Together, these demonstrate repeatable execution at scale (10-12 artists), venue partnerships, and audience growth.</p>
       <p><strong>Current Pipeline (2026).</strong> ZAOville confirmed for July with 86 RSVPs (86% of 100 confirmed attendees as of late May). ZAOstock October confirmed with distributed team active since April standups, partnerships announced, and budget sourcing underway.</p>
-      <p class="stat">@zaofestivals Instagram: 246 followers, 65 posts, active archive of ZAO-CHELLA and prior event content as of June 2026.
+      <p class="stat">@zaofestivals Instagram: 246 followers, 65 posts, active archive<sup class="cite"><a href="#ref5">[5]</a></sup> of ZAO-CHELLA and prior event content as of June 2026.
         <span class="src">Source: Instagram profile metadata, last checked 2026-06-29</span>
       </p>
     </section>
@@ -336,7 +346,7 @@
     <section>
       <span class="num">7 - Open Questions</span>
       <h2>What We Don't Yet Know</h2>
-      <p><strong>Attendance Scaling.</strong> ZAO-CHELLA drew 100s of attendees in Miami; ZAOville is expected to draw 100s in DC. ZAOstock has no confirmed attendance yet; the goal is 250 total attendees (per Zaal, 2026-07-09). Weather, venue capacity, and neighboring events (Maine Craft Weekend) could significantly impact both attendance and operational complexity.</p>
+      <p><strong>Attendance Scaling.</strong> ZAO-CHELLA drew 100s of attendees in Miami; ZAOville is expected to draw 100s in DC. ZAOstock has no confirmed attendance yet; the goal is 250 total attendees<sup class="cite"><a href="#ref1">[1]</a></sup> (per Zaal, 2026-07-09). Weather, venue capacity, and neighboring events (Maine Craft Weekend) could significantly impact both attendance and operational complexity.</p>
       <p><strong>Economics & Sponsorship.</strong> ZAO-CHELLA was student-sponsored ($LOANZ token); ZAO-PALOOZA broke even. ZAOstock's $5-25k budget range is wide. Actual sponsorship acquisition and attendee conversion (if ticket-gated) have not been tested at the planned scale. Artist payout models via 0xSplits are technically proven but have not been validated across a large and diverse artist roster in a single event.</p>
       <p><strong>Regional Expansion.</strong> The plan mentions potential returns to Art Basel and NFT NYC, and new regional events. The team's capacity to scale to multiple simultaneous events (or events in very different geographies) is untested.</p>
     </section>
@@ -350,41 +360,26 @@
       <p><strong>As an Attendee.</strong> Follow @zaofestivals on Instagram and join the Farcaster /zao channel for announcements. Tickets and registration details are posted on thezao.xyz/events and the ZAO calendar (luma.com). Early attendees are eligible for POAPs and potential NFT collectibles.</p>
     </section>
 
-    <section class="sources">
-      <h2>Sources & Research</h2>
-      <p>This whitepaper is sourced from the ZAO research library and operational documentation. All facts are traced to production documents, planning records, or event archives. Nothing is speculative unless flagged as an open question.</p>
-
-      <h3>Primary Sources</h3>
+    <section>
+      <h2 style="margin-top:2rem">References</h2>
+      <ol class="references">
+        <li id="ref1"><b>ICM Box: ZAO Festivals.</b> Context card managed on useicm.com. Canonical record of the ZAO Festivals umbrella, the flagship ZAOstock event (date: October 3, 2026; location: Ellsworth, Maine; budget range: $5-25k), expected attendance (250 attendees, per Zaal, 2026-07-09), and positioning within the ZAO ecosystem.</li>
+        <li id="ref2"><b>ZAOstock Standup Kickoff Implementation Plan (2026-04-14).</b> ZAOOS research library, <code>docs/superpowers/plans/2026-04-14-zaostock-standup-kickoff.md</code>. Defines the team structure (Operations, Finance, Design rosters with named roles), partner landscape (Fractured Atlas 501(c)(3) fiscal sponsorship, Heart of Ellsworth, Black Moon Public House, Wallace Events), operational details (livestream via ZAO OS, Fractured Atlas 501(c)(3) nonprofit status), and resource stack (Giveth, Mirror on-chain fundraising, 0xSplits, POAP, ZAO OS livestream).</li>
+        <li id="ref3"><b>Dcoop x Zaal + Sam: Zaoville DC Day-Party Planning (2026-05-26).</b> ZAOOS research library, <code>research/events/814-dcoop-zaoville-dc-dayparty-planning-may26/README.md</code>. Documents ZAOville artist lineup, run-of-show, production crew, RSVP count (86 of 100 confirmed, as of late May 2026), venue (Dcoop's residence), and Dcoop's $1,000 seed funding via hackathon win.</li>
+        <li id="ref4"><b>ZAO-PALOOZA + ZAO-CHELLA: Past Event Record (2026-06-29).</b> ZAOOS research library, <code>research/events/919-zao-palooza-zao-chella-event-record/README.md</code>. Comprehensive record of the two 2024 events: ZAO-PALOOZA (April, NYC, tied to NFT NYC 2024, 12 artists, break-even economics); ZAO-CHELLA (December 6, 2024, Miami, tied to Art Basel, 10 artists, organized by AttaBotty and DaNici, WaveWarZ LIVE rematch battle on stage, Student $LOANZ Token Gold Sponsor).</li>
+        <li id="ref5"><b>@zaofestivals Instagram Metrics (last-checked 2026-06-29).</b> 246 followers, 65 posts, active archive of ZAO-CHELLA and prior event content. Primary social presence for ZAO Festivals announcements and event documentation.</li>
+        <li id="ref6"><b>ZAOville RSVP Count (as of 2026-05-26).</b> 86 of 100 confirmed attendees per Zaoville DC Day-Party Planning document (ref. 3).</li>
+        <li id="ref7"><b>ZAOstock Budget Range (from ICM Box, 2026).</b> $5-25k, confirmed via ICM metadata. Sourced from ref. 1.</li>
+      </ol>
+      
+      <h3 style="margin-top: 2rem; color: var(--ink-soft); border-top: 1px solid var(--line); padding-top: 1.5rem;">Gaps & Non-Sourced Claims</h3>
+      <p style="color: var(--ink-soft); font-style: italic;">The following claims have not yet been validated against external sources in the research library. They should be confirmed with the team before being relied upon for strategic decisions:</p>
       <ul class="fivec">
-        <li><b>ICM Box: ZAO Festivals.</b> Context card managed on useicm.com. Canonical record of the ZAO Festivals umbrella, the flagship ZAOstock event (date, location, budget range), and positioning within the ZAO ecosystem.</li>
-        <li><b>ZAOstock Standup Kickoff Implementation Plan (2026-04-14).</b> ZAOOS research library, `docs/superpowers/plans/2026-04-14-zaostock-standup-kickoff.md`. Defines the team structure (Operations, Finance, Design rosters with named roles), partner landscape (Fractured Atlas, Heart of Ellsworth, Black Moon Public House, Wallace Events), and resource stack (Giveth, Mirror, 0xSplits, POAP, ZAO OS livestream).</li>
-        <li><b>Dcoop x Zaal + Sam: Zaoville DC Day-Party Planning (2026-05-26).</b> ZAOOS research library, `research/events/814-dcoop-zaoville-dc-dayparty-planning-may26/README.md`. Documents ZAOville artist lineup, run-of-show, production crew, RSVP count (86/100), and Dcoop's $1,000 seed funding via hackathon.</li>
-        <li><b>ZAO-PALOOZA + ZAO-CHELLA: Past Event Record (2026-06-29).</b> ZAOOS research library, `research/events/919-zao-palooza-zao-chella-event-record/README.md`. Comprehensive record of the two 2024 events: ZAO-PALOOZA (April, NYC, NFT NYC 2024, 12 artists, break-even); ZAO-CHELLA (December 6, Miami, Art Basel, 10 artists, WaveWarZ LIVE rematch, Student $LOANZ Token Gold Sponsor, @zaofestivals Instagram 246 followers / 65 posts as of June 29 2026).</li>
+        <li><b>ZAOstock Expected Attendance Scale.</b> The goal of 250 total attendees was confirmed directly by Zaal (2026-07-09) but does not yet appear in written research library documents. This is a stated target, not yet a confirmed outcome.</li>
+        <li><b>2027 Festival Calendar Details.</b> The whitepaper mentions potential returns to Art Basel (December 2027) and NFT NYC (September 2027), plus new regional events, but no formal roadmap with confirmed dates or venues exists yet. See section 6 (Roadmap & Scaling) for current public statements.</li>
+        <li><b>Exact ZAOstock Lineup & Final Sponsors.</b> As of publication date (2026-07-09), the artist lineup and final confirmed sponsors are still being finalized. The ZAOstock standups (ongoing, Tuesdays 10am EST per section 8) are the live source for updates.</li>
+        <li><b>Economics Validation at Scale.</b> Artist payout models via 0xSplits and sponsorship acquisition have been tested at smaller events (ZAO-CHELLA, ZAOville) but have not yet been validated across a large and diverse artist roster or at ZAOstock's planned attendance scale (250 attendees).</li>
       </ul>
-
-      <h3>Secondary & Ecosystem Context</h3>
-      <ul class="fivec">
-        <li><b>ICM Box: WaveWarZ.</b> Live-traded music battles on Solana/Base. Documented as a parallel production lane to ZAO Festivals. ZAO-CHELLA featured a WaveWarZ LIVE rematch battle on stage.</li>
-        <li><b>ZAO Community & Calendar.</b> thezao.xyz (event listing and calendar), Farcaster /zao channel, @zaofestivals Instagram, luma.com/zao (ZAO calendar events).</li>
-      </ul>
-
-      <h3>Data & Metrics Snapshot Dates</h3>
-      <ul class="fivec">
-        <li><b>@zaofestivals Instagram Metrics.</b> 246 followers, 65 posts, as of 2026-06-29 (last-validated date in source doc).</li>
-        <li><b>ZAOville RSVPs.</b> 86 of 100 confirmed, as of 2026-05-26 (planning call date).</li>
-        <li><b>ZAOstock Budget Range.</b> $5-25k, sourced from ICM box (updated per ICM metadata).</li>
-      </ul>
-
-      <h3>Deep-Research Verification (v0.3)</h3>
-      <p>All major claims have been externally verified against 2026 sources: Fractured Atlas confirmed operating as 501(c)(3) fiscal sponsor; Giveth and 0xSplits confirmed active with no changes to operations; Art Basel Miami 2026 confirmed Dec 4-6; NFT NYC 2026 confirmed September 1-3 (not April); Maine Craft Weekend 2026 confirmed Oct 1-4 with ZAOstock October 3 correctly positioned; all Ellsworth partners (Heart of Ellsworth, Black Moon Public House, Wallace Events) confirmed real and operational. Mirror.xyz acquisition by Paragraph (May 2024) noted but platform remains operational.</p>
-      <h3>Gaps & Non-Sourced Claims</h3>
-      <p>The following are not yet sourced in the research library and should be validated with the team:</p>
-      <ul class="fivec">
-        <li><b>ZAOstock Expected Attendance Scale.</b> No confirmed attendance yet; the goal is 250 total attendees, confirmed directly by Zaal (2026-07-09), not yet in the written research library.</li>
-        <li><b>2027 Festival Calendar Details.</b> Plan mentions potential Art Basel and NFT NYC returns, plus new regional events, but no formal roadmap yet. See section 6 for current public statements.</li>
-        <li><b>Exact ZAOstock Lineup & Sponsors.</b> As of publication date, the artist lineup and final confirmed sponsors are still being finalized. See ZAOstock standups (ongoing, Tuesdays 10am EST) for updates.</li>
-      </ul>
-
     </section>
 
   </div>
