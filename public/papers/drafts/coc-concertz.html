@@ -257,6 +257,15 @@
     .num { font-size: 0.65rem; }
     .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
   }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
 </style>
 
 </head>
@@ -281,16 +290,16 @@
     <section>
       <span class="num">What it is</span>
       <h2>The On-Stage Expression of The ZAO</h2>
-      <p>COC Concertz is a recurring concert and showcase series run by Zaal (BetterCallZaal) under The ZAO umbrella. It occupies a distinct place in the ecosystem - not the large annual gatherings of ZAO Festivals, but a numbered, ongoing cadence: shows happen roughly monthly during active seasons, with editions numbered sequentially (COC #1 in March 2025, COC #7 scheduled for mid-July 2026).</p>
-      <p>Each edition is a live concert featuring 2-4 independent artists, typically running 2-3 hours of music, conversation, and experimental Web3 moments. Recent shows have piloted dropping wallet gates entirely, trading crypto-native friction for open access and broader audience reach.</p>
-      <p>The series broadcasts simultaneously across multiple platforms: Spatial.io metaverse venues (the primary virtual stage), X Spaces, Twitch, TikTok, and YouTube. This multi-platform approach treats virtual and physical equally - audience members can join from a Web3-native venue, a livestream platform, or an IRL location if a physical co-hosting partner is involved.</p>
-      <div class="note">Platform Status Update (July 9, 2026): Spatial.io announced on July 27, 2026 shutdown of its free and pro tier subscriptions and discontinuation of 3D world hosting for those users. Enterprise customers retain platform access. COC shows may need to migrate venues or pursue enterprise tier access post-July 27. See updated risk section below.</div>
+      <p>COC Concertz is a recurring concert and showcase series run by Zaal (BetterCallZaal) under The ZAO umbrella<sup class="cite"><a href="#ref1">[1]</a></sup>. It occupies a distinct place in the ecosystem - not the large annual gatherings of ZAO Festivals, but a numbered, ongoing cadence: shows happen roughly monthly during active seasons<sup class="cite"><a href="#ref1">[1]</a></sup>, with editions numbered sequentially (COC #1 in March 2025, COC #7 scheduled for mid-July 2026)<sup class="cite"><a href="#ref1">[1]</a></sup>.</p>
+      <p>Each edition is a live concert featuring 2-4 independent artists<sup class="cite"><a href="#ref1">[1]</a></sup>, typically running 2-3 hours of music<sup class="cite"><a href="#ref1">[1]</a></sup>, conversation, and experimental Web3 moments. Recent shows have piloted dropping wallet gates entirely, trading crypto-native friction for open access and broader audience reach.</p>
+      <p>The series broadcasts simultaneously across multiple platforms: Spatial.io metaverse venues (the primary virtual stage), X Spaces, Twitch, TikTok, and YouTube<sup class="cite"><a href="#ref4">[4]</a></sup>. This multi-platform approach treats virtual and physical equally - audience members can join from a Web3-native venue, a livestream platform, or an IRL location if a physical co-hosting partner is involved.</p>
+      <div class="note">Platform Status Update (July 9, 2026): Spatial.io announced on July 27, 2026<sup class="cite"><a href="#ref7">[7]</a></sup> shutdown of its free and pro tier subscriptions and discontinuation of 3D world hosting for those users. Enterprise customers retain platform access. COC shows may need to migrate venues or pursue enterprise tier access post-July 27. See updated risk section below.</div>
     </section>
 
     <section>
       <span class="num">Why it matters</span>
       <h2>A Stage Where the Network Proves Itself</h2>
-      <p>The ZAO ecosystem provides on-chain tools - SongJam for composition, ZABAL for community coordination, streaming contracts for revenue splits. These tools return profit, data, and IP rights to creators. COC Concertz returns something equally essential but harder to measure: the stage, the attention, and the proof that a decentralized music community is not just a timeline but a room full of people who showed up.</p>
+      <p>The ZAO ecosystem provides on-chain tools - SongJam for composition, ZABAL for community coordination, streaming contracts for revenue splits<sup class="cite"><a href="#ref6">[6]</a></sup>. These tools return profit, data, and IP rights to creators. COC Concertz returns something equally essential but harder to measure: the stage, the attention, and the proof that a decentralized music community is not just a timeline but a room full of people who showed up.</p>
       <p>For artists, it is direct exposure and a pathway into the wider ZAO pipeline - moments from the shows become clips, community engagement becomes bounties, and artists themselves graduate into festival lineups. For The ZAO community, it is cultural proof - evidence that the network functions as a platform for real expression, not just economic coordination.</p>
       <p>The format also serves as a testing ground for hybrid live/virtual formats. Each show generates feedback on how audiences move between platforms, how the metaverse venue and the livestream audience interact, and what keeps people engaged during live music in a decentralized context.</p>
     </section>
@@ -310,7 +319,7 @@
       <h3>Broadcast Topology</h3>
       <p>The operational core is multi-platform:</p>
       <ul class="lane">
-        <li><span class="tag">Spatial.io Metaverse</span> <p>The primary virtual venue (usually StiloWorld, a custom Spatial.io space designed by Stilo and CyberNerdBaby). Audiences arrive as avatars, can interact in-world, and feel a sense of shared space. Real-time chat runs alongside the stream. NOTE: Spatial.io free/pro tier sunsetting July 27, 2026; enterprise access may be required for future shows.</p></li>
+        <li><span class="tag">Spatial.io Metaverse</span> <p>The primary virtual venue (usually StiloWorld, a custom Spatial.io space designed by Stilo and CyberNerdBaby<sup class="cite"><a href="#ref4">[4]</a></sup>). Audiences arrive as avatars, can interact in-world, and feel a sense of shared space. Real-time chat runs alongside the stream. NOTE: Spatial.io free/pro tier sunsetting July 27, 2026<sup class="cite"><a href="#ref7">[7]</a></sup>; enterprise access may be required for future shows.</p></li>
         <li><span class="tag">X Spaces</span> <p>A linked audio room on X (formerly Twitter). Reaches the native Farcaster/X community and provides an audio-only option for listeners on mobile or in transit.</p></li>
         <li><span class="tag">Twitch & TikTok</span> <p>Parallel livestreams at twitch.tv/bettercallzaal and TikTok. Captures audiences from those platforms' native communities and creates clips for asynchronous discovery.</p></li>
         <li><span class="tag">YouTube</span> <p>Recorded performances and full-show compilations. Archive strategy in development - docs show plans for automated YouTube description generation, timestamped chapter markers, and artist profile enrichment from live transcripts.</p></li>
@@ -321,7 +330,7 @@
       <ul class="lane">
         <li><span class="tag">Proof of Meet Collectibles</span> <p>Experimental moments where attending a show (whether in the metaverse or on livestream) earns a non-transferable or semi-fungible collectible as proof of presence and community membership.</p></li>
         <li><span class="tag">Cross-Community Collaboration</span> <p>Shows feature multiple artist/creator communities: an artist's fanbase, a metaverse community (like StiloWorld or Waha indigenous community), and The ZAO core team converge on one stage.</p></li>
-        <li><span class="tag">Fundraising via Giveth</span> <p>Some artists (e.g., Joseph Goats) use COC shows as a vehicle to raise funds for community causes via Giveth (giveth.io) on-chain donations, turning the concert into a dual cultural and economic event. Giveth is a zero-fee cryptocurrency donation platform where 100% of donations go directly to verified projects.</p></li>
+        <li><span class="tag">Fundraising via Giveth</span> <p>Some artists (e.g., Joseph Goats) use COC shows as a vehicle to raise funds for community causes via Giveth (giveth.io) on-chain donations<sup class="cite"><a href="#ref7">[7]</a></sup>, turning the concert into a dual cultural and economic event. Giveth is a zero-fee cryptocurrency donation platform<sup class="cite"><a href="#ref7">[7]</a></sup> where 100% of donations go directly to verified projects.</p></li>
       </ul>
     </section>
 
@@ -385,7 +394,7 @@
           </tbody>
         </table>
       </div>
-      <p>Source: Codebase show history (doc 352, validated May 2026), ICM COC Concertz box.</p>
+      <p>Source: Codebase show history (doc 352, validated May 2026), ICM COC Concertz box<sup class="cite"><a href="#ref3">[3]</a></sup>.</p>
     </section>
 
     <section>
@@ -394,15 +403,15 @@
       <p>Three artists have emerged as core to the COC series identity, with additional performers rotating in. Here is the active roster as of May 2026:</p>
 
       <h3>Stilo World (Los Angeles, CA)</h3>
-      <p>Caribbean-influenced hip-hop and R&B artist, founder of the StiloWorld Spatial.io venue used for COC broadcasts. Released album "Ambition" with tracks including Together, Hero, I Want You to Stay, Paradise, Mama, Bonita, Save Me, and Nothing to Lose. Approaches artist readiness as a core practice - "preparation meeting opportunity." Hosted 150+ consecutive weekly VR concerts, establishing himself as a reliable presence in Web3 music. Performances at COC: #2 (WaveWarZ Battle exhibition), #4 (full Ambition album live).</p>
+      <p>Caribbean-influenced hip-hop and R&B artist, founder of the StiloWorld Spatial.io venue used for COC broadcasts<sup class="cite"><a href="#ref5">[5]</a></sup>. Released album "Ambition" with tracks including Together, Hero, I Want You to Stay, Paradise, Mama, Bonita, Save Me, and Nothing to Lose. Approaches artist readiness as a core practice - "preparation meeting opportunity." Hosted 150+ consecutive weekly VR concerts, establishing himself as a reliable presence in Web3 music. Performances at COC: #2 (WaveWarZ Battle exhibition), #4 (full Ambition album live).</p>
       <p><strong>Artist Social Links:</strong> <a href="https://instagram.com/stilio.music" target="_blank" rel="noopener">Instagram @stilio.music</a>, <a href="https://twitter.com/stiloart" target="_blank" rel="noopener">Twitter/X @stiloart</a>, <a href="https://www.linkedin.com/company/dope-stilo-music-club/" target="_blank" rel="noopener">LinkedIn: Dope Stilo Music Club</a></p>
 
       <h3>Tom Fellenz (US-based, vineyard performance circuit)</h3>
-      <p>Guitarist, soundtrack composer, and AR/virtual space builder who returned to live acoustic performance through metaverse stages. Since 2019, has composed over 15 full-length pieces of electronic music crossing genres including rock, 80s soundtrack, R&B, blues, and smooth jazz. Earlier work centered around solo instrumental acoustic guitar performance; has begun transcribing pieces for full band arrangements. Performed at Metaverse Music Festival in Decentraland (March 2022). Plays guitar "as conversation, not performance." Original compositions: Setting the Scene, From Above (20 years in development), Another Page Turned, In Quieter Times, A Tale of Fall. Connected to Meteorites, Token Smart, and Third Planet communities. Deeply engaged with blockchain and virtual platform technologies for music distribution, having built 'NFT Music Hall' in multiple virtual platforms and hosted over 40 musicians. Performances at COC: #2 (live set in SaltyVerse Auditorium), #4 (5-song acoustic set, showing his progression as a performer).</p>
+      <p>Guitarist, soundtrack composer, and AR/virtual space builder<sup class="cite"><a href="#ref5">[5]</a></sup> who returned to live acoustic performance through metaverse stages. Since 2019, has composed over 15 full-length pieces of electronic music crossing genres including rock, 80s soundtrack, R&B, blues, and smooth jazz. Earlier work centered around solo instrumental acoustic guitar performance; has begun transcribing pieces for full band arrangements. Performed at Metaverse Music Festival in Decentraland (March 2022). Plays guitar "as conversation, not performance." Original compositions: Setting the Scene, From Above (20 years in development), Another Page Turned, In Quieter Times, A Tale of Fall. Connected to Meteorites, Token Smart, and Third Planet communities. Deeply engaged with blockchain and virtual platform technologies for music distribution, having built 'NFT Music Hall' in multiple virtual platforms and hosted over 40 musicians. Performances at COC: #2 (live set in SaltyVerse Auditorium), #4 (5-song acoustic set, showing his progression as a performer).</p>
       <p><strong>Artist Social Links:</strong> <a href="https://linkedin.com/in/tomfellenz/" target="_blank" rel="noopener">LinkedIn</a>, <a href="https://tomfellenz.com/" target="_blank" rel="noopener">tomfellenz.com</a>, <a href="https://music.apple.com/us/artist/tom-fellenz/522478162" target="_blank" rel="noopener">Apple Music</a></p>
 
       <h3>Joseph Goats (Caracas, Venezuela)</h3>
-      <p>Venezuelan singer-songwriter and social impact artist (born as José Cabrera), using music as a vehicle for indigenous community support and social coordination. Rebranded from Jose to Joseph Goats for English-language audiences. Performs original songs in Spanish: No Winter Slam, Kama, Compass (Brujula), with themes of ecology, indigenous wisdom, and community building. Active fundraiser via Giveth for community causes - raised USD 8,259 on Giveth supporting earthquake relief and community projects. Approaches music as a public good for DAOs and Web3 communities, organizing free digital concerts and discord performances. Performances at COC: #4 (3-song live set from Caracas, demonstrating the multi-geographic reach of the series).</p>
+      <p>Venezuelan singer-songwriter and social impact artist (born as José Cabrera), using music as a vehicle for indigenous community support and social coordination. Rebranded from Jose to Joseph Goats for English-language audiences. Performs original songs in Spanish: No Winter Slam, Kama, Compass (Brujula), with themes of ecology, indigenous wisdom, and community building. Active fundraiser via Giveth for community causes - raised USD 8,259 on Giveth<sup class="cite"><a href="#ref7">[7]</a></sup> supporting earthquake relief and community projects. Approaches music as a public good for DAOs and Web3 communities, organizing free digital concerts and discord performances. Performances at COC: #4 (3-song live set from Caracas, demonstrating the multi-geographic reach of the series).</p>
       <p><strong>Artist Social Links:</strong> Giveth campaign profile (specific URL to be confirmed); additional social profiles in active population.</p>
 
       <h3>Additional Artists</h3>
@@ -416,12 +425,12 @@
       <h2>The Stack Behind Live Performance</h2>
 
       <h3>Data & Audience Management</h3>
-      <p>COC Concertz currently runs on Google Firestore for core data (show metadata, artist profiles, chat persistence, real-time presence during broadcasts). The database setup is straightforward: free tier accommodates the monthly-show cadence with 50,000 reads/day capacity. During a show with 50+ concurrent viewers and a few hundred chat messages, the system burns a few tens of thousands of reads in a single evening - still well inside the free tier, with cost escalation only relevant if a single show exceeds 500 concurrent viewers (estimated ~$0.06 per 100,000 additional reads if that threshold is crossed, a non-issue at current scale).</p>
+      <p>COC Concertz currently runs on Google Firestore<sup class="cite"><a href="#ref2">[2]</a></sup> for core data (show metadata, artist profiles, chat persistence, real-time presence during broadcasts). The database setup is straightforward: free tier accommodates the monthly-show cadence with 50,000 reads/day capacity. During a show with 50+ concurrent viewers and a few hundred chat messages, the system burns a few tens of thousands of reads in a single evening - still well inside the free tier, with cost escalation only relevant if a single show exceeds 500 concurrent viewers (estimated ~$0.06 per 100,000 additional reads if that threshold is crossed, a non-issue at current scale).</p>
 
       <p>The Firestore setup uses client-read-only rules on core collections (artists, shows, chat history), with all writes routed through Admin SDK routes at `/api/*`. A Supabase instance is already wired into the application at `src/lib/supabase.ts` for archive features (dormant, pending activation). Site authentication is optional; wallet gates have been dropped on recent shows to maximize reach, though past shows still track attendance via optional Web3 verification.</p>
 
-      <div class="stat">A database migration off Firestore is not planned. Firestore cost is zero at COC scale, migration is a full rewrite (2-6 weeks estimated), and the operational priority is feature velocity (YouTube automation, artist profile enrichment, content distribution) not database consolidation. If a show reaches sustained 500+ concurrent viewers, this decision will be revisited.
-      <span class="src">Source: ZAOOS Research Doc 955 (COC Concertz Database Options), validated July 3, 2026</span></div>
+      <div class="stat">A database migration off Firestore is not planned. Firestore cost is zero at COC scale<sup class="cite"><a href="#ref2">[2]</a></sup>, migration is a full rewrite (2-6 weeks estimated), and the operational priority is feature velocity (YouTube automation, artist profile enrichment, content distribution) not database consolidation. If a show reaches sustained 500+ concurrent viewers, this decision will be revisited.
+      <span class="src">Source: ZAOOS Research Doc 955 (COC Concertz Database Options)<sup class="cite"><a href="#ref2">[2]</a></sup>, validated July 3, 2026</span></div>
 
       <h3>Content Generation & Archive</h3>
       <p>Current workflow: shows are recorded to YouTube, with manual description writing post-show. Development underway for automating YouTube description generation, integrating transcripts, adding timestamp-based chapter markers, and enriching artist social links from show transcripts.</p>
@@ -439,7 +448,7 @@
       <ul class="fivec">
         <li><b>Content & Clips</b> - Moments from shows become short-form content for Farcaster, X, TikTok. Artist performances and community reactions drive discovery and funnel new audiences to The ZAO.</li>
         <li><b>Bounties & Engagement</b> - Moments flagged for community response (artist callouts, audience shoutouts) become ZABAL bounties, incentivizing ongoing engagement beyond the live show.</li>
-        <li><b>Artist Pipeline</b> - Performers and organizers from COC shows are candidates for ZAO Festivals, the larger annual events, creating a natural progression from recurring series to marquee events.</li>
+        <li><b>Artist Pipeline</b> - Performers and organizers from COC shows are candidates for ZAO Festivals<sup class="cite"><a href="#ref6">[6]</a></sup>, the larger annual events, creating a natural progression from recurring series to marquee events.</li>
         <li><b>Community Proof</b> - Each show is a data point that the network functions IRL, not just on-chain. Attendance, cross-platform viewership, and on-chain coordination metrics are gathered and shared.</li>
         <li><b>Protocol Testing</b> - Proof of Meet collectibles, cross-community fundraising via Giveth, and hybrid virtual/physical co-hosting are all experiments that test mechanics later scaled across The ZAO.</li>
       </ul>
@@ -475,31 +484,28 @@
       <span class="num">How to participate</span>
       <h2>For Artists, Community Members, and Partners</h2>
       <ul class="lane">
-        <li><span class="tag">Attend a Show</span> <p>Shows are free and open to the public. Join the Farcaster channel <a href="https://warpcast.com/~/channel/cocconcertz">/cocconcertz</a> for announcements of upcoming shows, venue links, and real-time chat during broadcasts. Watch on Spatial.io (metaverse), Twitch, TikTok, or YouTube depending on your preference. NOTE: Spatial.io access may require changes post-July 27, 2026.</p></li>
-        <li><span class="tag">Support Artists</span> <p>Follow performers on their home platforms (links now included in artist profiles above as they become verified). If an artist is fundraising via Giveth (e.g., Joseph Goats supporting community projects), donations on <a href="https://giveth.io/" target="_blank" rel="noopener">giveth.io</a> go directly to community projects with zero platform fees. Engage with content clipped from shows, comment, and amplify on your networks.</p></li>
-        <li><span class="tag">Perform or Collaborate</span> <p>Inquire via Farcaster (<a href="https://warpcast.com/bettercallzaal">@bettercallzaal</a>) about artist submission and booking. The series prioritizes Web3-aligned and independent artists, multi-genre, with openness to experimental formats. Being embedded in The ZAO ecosystem is a plus but not a requirement.</p></li>
+        <li><span class="tag">Attend a Show</span> <p>Shows are free and open to the public. Join the Farcaster channel <a href="https://warpcast.com/~/channel/cocconcertz">/cocconcertz</a><sup class="cite"><a href="#ref1">[1]</a></sup> for announcements of upcoming shows, venue links, and real-time chat during broadcasts. Watch on Spatial.io (metaverse), Twitch, TikTok, or YouTube depending on your preference. NOTE: Spatial.io access may require changes post-July 27, 2026.</p></li>
+        <li><span class="tag">Support Artists</span> <p>Follow performers on their home platforms (links now included in artist profiles above as they become verified). If an artist is fundraising via Giveth<sup class="cite"><a href="#ref7">[7]</a></sup> (e.g., Joseph Goats supporting community projects), donations on <a href="https://giveth.io/" target="_blank" rel="noopener">giveth.io</a> go directly to community projects with zero platform fees. Engage with content clipped from shows, comment, and amplify on your networks.</p></li>
+        <li><span class="tag">Perform or Collaborate</span> <p>Inquire via Farcaster (<a href="https://warpcast.com/bettercallzaal">@bettercallzaal</a><sup class="cite"><a href="#ref1">[1]</a></sup>) about artist submission and booking. The series prioritizes Web3-aligned and independent artists, multi-genre, with openness to experimental formats. Being embedded in The ZAO ecosystem is a plus but not a requirement.</p></li>
         <li><span class="tag">Produce or Host</span> <p>COC Concertz is looking to formalize regional hubs and co-hosting partnerships for physical/hybrid shows. If your community or venue wants to host or co-produce a show, reach out with your space, audience size, and technical setup.</p></li>
       </ul>
     </section>
 
-    <section>
-      <span class="num">Sources & references</span>
-      <h2>Primary Sources for This Whitepaper</h2>
-      <p>This whitepaper draws from the following primary sources in The ZAO OS research library and ICM context boxes:</p>
-      <ul class="fivec">
-        <li><b>ICM Box: COC Concertz</b> - Primary context box defining what COC Concertz is, why it matters, and related ecosystem boxes. Establishes the "live culture surface" framing and multi-platform broadcast model. Source: useicm.com, retrieved July 2026.</li>
-        <li><b>ZAOOS Doc 955: COC Concertz Database Options</b> - Deep technical research on Firestore, alternatives (Supabase, Convex, InstantDB, Vercel), and operational cost/benefit analysis. Validated July 3, 2026. Confirms Firestore is the current and planned database with no migration planned unless show scale exceeds 500 concurrent viewers.</li>
-        <li><b>ZAOOS Doc 352: COC Concertz Full Context</b> - Comprehensive research on show history, artist profiles, content automation roadmap, and platform topology. Validated May 21, 2026. Primary source for artist bios, show history, and planned content features. Includes full codebase audit (476 lines of Firestore code, 16 operational scripts, 15 real-time listener sites).</li>
-        <li><b>COC Concertz Codebase</b> - Site configuration, artist seed data, show history, and newsletter/content generation infrastructure. Files: concertz.config.ts, src/components/home/PastShows.tsx, src/components/admin/SeedArtists.tsx, src/components/newsletter/*, etc. Provides ground truth on implemented features.</li>
-        <li><b>COC Concertz #4 Transcripts</b> - Primary source for artist biographies, performance context, and community voice. Used to enrich artist profiles beyond codebase seed data.</li>
-        <li><b>The ZAO Technical Whitepaper & Ecosystem Papers</b> - Context on The ZAO's broader mission, On-chain tools (SongJam, ZABAL), and festival/event strategy. Helps position COC Concertz within the wider network.</li>
-        <li><b>External Verification Sources (July 9, 2026 Deep Research Pass)</b> - Web search verification of artist profiles, Spatial.io platform status, Giveth platform confirmation, artist social link discovery. Sources: Spatial.io official announcements re: July 27, 2026 shutdown; Giveth.io documentation; Tom Fellenz LinkedIn and artist websites; Stilo World Instagram and social profiles.</li>
-      </ul>
-      <p class="note">This is a research-deepened whitepaper as of July 9, 2026 (v0.3). Deep research pass added platform status updates for Spatial.io shutdown announcement, verified Giveth as zero-fee donation platform, added confirmed artist social links for Tom Fellenz and Stilo World, and confirmed Joseph Goats' Giveth fundraising presence. Some data (complete social profiles for Joseph Goats, COC #5-7 artist lineup, detailed monetization model) remains in development and will be updated as available. No speculative or invented details have been included.</p>
-    </section>
-
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">ICM Box: COC Concertz. Useicm.com. Primary context box defining what COC Concertz is, why it matters, and related ecosystem boxes. Establishes the "live culture surface" framing and multi-platform broadcast model. Retrieved July 2026.</li>
+      <li id="ref2">ZAOOS Doc 955: COC Concertz Database Options. ZAO OS research library. Deep technical research on Firestore, alternatives (Supabase, Convex, InstantDB, Vercel), and operational cost/benefit analysis. Validated July 3, 2026. Confirms Firestore is the current and planned database with no migration planned unless show scale exceeds 500 concurrent viewers.</li>
+      <li id="ref3">ZAOOS Doc 352: COC Concertz Full Context. ZAO OS research library. Comprehensive research on show history, artist profiles, content automation roadmap, and platform topology. Validated May 21, 2026. Primary source for artist bios, show history, and planned content features. Includes full codebase audit (476 lines of Firestore code, 16 operational scripts, 15 real-time listener sites).</li>
+      <li id="ref4">COC Concertz Codebase. Site configuration, artist seed data, show history, and newsletter/content generation infrastructure. Files: concertz.config.ts, src/components/home/PastShows.tsx, src/components/admin/SeedArtists.tsx, src/components/newsletter/*, etc. Provides ground truth on implemented features and broadcast platform topology.</li>
+      <li id="ref5">COC Concertz #4 Transcripts. Live show transcript from April 2026. Primary source for artist biographies, performance context, and community voice. Used to enrich artist profiles beyond codebase seed data.</li>
+      <li id="ref6">The ZAO Technical Whitepaper & Ecosystem Papers. Thezao.xyz/papers. Context on The ZAO's broader mission, on-chain tools (SongJam, ZABAL), and festival/event strategy. Helps position COC Concertz within the wider network.</li>
+      <li id="ref7">External Verification Sources (July 9, 2026 Deep Research Pass). Independent verification of platform status, artist profiles, and partnership details. Sources: Spatial.io official announcements re: July 27, 2026 shutdown of free and pro tier subscriptions; Giveth.io documentation confirming zero-fee donation platform model; Tom Fellenz LinkedIn and artist website verification; Stilo World Instagram and social profile confirmation; Joseph Goats Giveth fundraising campaign verification.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body>
