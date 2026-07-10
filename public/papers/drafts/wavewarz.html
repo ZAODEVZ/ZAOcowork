@@ -276,7 +276,7 @@
     <p>WaveWarZ does not try to fix streaming. It builds a different game next to it: a live, tradable market where a battle settles in about two hours and the artist gets paid the moment a trade happens, not a quarter later.</p></section>
 
     <section><h2>What it is</h2>
-    <p>WaveWarZ is a prediction-market-style music battle platform. It runs on Solana mainnet, with Base L2 contracts live on the Base Sepolia testnet since February 27, 2026, so EVM-native fans and builders can eventually reach it without a Solana bridge. Two artists battle; fans buy into whichever side they think will win using ephemeral, bonding-curve-priced tokens that exist only for the duration of that battle. It turns a music competition into a live market where the crowd's conviction, not a label's marketing budget, sets the score.</p></section>
+    <p>WaveWarZ is a prediction-market-style music battle platform. It runs on Solana mainnet, with Base L2 contracts verified on the Base Sepolia testnet since February 21, 2026, so EVM-native fans and builders can eventually reach it without a Solana bridge. Two artists battle; fans buy into whichever side they think will win using ephemeral, bonding-curve-priced tokens that exist only for the duration of that battle. It turns a music competition into a live market where the crowd's conviction, not a label's marketing budget, sets the score.</p></section>
 
     <section><h2>How a battle works</h2>
     <p><strong>Main Events</strong> are artist versus artist: three rounds, twenty minutes per round, roughly two hours total, streamed across X Spaces, YouTube, Retake, and Pump.fun. <strong>Quick Battles</strong> are song versus song with thirty-second final trading windows, run weeknights around 8:30pm EST, with special events and tournaments on Sundays. The full weekly schedule runs eleven shows: a Monday-through-Friday 11am EST community AMA, the 8:30pm EST Quick Battle trading session, and Sunday 8pm EST specials.</p>
@@ -304,7 +304,7 @@
     <p class="note">Break-even per battle is roughly $500 in trading volume; current matches typically run $800 to $2,500. Bonding-curve pricing on Base uses a square-root-of-x integral (Babylonian method for square roots, Newton's method for cube roots), settled in WETH or ETH; Solana transaction cost is effectively free at roughly $0.00025 per transaction.</p></section>
 
     <section><h2>Chains and contracts</h2>
-    <p>Solana mainnet remains the primary chain, running on an Anchor/Rust program. Base Sepolia is the EVM testnet, deployed February 27, 2026, with five Solidity/Foundry contracts: WaveWarzBase (core battle mechanics), EphemeralBattleToken (the per-battle tokens described above), WaveWarzMarketplace (trading battle positions), WaveWarzMusicNFT, and an interface contract. A mainnet date for Base has not been set; it is pending a contract security review.</p>
+    <p>Solana mainnet remains the primary chain, running on an Anchor/Rust program. Base Sepolia (chain 84532) holds three verified Solidity/Foundry contracts deployed February 21, 2026: <code>WaveWarzBase</code> (battle lifecycle and fee distribution), <code>WaveWarzMarketplace</code> (bonding curve and settlement), and <code>WaveWarzMusicNFT</code> (ERC-721 artist certificates). 134 of 135 tests pass in the Foundry suite. The contracts, frontend, backend, and trading logic are built and testnet-ready - what is actually blocking mainnet is not a pending security review, it is an open technical co-founder seat for the Base build. The infrastructure exists; the principal to take it live does not, as of this writing.</p>
     <p class="note">The Solana program ID published in WaveWarZ's original whitepaper is <code>9TUfEHvk5fN5vogtQyrefgNqzKy2Bqb4nWVhSFUg2fYo</code> - treat as unconfirmed until the team verifies it is still the live production program before building any direct onchain reads against it.</p></section>
 
     <section><h2>New product lines</h2>
@@ -326,21 +326,22 @@
     <p>WaveWarZ is The ZAO's always-on front door - the gravity well. Outsiders, often founders with their own ecosystems, arrive through WaveWarZ and discover The ZAO from there; it is a top-of-funnel magnet, not a deal-closer or a rails product. ZABAL Games plays the parallel front-door role for builders, and both feed the same community. Zaal (BetterCallZaal) works WaveWarZ as Director of Ecosystem Strategy and Partnerships, the connective role that brought most of the seven distribution partners above into the fold.</p></section>
 
     <section><h2>Traction</h2>
-    <p>As of early July 2026, per the WaveWarZ Intelligence dashboard: approximately 491 SOL of cumulative trading volume (up from 458 SOL in late May 2026), and between 950 and 1,125 total battles depending on the aggregation method used by the dashboard. The discrepancy between these figures is flagged in the ZAO research library as an outstanding reconciliation item. Cumulative artist payouts stand at approximately 8.7 SOL (~$590), with platform cumulative revenue at approximately 15.9 SOL. These are point-in-time figures from self-reported dashboards - the live dashboards linked from wavewarz.com and embedded in ZAO OS carry the current numbers.</p></section>
+    <p>Per the WaveWarZ Intelligence dashboard (wavewarz.info), live-checked July 2026: 498.88 SOL of cumulative trading volume (~$38,900), 1,200 total battles (49 events, 159 main-event battles, 1,005 Quick Battles), 8.82 SOL paid to artists (~$688, instant and automatic), and 16.81 SOL of platform revenue (~$1,311, spanning trades, settlement, and battle-launch fees). These are all-time, test-battles-excluded figures read directly off the live dashboard - it is the authoritative source over any static snapshot, since the numbers move nightly.</p></section>
 
     <section><h2>Roadmap</h2>
     <ol class="fivec">
-      <li><b>Foundation</b> - done. 950+ battles shipped, the seven-partner network locked in, three dashboards live, the eleven-show weekly ritual running.</li>
+      <li><b>Foundation</b> - done. 1,200 battles shipped, the seven-partner network locked in, three dashboards live, the eleven-show weekly ritual running.</li>
       <li><b>Market expansion</b> - in progress. Africa announced, Coinflow live, deep ZAO integration, AI-artist tournament in pilot.</li>
       <li><b>Scale</b> - not yet. The 16-Artist Bracket Tournament is the next scale event; no celebrity-tier partnerships yet.</li>
       <li><b>Market leadership</b> - not yet. Depends on Base reaching mainnet, the AI-artist line sustaining, and the Africa launch actually going live.</li>
     </ol></section>
 
     <section><h2>Team</h2>
-    <p>Hurric4n3ike leads as founder, developer, and MC. Candytoybox (Samantha) runs design, marketing, and CC0 art. Zaal (BetterCallZaal) is Director of Ecosystem Strategy and Partnerships.</p></section>
+    <p>Ikechi Nwachukwu (Hurric4n3ike) is founder, project manager, and a featured battling artist. Samantha Kinney (Candytoybox) is co-founder, built the application stack, and runs WaveWarZ Solana day-to-day. Zaal (BetterCallZaal) is Director of Ecosystem Strategy and Partnerships.</p></section>
 
     <section><h2>Risks, honestly</h2>
-    <p>Prediction markets on Solana are experiencing robust growth in 2026 with what appears to be a clear regulatory path, particularly for music-based markets, though Africa's entry adds new jurisdictions. Two live chains mean two smart-contract attack surfaces to secure rather than one. Volume is denominated in SOL (and, on Base, ETH/WETH), so crypto-market volatility affects both trading activity and payout value. The roster of active artists is real but not huge - roughly 43 and holding, rotation rather than net growth - so artist adoption and retention still matter more than they will once the base is bigger. Finally, at current scale the platform's cumulative revenue (~15.9 SOL) exceeds cumulative artist payouts (~8.7 SOL) by a factor of nearly 1.8x, driven by launch and queue fees - a ratio that undercuts the product's core pitch ("the artist earns") and will need addressing as volume grows.</p></section>
+    <p>Prediction markets on Solana are experiencing robust growth in 2026 with what appears to be a clear regulatory path, particularly for music-based markets, though Africa's entry adds new jurisdictions. Two live chains mean two smart-contract attack surfaces to secure rather than one. Volume is denominated in SOL (and, on Base, ETH/WETH), so crypto-market volatility affects both trading activity and payout value. The roster of active artists is real but not huge - roughly 43 and holding, rotation rather than net growth - so artist adoption and retention still matter more than they will once the base is bigger.</p>
+    <p>On the money: the trading fee split is intentionally artist-favored, not the reverse - artists take 1.0% per trade to the platform's 0.5%, and at settlement artists split 7% of the loser pool (5% winner, 2% loser) against the platform's 3%. Where the platform's cumulative revenue (16.81 SOL) currently runs ahead of cumulative artist payouts (8.82 SOL) is battle-launch and queue fees, a separate charge tied to creating a battle rather than to trading volume. That is worth watching as the platform scales, but it is not evidence the trading economics favor the house over the artist - on a per-trade and per-settlement basis, they do not. The Base build is a separate, honest gap: contracts, frontend, backend, and trading logic are built and tested on Base Sepolia, but the project has sat dormant for months for a structural reason - it needs a technical co-founder to take it to mainnet, not more engineering time from the current team.</p></section>
 
     <section><h2>What's next / how to get involved</h2>
     <p><strong>Artists</strong> register for the 16-Artist Bracket Tournament or the AI Artist Tournament via X @WaveWarZ. <strong>Fans and traders</strong> show up for the Monday-through-Friday 11am EST AMA or the 8:30pm EST Quick Battle trading session on X Spaces and YouTube. <strong>Builders and agent developers</strong> can watch the Base testnet contracts and the x402 agent-payment direction - a battle format one day enterable by an autonomous agent, not just a person, is the long-term shape of this. <strong>Ecosystem partners</strong> looking to plug into the distribution network can reach the team the same way the current seven did: through The ZAO.</p></section>
@@ -348,7 +349,18 @@
     <section><h2>Find it</h2>
     <p>wavewarz.com, with intelligence and analytics dashboards linked from there. On X: @WaveWarZ. On Farcaster: the /wavewarz channel. Embedded in ZAO OS at /wavewarz.</p></section>
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p>
+    <p><b>Sources:</b></p>
+    <ul style="list-style: none; padding: 0; margin: 1rem 0; font-size: 0.95rem; color: var(--ink-soft);">
+      <li>- WaveWarZ Intelligence dashboard: wavewarz.info - live, all-time platform stats (volume, battles, artist payouts, platform revenue), checked directly by Zaal July 2026</li>
+      <li>- github.com/bettercallzaal/wwbase (README) - Zaal's own deep-dive writeup on WaveWarZ Base: verified contract addresses, chain ID, test suite status, team roles, and honest gaps (self-authored, primary source)</li>
+      <li>- ZAO OS research doc 743 (WaveWarZ Whitepaper v2 Deep Dive) - mechanics, tokenomics, partner network, May 2026 baseline</li>
+      <li>- ZAO OS research doc 974 (WaveWarZ financials snapshot, 2026-07) - flagged the platform-revenue-vs-artist-payouts gap for the first time; superseded on the "undercuts the pitch" framing by Zaal's direct correction (2026-07-09) and the wwbase README's fee-model documentation</li>
+      <li>- wavewarz.com - main app; @WaveWarZ on X; /wavewarz on Farcaster</li>
+    </ul>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body></html>
