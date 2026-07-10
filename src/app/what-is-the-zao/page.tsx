@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 // Claude) get the full Q&A text, plus FAQPage JSON-LD which mirrors AI
 // question-answer synthesis (highest-ROI schema per research doc 1016).
 // Facts sourced from research/identity/icm-boxes/thezao.llm.txt, verified
-// on-chain 2026-07-05. Update the FAQ array below to update both the visible
+// on-chain 2026-07-10. Update the FAQ array below to update both the visible
 // page and the structured data - single source of truth.
 
 export const metadata: Metadata = {
@@ -51,7 +51,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "How does governance work in The ZAO?",
-    a: "Governance runs on the Fractal and on Respect. Respect is the on-chain contribution currency - a soulbound OG ERC-20 plus a ZOR ERC-1155, on Optimism. A weekly Respect Game ranks contributions, OREC (optimistic execution with commitment-and-reveal) settles the outcomes, and a Fibonacci curve shapes the rewards. As of 2026-07-05 there were 156 Respect holders with an OG Gini of roughly 0.73.",
+    a: "Governance runs on the Fractal and on Respect. Respect is the on-chain contribution currency - a soulbound OG ERC-20 plus a ZOR ERC-1155, on Optimism. A weekly Respect Game ranks contributions, OREC (optimistic execution with commitment-and-reveal) settles the outcomes, and a Fibonacci curve shapes the rewards. As of 2026-07-10 there were 122 Respect holders with an OG Gini of roughly 0.73 (top 5 holders own about 34% of supply, top 10 about 53%).",
   },
   {
     q: "What is Respect in The ZAO?",
@@ -144,7 +144,7 @@ export default function WhatIsTheZaoPage() {
           >
             thezao.xyz/papers
           </a>
-          . Facts verified on-chain 2026-07-05.
+          . Facts verified on-chain 2026-07-10.
         </p>
       </footer>
     </main>
