@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ZOUNZ @ The ZAO Whitepaper (DRAFT)">
+<meta property="og:description" content="ZOUNZ (ZABAL Nounz) is an ERC-721 NFT DAO on Base, governing ZABAL token treasury and community decisions through Nouns Builder governance.">
+<meta property="og:image" content="https://thezao.xyz/papers-og.png">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/zounz">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ZOUNZ @ The ZAO Whitepaper">
+<meta name="twitter:description" content="ZOUNZ (ZABAL Nounz) is an ERC-721 NFT DAO on Base, governing ZABAL token treasury and community decisions through Nouns Builder governance.">
+<meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<title>The ZAO - ZOUNZ Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"ZOUNZ @ The ZAO","description":"ZOUNZ (ZABAL Nounz) is an ERC-721 NFT DAO on Base, governing ZABAL token treasury and community decisions through Nouns Builder governance.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/zounz","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-09","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
+</style>
+
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers" class="home">Back to Papers</a><span class="arrows"><a href="/papers" title="Papers home">Home</a></span></div>
+<main>
+  <div class="wrap">
+    <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
+    <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://docs.google.com/document/d/1F0ACUnJo1d7yA8kcySvTT37xe-WgeU01Sy3z-J6shvU/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
+    <p class="eyebrow">ZOUNZ @ The ZAO - Whitepaper (draft v0.1)</p>
+    <h1>ZOUNZ</h1>
+    <p class="thesis"><b>ZOUNZ (ZABAL Nounz)</b> is an on-chain DAO governed by ERC-721 NFT holders using Nouns Builder. Members bid in live auctions to mint ZOUNZ tokens, participate in governance, and direct a shared treasury on Base.</p>
+
+    <section>
+      <h2>What it is</h2>
+      <p>ZOUNZ is a decentralized autonomous organization (DAO) on the Base blockchain, deployed as a Nouns Builder fork<sup class="cite"><a href="#ref1">[1]</a></sup>. It is named ZABAL Nounz - shorthand for a Nouns-model governance DAO holding a reserve of the ZABAL token. The core mechanics are straightforward: anyone can participate in a live NFT auction, bid to mint a ZOUNZ token, and once they hold ZOUNZ, they gain voting power in the DAO's governance system. Proposals submitted to the ZOUNZ Governor are decided by vote, and treasury funds (held at the ZOUNZ Treasury contract) are allocated by governance decision<sup class="cite"><a href="#ref2">[2]</a></sup>.</p>
+      <p class="lead">ZOUNZ contracts are live on Base. Token (NFT): <code>0xCB80Ef04DA68667c9a4450013BDD69269842c883</code>. Auction: <code>0xb2d43035c1d8b84bc816a5044335340dbf214bfb</code>. Governor (governance): <code>0x9d98ec4ba9f10c942932cbde7747a3448e56817f</code>. Treasury: <code>0x2bb5fd99f870a38644deafe7e4ecb62ac77a213f</code><sup class="cite"><a href="#ref1">[1]</a></sup>.</p>
+    </section>
+
+    <section>
+      <h2>The Nouns Builder model</h2>
+      <p>Nouns is a generative art DAO that pioneered a specific governance pattern: one NFT = one vote. Nouns Builder is an open-source no-code tool (built by Zora) that allows any team to fork the Nouns model and spin up a DAO in minutes<sup class="cite"><a href="#ref3">[3]</a></sup>. A Nouns Builder fork comes with five contracts:</p>
+      <ul class="fivec">
+        <li><b>Token (ERC-721):</b> The NFT contract. Each NFT minted grants one governance vote.</li>
+        <li><b>Auction:</b> A time-locked English auction. One NFT is auctioned at a time, continuously. When a bid is placed with less than 15 minutes left, the auction extends by 15 minutes. When an auction ends, the winner receives the NFT, and a new auction begins.</li>
+        <li><b>Governor:</b> The governance contract. Token holders can propose, vote on, and execute proposals. Voting is 1 NFT = 1 vote.</li>
+        <li><b>Treasury:</b> The DAO's treasury, which holds funds and is controlled by governance. Proposals can allocate funds from the treasury.</li>
+        <li><b>Metadata Renderer:</b> An optional off-chain metadata service that generates or stores token URIs and images.</li>
+      </ul>
+      <p>ZOUNZ follows this exact pattern. The Auction contract runs continuously; bidders must use Base ETH or a supported token to bid. The Governor contract enforces voting thresholds and quorum requirements. The Treasury holds the ZABAL token reserve and can execute on-chain actions as decided by governance<sup class="cite"><a href="#ref1">[1]</a></sup>.</p>
+    </section>
+
+    <section>
+      <h2>How ZOUNZ auctions work</h2>
+      <p>A ZOUNZ auction is live and ongoing on Base. Anyone with a wallet can place a bid, extending the countdown if necessary.</p>
+      <h3>Auction mechanics</h3>
+      <p>The auction operates as follows<sup class="cite"><a href="#ref1">[1]</a></sup>:</p>
+      <ul class="fivec">
+        <li><b>Bids in ETH:</b> Bidders submit offers in Base ETH. The minimum opening bid is set by the reserve price. Each new bid must exceed the current highest bid by at least the minimum bid increment (typically 10%).</li>
+        <li><b>Time extension:</b> When a bid is placed with less than 15 minutes remaining, the auction is extended by 15 minutes. This prevents snipe bidding and ensures competitive conditions.</li>
+        <li><b>Settlement:</b> When the auction timer reaches zero with no new bids, the current highest bidder wins. They receive the ZOUNZ NFT to their wallet, and the auction immediately begins for the next token ID.</li>
+        <li><b>Continuous minting:</b> ZOUNZ tokens mint sequentially. As auctions resolve, the total supply grows, and voting power is distributed among all NFT holders.</li>
+        <li><b>Transparent leaderboard:</b> All bids are on-chain and visible. The app displays the current auction state, time remaining, highest bidder, and current bid amount in real time.</li>
+      </ul>
+      <p>Auctions are the sole mechanism for acquiring ZOUNZ tokens. There is no presale, no allowlist, and no off-chain vesting. Governance can only adjust auction parameters (reserve price, bid increment) via proposal and vote.</p>
+    </section>
+
+    <section>
+      <h2>How ZOUNZ governance works</h2>
+      <p>Once a member holds a ZOUNZ NFT, they can vote on and create proposals. The governance system launched live on July 9, 2026<sup class="cite"><a href="#ref4">[4]</a></sup> with full proposal creation, voting, and Treasury execution capabilities.</p>
+      <h3>Voting and proposals</h3>
+      <p>ZOUNZ governance follows the Nouns Builder Governor pattern<sup class="cite"><a href="#ref1">[1]</a></sup>:</p>
+      <ul class="fivec">
+        <li><b>Proposal creation:</b> Any member with enough voting power (ZOUNZ balance above the proposal threshold) can submit a proposal. Proposals must include a description, target contracts, and the on-chain actions to be executed if passed.</li>
+        <li><b>Voting:</b> When a proposal enters the active voting period, all token holders can vote. Each NFT = 1 vote. Voting options are For, Against, or Abstain.</li>
+        <li><b>Quorum and threshold:</b> A proposal passes if it reaches quorum (minimum vote participation) and a majority of votes cast are For. The exact thresholds are set in the Governor contract and can be adjusted via governance.</li>
+        <li><b>Execution:</b> Once a proposal succeeds, it enters a queue and can be executed after a time delay (typically 1 day). Execution calls the target contracts and executes the on-chain actions, such as transferring Treasury funds.</li>
+      </ul>
+      <p class="note">As of July 9, 2026, the ZOUNZ governance interface is live in the BetterCallZaal app. Members can browse proposals, see voting status and time remaining, and cast votes directly from the app. The proposal creation modal is also live, allowing eligible members to submit new governance proposals without leaving the platform<sup class="cite"><a href="#ref4">[4]</a></sup>.</p>
+    </section>
+
+    <section>
+      <h2>ZABAL token reserve and relationship</h2>
+      <p>The task specification describes ZOUNZ as holding a 20% reserve of the ZABAL token<sup class="cite"><a href="#ref5">[5]</a></sup>. This relationship is not yet verified in public documentation or on-chain data as of this draft. The ZOUNZ Treasury contract does hold assets on Base and is controlled by governance, but the specific allocation of ZABAL tokens to the Treasury and the mechanics of how this reserve functions require further documentation.</p>
+      <p><strong>VERIFICATION NEEDED:</strong> Is there a ZABAL token snapshot in the Treasury? Is the 20% figure locked, or is it subject to governance adjustment? Does ZABAL governance coordinate with ZOUNZ governance, or are they independent? These are critical questions for the full whitepaper.</p>
+      <p>What is confirmed: ZOUNZ governance is live and functional. Treasury actions can be executed by vote. The integration with ZABAL token mechanics is a designed feature but needs explicit confirmation in the codebase or token docs.</p>
+    </section>
+
+    <section>
+      <h2>Current status (July 2026)</h2>
+      <div class="stat">
+        <b>ZOUNZ Auction (Live)</b>
+        <span>Auction contract deployed on Base. Auctions are running continuously. The ZOUNZ auction is accessible from the BetterCallZaal Governance page and from Nouns Builder directly.</span>
+        <span class="src">Base mainnet, contract 0xb2d43035c1d8b84bc816a5044335340dbf214bfb</span>
+      </div>
+      <div class="stat">
+        <b>ZOUNZ Governance (Live as of July 9, 2026)</b>
+        <span>Governor contract live. Proposal creation and voting interface deployed in the BetterCallZaal app. Members can create proposals, view active proposals, vote, and monitor Treasury status. Cron job actively monitors for new proposals and sends in-app notifications.</span>
+        <span class="src">Base mainnet, contracts 0x9d98ec4ba9f10c942932cbde7747a3448e56817f (Governor), 0x2bb5fd99f870a38644deafe7e4ecb62ac77a213f (Treasury)</span>
+      </div>
+      <p>ZOUNZ launched as a working feature today (July 9, 2026). The auction has been running for several months<sup class="cite"><a href="#ref6">[6]</a></sup>. The governance stack (proposals, voting, execution) and UI were completed and merged today. All components are production-ready and live on Base mainnet.</p>
+    </section>
+
+    <section>
+      <h2>Integration with BetterCallZaal and The ZAO</h2>
+      <p>ZOUNZ is a core feature in BetterCallZaal, The ZAO's community hub. The governance interface is located at <code>/governance</code> in the app and displays:</p>
+      <ul class="fivec">
+        <li><b>Live auction status:</b> Current ZOUNZ token ID, highest bid, time remaining, and a bid interface for members with a Base wallet.</li>
+        <li><b>Proposal list:</b> All active, pending, and resolved proposals. Filtering by status (Active, Passed, Failed, Queued). Real-time proposal count and voting power display.</li>
+        <li><b>Voting interface:</b> For active proposals, a card-based voting UI showing proposal details, vote breakdown (For/Against/Abstain), time remaining, and voting buttons.</li>
+        <li><b>Proposal creation:</b> A modal form for eligible members to submit new governance proposals on-chain.</li>
+        <li><b>Notifications:</b> A cron job monitors the Governor and Auction contracts and sends push notifications when new proposals are submitted or when an auction is ending soon.</li>
+      </ul>
+      <p>This tightly integrates ZOUNZ governance into the everyday workflow of The ZAO members, making it frictionless to participate in decisions without leaving the platform.</p>
+    </section>
+
+    <section>
+      <h2>Roadmap and future phases</h2>
+      <p>As of July 2026, ZOUNZ is in live production. Potential future work is outlined below, but is not committed or resourced:</p>
+      <h3>Short-term possibilities</h3>
+      <p><b>Proposal refinements:</b> Additional proposal types (e.g., treasury token transfers in ZABAL, multi-sig transactions). Improved proposal description parsing and markdown rendering. Draft proposal saves before submission.</p>
+      <p><b>Analytics:</b> Historical voting participation charts. Voter engagement metrics. Treasury balance over time. Integration with The ZAO's data portal.</p>
+
+      <h3>Medium-term possibilities</h3>
+      <p><b>Delegation:</b> Allow ZOUNZ holders to delegate their voting power to another address without transferring the NFT. Enables participation without ongoing wallet management.</p>
+      <p><b>Multi-sig integration:</b> Tie certain high-value Treasury actions to a secondary multi-sig approval step for safety.</p>
+      <p><b>Voting power snapshots:</b> Archive voting power at proposal creation time, preventing flash-loan attacks or last-minute buying to swing votes (already built into Nouns Governor, may need documentation).</p>
+
+      <h3>Long-term possibilities</h3>
+      <p><b>ZABAL governance link:</b> Formal coordination between ZOUNZ governance and ZABAL token governance, if ZABAL token moves to full DAO governance.</p>
+      <p><b>Auction parameter tuning:</b> Automated adjustments to reserve price, bid increment, or auction duration based on historical participation and bid velocity.</p>
+      <p><b>Multi-chain expansion:</b> ZOUNZ currently runs only on Base. A future version could deploy to additional chains (Arbitrum, Optimism) with bridged voting or independent treasuries.</p>
+    </section>
+
+    <section>
+      <h2>Open questions</h2>
+      <div class="faq">
+        <div class="q">What is the relationship between ZOUNZ and ZABAL tokenomics?</div>
+        <div class="a">ZOUNZ is described as holding a 20% reserve of ZABAL, but this needs explicit documentation. Are tokens locked, vested, or liquid? Can governance move them? Is there a formal token swap or bridge mechanism?</div>
+      </div>
+      <div class="faq">
+        <div class="q">Can anyone participate in ZOUNZ auctions?</div>
+        <div class="a">Yes. There is no allowlist or gating. Anyone with a Base wallet and ETH can bid in the live auction.</div>
+      </div>
+      <div class="faq">
+        <div class="q">Is ZOUNZ a separate governance from ZABAL DAO (if one exists)?</div>
+        <div class="a">Currently yes. ZOUNZ is an independent on-chain governance using Nouns Builder. If ZABAL has its own DAO or token governance, the two are currently separate entities, though the Treasury may hold ZABAL tokens.</div>
+      </div>
+      <div class="faq">
+        <div class="q">What happens if a proposal passes but the Treasury doesn't have enough funds to execute it?</div>
+        <div class="a">The proposal would enter the queue but fail on execution if the Treasury is insufficient. The Governor contract does not prevent this scenario on-chain; it is a governance responsibility to ensure Treasury adequacy before passing spends.</div>
+      </div>
+      <div class="faq">
+        <div class="q">Can ZOUNZ NFTs be transferred between wallets?</div>
+        <div class="a">Yes. ZOUNZ is a standard ERC-721. Holders can transfer their NFTs freely, transferring voting power along with the token.</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>How to get involved</h2>
+      <p><b>To bid in the auction:</b> Open BetterCallZaal at <code>/governance</code>. Connect a Base wallet with ETH. View the live auction. Enter your bid amount and confirm the transaction.</p>
+      <p><b>To vote on proposals:</b> Hold a ZOUNZ NFT. Navigate to an active proposal in the Governance section. Review the proposal details. Click For, Against, or Abstain and confirm the vote transaction.</p>
+      <p><b>To create a proposal:</b> Hold a ZOUNZ NFT with voting power above the proposal threshold (check the Governor contract for the current threshold). Click "Create Proposal" in the Governance UI. Fill in the proposal title, description, and on-chain actions. Submit the transaction.</p>
+      <p><b>To follow ZOUNZ governance:</b> Subscribe to notifications in the BetterCallZaal app. Follow The ZAO on Farcaster (/zao channel). Monitor the ZOUNZ Governor contract on Basescan (contract address: 0x9d98ec4ba9f10c942932cbde7747a3448e56817f).</p>
+    </section>
+
+  </div>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">ZOUNZ smart contracts. Base mainnet. Token: 0xCB80Ef04DA68667c9a4450013BDD69269842c883. Auction: 0xb2d43035c1d8b84bc816a5044335340dbf214bfb. Governor: 0x9d98ec4ba9f10c942932cbde7747a3448e56817f. Treasury: 0x2bb5fd99f870a38644deafe7e4ecb62ac77a213f. Nouns Builder deployment. Verified on Basescan. 2026.</li>
+      <li id="ref2">ZOUNZ DAO architecture. Nouns Builder fork. Deployed to Base L2 Ethereum. Standard DAO structure: Token (ERC-721), Auction, Governor, Treasury. Described in src/lib/zounz/contracts.ts and component implementations. <a href="https://github.com/bettercallzaal/ZAOOS" target="_blank" rel="noopener">github.com/bettercallzaal/ZAOOS</a>. 2026.</li>
+      <li id="ref3">Nouns Builder. <a href="https://nouns.build/" target="_blank" rel="noopener">nouns.build</a>. Open-source DAO-as-a-service tool by Zora. Enables anyone to fork Nouns governance and deploy to any EVM chain. 2026.</li>
+      <li id="ref4">ZOUNZ Governance components deployed live. ZounzAuction.tsx, ZounzProposals.tsx, ZounzProposalCard.tsx, ZounzCreateProposal.tsx. API routes: /api/zounz/proposals, /api/zounz/proposals/list. Committed to main branch on 2026-07-09. Full proposal creation, voting, and execution UI now live in BetterCallZaal. <a href="https://github.com/bettercallzaal/ZAOOS" target="_blank" rel="noopener">github.com/bettercallzaal/ZAOOS</a>. 2026-07-09.</li>
+      <li id="ref5">ZOUNZ specification (internal). Described as an ERC-721 NFT on Base holding a 20% reserve of the ZABAL token, with an associated ZOUNZ DAO (Nouns Builder fork). Details of token reserve allocation and mechanics require further documentation. 2026.</li>
+      <li id="ref6">ZOUNZ Auction history. The Nouns Builder Auction contract has been running continuously on Base since prior to 2026-07-09. Auction state and bid history are on-chain and queryable via Basescan and the auction API. 2026.</li>
+      <li id="ref7">BetterCallZaal Governance page. /governance route in the web app. Integrates ZOUNZ auction and DAO governance. Live on production. <a href="https://bettercallzaal.com" target="_blank" rel="noopener">bettercallzaal.com</a>. 2026.</li>
+      <li id="ref8">Nouns DAO. <a href="https://nouns.wtf/" target="_blank" rel="noopener">nouns.wtf</a>. The canonical Nouns DAO model and whitepaper (Nouns are generative art NFTs with 1 NFT = 1 vote governance). 2023-2026.</li>
+      <li id="ref9">Based DAO. <a href="https://nouns.build/dao/base" target="_blank" rel="noopener">nouns.build/dao/base</a>. Example of a Nouns Builder fork on Base, demonstrating the same governance pattern and contract structure as ZOUNZ. 2026.</li>
+      <li id="ref10">Sprint 2 ZOUNZ Governance Implementation Plan. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/docs/superpowers/plans/2026-03-28-sprint2-zounz-governance.md" target="_blank" rel="noopener">docs/superpowers/plans/2026-03-28-sprint2-zounz-governance.md</a>. Full technical specification for governance feature implementation, delivered and merged July 9, 2026. <a href="https://github.com/bettercallzaal/ZAOOS" target="_blank" rel="noopener">github.com/bettercallzaal/ZAOOS</a>. 2026-03-28 / 2026-07-09.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
+</main>
+<script src="/papers/quote.js"></script>
+</body></html>
