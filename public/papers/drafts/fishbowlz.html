@@ -391,5 +391,13 @@
   </div></footer>
 </main>
 <script src="/papers/quote.js"></script>
+<script type="module">
+  // Dismiss the Farcaster mini-app splash. Loads the miniapp SDK and signals
+  // ready(); harmless (caught) when the page is opened in a normal browser.
+  try {
+    const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk');
+    await sdk.actions.ready();
+  } catch (e) { /* not in a mini-app context */ }
+</script>
 </body>
 </html>
