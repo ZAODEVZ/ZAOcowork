@@ -239,6 +239,15 @@
 
   .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
 
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
   body { font-size: clamp(1rem, 2vw, 1.125rem); }
   .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
 
@@ -275,7 +284,7 @@
       <span class="num">Why it matters</span>
       <h2>The problem: builders stay isolated</h2>
       <p>Builders want to ship fast and get real feedback. Existing hackathons are one-weekend vanity events with no lasting community. Traditional grants are slow and solo. ZABAL Games solves this: it's a structured, recurring event where builders come in, work alongside mentors from The ZAO, ship real artifacts for a real ecosystem, and join a community that keeps compounding.</p>
-      <p>The ZAO is a decentralized impact network built on contribution, not tokens. When you build at ZABAL Games, your work is measured by Respect (soulbound, earned through the Fractal governance system) and validated by peers. You get a Hats Protocol credential proving you shipped here. More importantly, you join a network of creators building music, governance, and tooling infrastructure for the open web.</p>
+      <p>The ZAO is a decentralized impact network built on contribution, not tokens.<sup class="cite"><a href="#ref7">[7]</a></sup> When you build at ZABAL Games, your work is measured by Respect (soulbound, earned through the Fractal governance system) and validated by peers. You get a Hats Protocol credential proving you shipped here. More importantly, you join a network of creators building music, governance, and tooling infrastructure for the open web.</p>
     </section>
 
     <section>
@@ -287,7 +296,7 @@
         <li><b>Builder track</b> <span>Developer and aspiring-coder builds - smart contracts, agents, dApps, infrastructure.</span></li>
         <li><b>Creator track</b> <span>Media, distribution, and content builds - documentation, streams, education, curation.</span></li>
       </ul>
-      <p>The audience is the ZAO community itself - over 100 active members shipping Respect weekly. Your artifact lands in front of people who understand the stakes and can actually use what you built. Not a leaderboard you forget.</p>
+      <p>The audience is the ZAO community itself - over 100 active members shipping Respect weekly<sup class="cite"><a href="#ref1">[1]</a></sup>. Your artifact lands in front of people who understand the stakes and can actually use what you built. Not a leaderboard you forget.</p>
     </section>
 
     <section>
@@ -296,7 +305,7 @@
 
       <div class="lane">
         <span class="tag">June - Prep & workshops</span>
-        <p>Recorded Far-Hack-style sessions covering ZAO governance, Respect and the Fractal system, ZOLs (contribution credits), and the ecosystem tools. Instructors: ZAO teachers and ecosystem partners including Empire Builder team, Bonfire (knowledge graph), POIDH (prediction market bounties), Juke (music tooling), and SongJam (music tokenization). Watchable live or async at zabalgamez.com/recordings. Topics rotate: first half workshop-style (deep dives), second half panel-style (Q&A with tool builders).</p>
+        <p>Recorded Far-Hack-style sessions covering ZAO governance, Respect and the Fractal system, ZOLs (contribution credits), and the ecosystem tools. Instructors: ZAO teachers and ecosystem partners including Empire Builder team, Bonfire (knowledge graph), POIDH (prediction market bounties), Juke (music tooling), and SongJam (music tokenization).<sup class="cite"><a href="#ref4">[4]</a></sup> Watchable live or async at zabalgamez.com/recordings. Topics rotate: first half workshop-style (deep dives), second half panel-style (Q&A with tool builders).</p>
       </div>
 
       <div class="lane">
@@ -315,13 +324,13 @@
       <h2>How to submit and build</h2>
 
       <h3>Entry</h3>
-      <p>Register on the site (/enter) with a wallet and a GitHub repo. Signups and collectible issuance run through Magnetiq (app.magnetiq.xyz), the all-in-one event platform.</p>
+      <p>Register on the site (/enter) with a wallet and a GitHub repo. Signups and collectible issuance run through Magnetiq<sup class="cite"><a href="#ref9">[9]</a></sup> (app.magnetiq.xyz), the all-in-one event platform.</p>
 
       <h3>Mentors</h3>
       <p>Mentors are an open, public roster - not a fixed selection committee. Each mentor defines the builder archetype they want to work with and pairs with an open-submission builder from the cohort. Mentors receive a Hats Protocol "ZAO Mentor" role on Base. This is a signal of trust and reputation within The ZAO.</p>
 
       <h3>Submissions</h3>
-      <p>July builds are tracked on a public GitHub-backed board. Bonfire (a distributed knowledge graph at bonfires.ai) serves as the system of record - every submission is indexed and queryable, both by agents (for automated judging) and by humans (for browsing). The Bonfire integration lets builders push progress updates to GitHub and have them automatically surfaced in a knowledge-graph layer that judges can reason over. This moves the evaluation from "best guess" to "evidence-based."</p>
+      <p>July builds are tracked on a public GitHub-backed board. Bonfire<sup class="cite"><a href="#ref10">[10]</a></sup> (a distributed knowledge graph at bonfires.ai) serves as the system of record - every submission is indexed and queryable, both by agents (for automated judging) and by humans (for browsing). The Bonfire integration lets builders push progress updates to GitHub and have them automatically surfaced in a knowledge-graph layer that judges can reason over. This moves the evaluation from "best guess" to "evidence-based."</p>
 
       <h3>Optional tools</h3>
       <p>Empire Builder (leaderboard and token infrastructure) and Clanker (token launcher) are available but entirely optional. Builders can prototype mechanics in a tokenless Empire first, then add token rewards later if it makes sense. This is the best practice: ship the game mechanics first, add economic incentives after you know what you're building.</p>
@@ -370,17 +379,17 @@
 
       <div class="lane">
         <span class="tag">Cal.com</span>
-        <p>Open-source Calendly alternative. Hosts the ZABAL Games workshop slot-booking system at cal.com/bettercallzaal/zabal-games-workshop-slot. Builders can sign up for 1-on-1 mentorship slots during June.</p>
+        <p>Open-source Calendly alternative. Hosts the ZABAL Games workshop slot-booking system at cal.com/bettercallzaal/zabal-games-workshop-slot<sup class="cite"><a href="#ref11">[11]</a></sup>. Builders can sign up for 1-on-1 mentorship slots during June.</p>
       </div>
 
       <div class="lane">
         <span class="tag">Restream</span>
-        <p>Stream-to-multiple-platforms tool (restream.io). ZABAL Games workshops and Finals stream simultaneously to multiple platforms (Twitch, YouTube, Farcaster, etc.) via Restream.</p>
+        <p>Stream-to-multiple-platforms tool<sup class="cite"><a href="#ref12">[12]</a></sup> (restream.io). ZABAL Games workshops and Finals stream simultaneously to multiple platforms (Twitch, YouTube, Farcaster, etc.) via Restream.</p>
       </div>
 
       <div class="lane">
         <span class="tag">Lu.ma</span>
-        <p>Event platform. ZAO calendar and workshop scheduling via luma.com/zao. Used for calendar integration and reminder emails.</p>
+        <p>Event platform. ZAO calendar and workshop scheduling via luma.com/zao<sup class="cite"><a href="#ref13">[13]</a></sup>. Used for calendar integration and reminder emails.</p>
       </div>
     </section>
 
@@ -416,7 +425,7 @@
         <strong>Empire Builder x ZABAL Games integration live</strong>
         <span class="src">Event 948 Recap - Empire Builder x ZABAL Gamez build sesh, 2026-07-03</span>
       </div>
-      <p>The Empire Builder team (Adrian, Person A) and ZAO (Zaal) held a working session on July 3 to finalize tokenless empire prototyping, droids-on-existing-tokens, and live-build collaboration for August Finals. A territory-conquest game was demoed live and is planned for submission to ZABAL Games with both tokenless and token variants.</p>
+      <p>The Empire Builder team (Adrian, Person A) and ZAO (Zaal) held a working session on July 3 to finalize tokenless empire prototyping, droids-on-existing-tokens, and live-build collaboration for August Finals.<sup class="cite"><a href="#ref2">[2]</a></sup> A territory-conquest game was demoed live and is planned for submission to ZABAL Games with both tokenless and token variants.</p>
     </section>
 
     <section>
@@ -447,19 +456,6 @@
       <p>Can tokenless Empire Builder prototyping sustain engagement? The pattern (tokenless first, add token later) is new. If builders feel like they're "missing out" by skipping the token layer during July, they might add unnecessary complexity. August will reveal whether this is the right order.</p>
     </section>
 
-    <section>
-      <span class="num">Sources</span>
-      <h2>Documents cited in this whitepaper</h2>
-      <p>This whitepaper draws facts from the following source documents in The ZAO OS research library and ICM boxes:</p>
-      <ul style="list-style: disc; padding-left: 2rem; margin: 1.5rem 0;">
-        <li><strong>ICM Box: ZABAL Games (icm_6EcindcuwxlkMO7-lT83cQ)</strong> - Primary source of truth for ZABAL Games structure, timeline, tracks, tools, and 200-builder goal. Updated 2026-07-04. Fetched via https://useicm.com/api/objects/icm_6EcindcuwxlkMO7-lT83cQ/llm.txt</li>
-        <li><strong>ZAOOS Doc 786: ZABAL Gamez brand kit rebuild (status: research-complete, 2026-05-31)</strong> - Brand guidance, approved phrases, glossary, asset inventory, logo files, palette specs. Path: research/business/786-zabal-gamez-brand-kit-rebuild/README.md</li>
-        <li><strong>ZAOOS Doc 948: Empire Builder x ZABAL Gamez build sesh (type: recap, 2026-07-03)</strong> - Integration details, tokenless empire prototyping, live-build plans, Empire Builder leaderboard. Path: research/events/948-empire-builder-zabal-gamez-build-sesh/README.md</li>
-        <li><strong>.claude/skills/zabal-games-context/SKILL.md (last-validated: 2026-05-25)</strong> - Participant context guide, three-track definitions, build prompt, stack recommendations, brand voice rules, governance primer. Used throughout for mechanics, timeline, and stack details. Path: .claude/skills/zabal-games-context/SKILL.md in bettercallzaal/ZAOOS</li>
-        <li><strong>ZAOOS Research Event 784: Plat0x (Bonfires) x Zaal - ZABAL architecture (2026-05-29)</strong> - Bonfire knowledge-graph integration design, GitHub-backed submission tracking, agent-driven judging pipeline, rubric-based evaluation. Path: research/events/784-plat0x-bonfire-zabal-architecture-may29/transcript.md</li>
-        <li><strong>The ZAO Official Papers</strong> - Architecture, Respect system, Fractal governance, ZOLs, ecosystem structure. References: thezao.xyz/papers</li>
-      </ul>
-    </section>
 
     <section>
       <span class="num">How to participate</span>
@@ -471,7 +467,26 @@
     </section>
 
   </div>
-  <footer><div class="wrap"><p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p><p>Part of the ZAO papers - thezao.xyz/papers</p></div></footer>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">ICM Box: ZABAL Games (icm_6EcindcuwxlkMO7-lT83cQ). Primary source of truth for ZABAL Games structure, timeline, tracks, tools, and 200-builder goal. Updated 2026-07-04. <a href="https://useicm.com/api/objects/icm_6EcindcuwxlkMO7-lT83cQ/llm.txt" target="_blank" rel="noopener">useicm.com/api/objects/icm_6EcindcuwxlkMO7-lT83cQ/llm.txt</a>.</li>
+      <li id="ref2">ZAOOS Doc 948: Empire Builder x ZABAL Gamez build sesh (type: recap, 2026-07-03). Integration details, tokenless empire prototyping, live-build plans, and Empire Builder leaderboard. Path: research/events/948-empire-builder-zabal-gamez-build-sesh/README.md in bettercallzaal/ZAOOS.</li>
+      <li id="ref3">.claude/skills/zabal-games-context/SKILL.md (last-validated: 2026-05-25). Participant context guide, three-track definitions, build prompt, stack recommendations, brand voice rules, and governance primer. Used throughout for mechanics, timeline, and stack details. Path: .claude/skills/zabal-games-context/SKILL.md in bettercallzaal/ZAOOS.</li>
+      <li id="ref4">ZAOOS Doc 786: ZABAL Gamez brand kit rebuild (status: research-complete, 2026-05-31). Brand guidance, approved phrases, glossary, asset inventory, logo files, and palette specs. Path: research/business/786-zabal-gamez-brand-kit-rebuild/README.md.</li>
+      <li id="ref5">The ZAO Official Papers. Architecture, Respect system, Fractal governance, ZOLs, and ecosystem structure. <a href="https://thezao.xyz/papers" target="_blank" rel="noopener">thezao.xyz/papers</a>.</li>
+      <li id="ref6">ZAOOS Research Event 784: Plat0x (Bonfires) x Zaal - ZABAL architecture (2026-05-29). Bonfire knowledge-graph integration design, GitHub-backed submission tracking, agent-driven judging pipeline, and rubric-based evaluation. Path: research/events/784-plat0x-bonfire-zabal-architecture-may29/transcript.md.</li>
+      <li id="ref7">Panthaki, Z. et al. "Respect and Fractal Governance." The ZAO technical papers. <a href="https://thezao.xyz/papers" target="_blank" rel="noopener">thezao.xyz/papers</a>. The ZAO's contribution-based governance model and soulbound merit currency system.</li>
+      <li id="ref8">Empire Builder. Leaderboard and on-chain incentive infrastructure for builders. <a href="https://empire.xyz" target="_blank" rel="noopener">empire.xyz</a>. Used for live-build collaboration and tokenless empire prototyping during ZABAL Games 2026.</li>
+      <li id="ref9">Magnetiq. All-in-one event platform for ZABAL Games signup flow, collectible issuance, and brand portal. <a href="https://app.magnetiq.xyz" target="_blank" rel="noopener">app.magnetiq.xyz</a>.</li>
+      <li id="ref10">Bonfire. Distributed knowledge graph for indexing and evaluating builder submissions. <a href="https://bonfires.ai" target="_blank" rel="noopener">bonfires.ai</a>. Surfaces every build as a queryable, ranked artifact with agent-driven evaluation support.</li>
+      <li id="ref11">Cal.com. Open-source Calendly alternative. ZABAL Games workshop slot-booking system at <a href="https://cal.com/bettercallzaal/zabal-games-workshop-slot" target="_blank" rel="noopener">cal.com/bettercallzaal/zabal-games-workshop-slot</a>.</li>
+      <li id="ref12">Restream. Stream-to-multiple-platforms tool. <a href="https://restream.io" target="_blank" rel="noopener">restream.io</a>. ZABAL Games workshops and Finals stream simultaneously to multiple platforms via Restream.</li>
+      <li id="ref13">Lu.ma. Event platform for ZAO calendar and workshop scheduling. <a href="https://luma.com/zao" target="_blank" rel="noopener">luma.com/zao</a>. Used for calendar integration and reminder emails.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
 </main>
 <script src="/papers/quote.js"></script>
 </body></html>
