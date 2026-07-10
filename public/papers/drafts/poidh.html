@@ -257,6 +257,16 @@
     .num { font-size: 0.65rem; }
     .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
   }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
 </style>
 
 </head>
@@ -273,7 +283,7 @@
 
     <section>
       <h2>What it is</h2>
-      <p>poidh ("pics or it didn't happen") is an on-chain bounty platform built by Kenny and Rhovian. It runs across three chains - Arbitrum, Base, and Degen Chain - and lets anyone post a bounty, anyone add funds to it, and anyone claim it by submitting proof. Every claim mints as an NFT automatically; when a bounty resolves, the reward goes to the winner's wallet and the winning submission's NFT goes to the bounty creator's. The ZAO runs its bounties on Base specifically, using it for structured creative and clip-up work - someone records video, clips it, makes an ad, or produces media - posts it publicly, and submits proof to claim the reward.</p>
+      <p>poidh ("pics or it didn't happen") is an on-chain bounty platform built by Kenny and Rhovian<sup class="cite"><a href="#ref5">[5]</a></sup>. It runs across three chains - Arbitrum, Base, and Degen Chain<sup class="cite"><a href="#ref5">[5]</a></sup> - and lets anyone post a bounty, anyone add funds to it, and anyone claim it by submitting proof. Every claim mints as an NFT automatically<sup class="cite"><a href="#ref5">[5]</a></sup>; when a bounty resolves, the reward goes to the winner's wallet and the winning submission's NFT goes to the bounty creator's. The ZAO runs its bounties on Base specifically, using it for structured creative and clip-up work - someone records video, clips it, makes an ad, or produces media - posts it publicly, and submits proof to claim the reward.</p>
       <p class="lead">Style note: lowercase "poidh". The platform is at poidh.xyz, with docs at info.poidh.xyz and words.poidh.xyz. The canonical ops home for ZAO's own bounties is the zpoidh repository on GitHub; poidh's own app and contracts live at github.com/picsoritdidnthappen.</p>
     </section>
 
@@ -299,25 +309,25 @@
 
       <h3>The chain</h3>
       <p>poidh is a multi-chain platform - Arbitrum, Base, and Degen Chain (which settles in the DEGEN token) - but The ZAO's own bounties run specifically on Base, in ETH. When a bounty is won, the ETH settlement happens directly: the creator's wallet receives the funds without intermediaries, and the winning submission's photo mints as an NFT to the bounty creator's wallet. This is why The ZAO can pay out reliably and transparently - no banking delays, no dispute resolution - the ledger is public.</p>
-      <p class="note">poidh takes a 2.5% completion fee on settled bounties (a platform-wide default, not ZAO-specific), and suggests a 5% resale royalty on the claim NFTs. Creators can cancel an unclaimed bounty at any time and get their funds back minus gas. Gas itself is small - typically a few cents per action on these chains. Source: poidh's own FAQ and beginner's guide (info.poidh.xyz, words.poidh.xyz).</p>
+      <p class="note">poidh takes a 2.5% completion fee on settled bounties<sup class="cite"><a href="#ref5">[5]</a></sup> (a platform-wide default, not ZAO-specific), and suggests a 5% resale royalty on the claim NFTs<sup class="cite"><a href="#ref5">[5]</a></sup>. Creators can cancel an unclaimed bounty at any time and get their funds back minus gas. Gas itself is small - typically a few cents per action on these chains. Source: poidh's own FAQ and beginner's guide (info.poidh.xyz, words.poidh.xyz).</p>
 
       <h3>Rounds</h3>
       <p>The ZAO runs bounties in numbered rounds. Each round has a theme, a deadline, and lives in the zpoidh repository under <code>rounds/r[N]/</code>. The round folder holds: the bounty spec, the brand kit (fonts, logos, promo audio), judging pages, and the resolved payouts once winners are announced.</p>
 
       <h3>What poidh can do that ZAO doesn't use yet</h3>
-      <p>ZAO bounties are single-judge: one clear decision-maker, final call. poidh's own v2 product also supports a different shape - <b>open multiplayer bounties</b> - where anyone can add funds to a bounty and get voting rights proportional to their contribution. When a claim comes in, a 48-hour vote opens; if more than half of the voters who actually show up say yes, all the funds go to that claimant. No single judge required. poidh also recently added <b>album pages</b>, letting bounties get tagged into topic categories (a ZAO or ZABAL Games album is possible, not yet set up). Neither is in use today, but both are real options if ZAO ever wants a bounty that's judged by whoever funded it instead of by Kenny or Zaal.</p>
+      <p>ZAO bounties are single-judge: one clear decision-maker, final call. poidh's own v2 product also supports a different shape - <b>open multiplayer bounties</b> - where anyone can add funds to a bounty and get voting rights proportional to their contribution. When a claim comes in, a 48-hour vote opens; if more than half of the voters who actually show up say yes<sup class="cite"><a href="#ref5">[5]</a></sup>, all the funds go to that claimant. No single judge required. poidh also recently added <b>album pages</b>, letting bounties get tagged into topic categories (a ZAO or ZABAL Games album is possible, not yet set up). Neither is in use today, but both are real options if ZAO ever wants a bounty that's judged by whoever funded it instead of by Kenny or Zaal.</p>
     </section>
 
     <section>
       <h2>Live activity (as of July 2026)</h2>
       <div class="stat">
         <b>Round 3 - Best ad for ZABAL Gamez</b>
-        <span>Closed June 14, 2026. Winner: @femmie (claim 6749). Fully resolved and paid out on-chain.</span>
+        <span>Closed June 14, 2026. Winner: @femmie (claim 6749). Fully resolved and paid out on-chain.<sup class="cite"><a href="#ref2">[2]</a></sup></span>
         <span class="src">zpoidh repository, rounds/r3/, poidh bounty 1180</span>
       </div>
       <div class="stat">
         <b>Round 4 - ZABAL Gamez open pot</b>
-        <span>Live and open. Cast June 15, 2026. Closes Friday July 31, 2026. 2 claims logged as of July 8, 2026. Open-split split format - ongoing contributions welcome.</span>
+        <span>Live and open. Cast June 15, 2026. Closes Friday July 31, 2026. 2 claims logged as of July 8, 2026.<sup class="cite"><a href="#ref2">[2]</a></sup> Open-split split format - ongoing contributions welcome.</span>
         <span class="src">zpoidh repository, rounds/r4/, poidh bounty 1249</span>
       </div>
       <div class="stat">
@@ -337,7 +347,7 @@
 
     <section>
       <h2>Operations and best practices</h2>
-      <p>The zpoidh repository is the canonical home for all ZAO-issued poidh bounty metadata, including:</p>
+      <p>The zpoidh repository is the canonical home for all ZAO-issued poidh bounty metadata<sup class="cite"><a href="#ref2">[2]</a></sup>, including:</p>
       <ul class="fivec">
         <li><b>Bounty specs:</b> Complete bar, rubric, brand assets, promo audio (stored in rounds/r[N]/)</li>
         <li><b>Brand kits:</b> Logos, fonts, color palette, promotional audio (60s MP3s with consistent audio treatment)</li>
@@ -345,7 +355,7 @@
         <li><b>Best practices:</b> Canonical guidelines for audio treatment (e.g., no competing background music under dialog, binaural beat acceptable), video length, and submission format</li>
         <li><b>Leaderboard:</b> Public feed of all claims and winners in JSON format, updated as rounds close</li>
       </ul>
-      <p>Before drafting any new bounty, review the best practices document (zpoidh/docs/bounty-best-practices.html) and the ZAO bounty playbook (research doc 625). Every submission must meet the hard bar before scoring begins.</p>
+      <p>Before drafting any new bounty, review the best practices document<sup class="cite"><a href="#ref7">[7]</a></sup> (zpoidh/docs/bounty-best-practices.html) and the ZAO bounty playbook (research doc 625). Every submission must meet the hard bar before scoring begins.</p>
     </section>
 
     <section>
@@ -367,7 +377,7 @@
       <p><b>Leaderboard automation:</b> Live JSON feed (poidh-leaderboard.json) already deployed. Additional data surfaces may include claim-to-payout timing and judge notes.</p>
 
       <h3>Future (not committed)</h3>
-      <p><b>ERC20 bounty support:</b> A fork of PoidhV2 (poidh-v2-contracts) has been prepared to support bounties funded in any ERC20 token, not just ETH. This would allow The ZAO to fund bounties in its own tokens if desired. The fork is not deployed or integrated into poidh.xyz yet, and remains on a feature branch in the BetterCallZaal organization. This is separate from poidh's own multi-chain support (Arbitrum/Base/Degen) - it's specifically about ZAO being able to denominate a bounty in a ZAO-native token on Base, rather than ETH.</p>
+      <p><b>ERC20 bounty support:</b> A fork of PoidhV2 (poidh-v2-contracts)<sup class="cite"><a href="#ref3">[3]</a></sup> has been prepared to support bounties funded in any ERC20 token, not just ETH. This would allow The ZAO to fund bounties in its own tokens if desired. The fork is not deployed or integrated into poidh.xyz yet, and remains on a feature branch in the BetterCallZaal organization. This is separate from poidh's own multi-chain support (Arbitrum/Base/Degen) - it's specifically about ZAO being able to denominate a bounty in a ZAO-native token on Base, rather than ETH.</p>
       <p><b>Batch judging:</b> Tooling for judges to review multiple submissions side-by-side and compare scores before final settlement.</p>
     </section>
 
@@ -389,25 +399,18 @@
   </div>
   <footer><div class="wrap">
     <p class="draft-flag">Draft v0.3, 2026-07-09 - not published</p>
-    <p><b>Sources:</b></p>
-    <ul style="list-style: none; padding: 0; margin: 1rem 0; font-size: 0.95rem; color: var(--ink-soft);">
-      <li>- ICM context box (poidh): https://useicm.com/api/objects/icm_1CRn7Oyvee1jDSK9kje7dw/llm.txt - Kenny's framing, platform details, live threads (2026)</li>
-      <li>- zpoidh repository README: github.com/bettercallzaal/zpoidh - Rounds history, session closeout (2026-05-31), brand kit status, leaderboard feed</li>
-      <li>- zpoidh/docs/bounty-best-practices.html - Canonical bar, audio rules, format specs</li>
-      <li>- zpoidh/docs/erc20-bounty-fork.md - PoidhV2 technical details, ERC20 fork status, contract behavior</li>
-      <li>- Research doc 625 (ZAOOS): poidh-zao-bounty-playbook - ZAO bounty mechanics and playbook</li>
-      <li>- Research doc 768 (ZAOOS): poidh-bounty-best-practices-zabalgames-r3 - R3-specific audio rules and submission format</li>
-      <li>- Research doc 992 (ZAOOS): clipper pipeline - How bounties feed recordings-to-clips workflow</li>
-      <li>- poidh.xyz - Live bounty pages and current round status</li>
-      <li>- BetterCallZaal poidh hub: bettercallzaal.com/poidh.html - Surfaces and bounty links</li>
-      <li>- Farcaster /poidh channel - Live community announcements and submissions</li>
-      <li>- info.poidh.xyz (poidh's own FAQ) - Multi-chain support, fee structure (2.5% completion fee, 5% suggested resale royalty), claim/NFT mechanics, team (fetched 2026-07-09)</li>
-      <li>- words.poidh.xyz/poidh-beginner-guide - Core mechanics, supported chains (Arbitrum/Base/Degen), team credit (Kenny and Rhovian) (fetched 2026-07-09)</li>
-      <li>- words.poidh.xyz/poidh-open-multiplayer-bounties-explained - v2 open multiplayer bounty mechanics: proportional voting, 48h vote window, >50% threshold (fetched 2026-07-09)</li>
-      <li>- github.com/picsoritdidnthappen/poidh-app and poidh-contracts - Canonical upstream poidh app and Solidity contracts, distinct from ZAO's zpoidh ops repo</li>
-      <li>- github.com/Rhovian - Co-founder/developer of poidh, alongside Kenny (warpcast.com/kenny)</li>
-    </ul>
-    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">zpoidh repository README. <a href="https://github.com/bettercallzaal/zpoidh" target="_blank" rel="noopener">github.com/bettercallzaal/zpoidh</a>. Rounds history, session closeout (2026-05-31), brand kit status, leaderboard feed. 2026.</li>
+      <li id="ref2">zpoidh repository (rounds metadata and judging records). <a href="https://github.com/bettercallzaal/zpoidh" target="_blank" rel="noopener">github.com/bettercallzaal/zpoidh</a>. Rounds history, judging records, winner payouts, dated claims, resolved bounty status.</li>
+      <li id="ref3">zpoidh/docs/erc20-bounty-fork.md. <a href="https://github.com/bettercallzaal/zpoidh" target="_blank" rel="noopener">github.com/bettercallzaal/zpoidh</a>. PoidhV2 technical details, ERC20 fork status, contract behavior.</li>
+      <li id="ref4">Research doc 625 (ZAOOS). poidh-zao-bounty-playbook. ZAO bounty mechanics and playbook. 2026.</li>
+      <li id="ref5">poidh. <a href="https://poidh.xyz" target="_blank" rel="noopener">poidh.xyz</a>, <a href="https://info.poidh.xyz" target="_blank" rel="noopener">info.poidh.xyz</a>, <a href="https://words.poidh.xyz" target="_blank" rel="noopener">words.poidh.xyz</a>. Platform mechanics, multi-chain support (Arbitrum, Base, Degen Chain), fee structure (2.5% completion fee, 5% suggested resale royalty), NFT claim mechanics, team (Kenny and Rhovian), open multiplayer bounty voting mechanics (48-hour vote, >50% threshold). Fetched 2026-07-09.</li>
+      <li id="ref6">Farcaster /poidh channel. Live community announcements and submissions. Ongoing.</li>
+      <li id="ref7">zpoidh/docs/bounty-best-practices.html. <a href="https://github.com/bettercallzaal/zpoidh" target="_blank" rel="noopener">github.com/bettercallzaal/zpoidh</a>. Canonical bar, audio rules, format specs.</li>
+      <li id="ref8">github.com/picsoritdidnthappen (poidh upstream). <a href="https://github.com/picsoritdidnthappen" target="_blank" rel="noopener">github.com/picsoritdidnthappen</a>. Canonical upstream poidh app and Solidity contracts. Distinct from ZAO's zpoidh ops repo.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>    <p>Part of the ZAO papers - thezao.xyz/papers</p>
   </div></footer>
 </main>
 <script src="/papers/quote.js"></script>
