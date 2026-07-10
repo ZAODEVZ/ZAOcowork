@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SongJam @ The ZAO Whitepaper (DRAFT)">
+<meta property="og:description" content="Live audio spaces for the ZABAL community. Host and join rooms, earn leaderboard points, and build real-time conversation infrastructure.">
+<meta property="og:image" content="https://thezao.xyz/papers-og.png">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/songjam">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SongJam @ The ZAO Whitepaper">
+<meta name="twitter:description" content="Live audio spaces for the ZABAL community.">
+<meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<title>The ZAO - SongJam Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"SongJam @ The ZAO","description":"Live audio spaces for the ZABAL community. Host and join rooms, earn leaderboard points, and build real-time conversation infrastructure.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/songjam","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-09","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
+</style>
+
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers" class="home">Back to Papers</a><span class="arrows"><a href="/papers" title="Papers home">Home</a></span></div>
+<main>
+  <div class="wrap">
+    <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
+    <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://docs.google.com/document/d/1HB_HB_HB_HB_HB_HB_HB/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
+    <p class="eyebrow">SongJam @ The ZAO - Whitepaper (draft v0.1)</p>
+    <h1>SongJam @ The ZAO</h1>
+    <p class="thesis"><b>Live audio spaces for the ZABAL community</b>. SongJam hosts real-time audio rooms where members can gather, speak, listen, and participate in structured conversation. Integrated into ZAO OS as a full-page Spaces route, it powers mentorship sessions, community calls, and live events.</p>
+
+    <section>
+      <h2>What it is</h2>
+      <p>SongJam is an external live audio platform<sup class="cite"><a href="#ref1">[1]</a></sup> (songjam.space, built by the SongjamSpace team). The ZAO uses SongJam to host branded audio rooms for the ZABAL community at <code>songjam.space/zabal</code><sup class="cite"><a href="#ref2">[2]</a></sup>. The platform supports real-time audio streaming, speaker management, and a public leaderboard tracking who participates. Rather than rebuild its own rooms infrastructure, The ZAO embeds SongJam's room via a full-page iframe in ZAO OS at <code>/spaces</code>, giving members a seamless way to join without leaving the app<sup class="cite"><a href="#ref3">[3]</a></sup>.</p>
+      <p class="lead">Users can join the ZABAL live audio space (listeners can join as guests or authenticated; speakers need Farcaster sign-in), see who's speaking in real-time, raise hands to request speaking slots, and build reputation on the SongJam leaderboard by participating<sup class="cite"><a href="#ref2">[2]</a></sup>.</p>
+    </section>
+
+    <section>
+      <h2>Why it exists in ZAO</h2>
+      <p>The ZAO's community is distributed and asynchronous, but many of its highest-value interactions happen live: podcast sessions, mentorship calls, real-time AMAs, and impromptu discussions. Before SongJam integration, there was no canonical home for live audio in ZAO OS. Community members had to jump to external platforms (Twitter Spaces, Farcaster Frames, Discord).</p>
+      <p>SongJam solves this by bringing live audio directly into the ZAO ecosystem, with Farcaster identity baked in (sign in with your Farcaster account, no additional auth needed). It also creates a participation leaderboard - tracking who shows up, who speaks, and who engages - which ties directly to ZAO's Respect and reputation systems<sup class="cite"><a href="#ref4">[4]</a></sup>.</p>
+      <p>This is the same pattern ZAO uses for other media: instead of building from scratch, integrate a best-of-breed external service (like Juke for music spaces) and wrap it in ZAO's identity and navigation. Spaces are first-class citizens in the app's navigation - not buried in an accordion.</p>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <h3>Architecture</h3>
+      <p>SongJam's ZABAL community room lives at <code>songjam.space/zabal</code><sup class="cite"><a href="#ref2">[2]</a></sup>. The ZAO embeds this as a full-page iframe at the route <code>/spaces</code> (and also at <code>/spaces/songjam</code> for explicitness)<sup class="cite"><a href="#ref3">[3]</a></sup>. The iframe uses iframe sandbox and permission attributes to allow microphone access, camera access, and autoplay audio for live participation<sup class="cite"><a href="#ref3">[3]</a></sup>. The <code>www.songjam.space</code> origin is already allowlisted in ZAO's CSP and Permissions-Policy middleware, so no additional security configuration is needed<sup class="cite"><a href="#ref3">[3]</a></sup>.</p>
+
+      <h3>User flows</h3>
+      <p><b>Listener (guest or authenticated):</b> Navigate to <code>/spaces</code> in ZAO OS. The SongJam iframe loads. Click "Join as listener" - you can hear speakers and see the participant list without needing to sign in (guest mode) or sign in with Farcaster for a persistent participant identity.</p>
+      <p><b>Speaker:</b> Navigate to <code>/spaces</code>. The iframe loads. Click "Request to speak" or (if you host) click "Go live." You must be signed in with Farcaster. Once approved by the host (or if you are the host), you can speak and be heard live by all listeners.</p>
+      <p><b>Leaderboard:</b> Every time you join or speak, SongJam tracks a "mention" or "engagement point" against your Farcaster identity. The public leaderboard aggregates these, showing top contributors to the ZABAL live audio space<sup class="cite"><a href="#ref4">[4]</a></sup>.</p>
+
+      <h3>Integration points in ZAO OS</h3>
+      <p>The <code>/spaces</code> route is a full-page Next.js component wrapping the SongJam iframe<sup class="cite"><a href="#ref3">[3]</a></sup>. Navigation was updated to surface Spaces as a top-level item in both mobile and desktop nav<sup class="cite"><a href="#ref5">[5]</a></sup>. The Ecosystem panel (sidebar partner list) was updated to link SongJam to <code>/spaces</code> instead of embedding it inline, so users can discover Spaces from multiple entry points<sup class="cite"><a href="#ref5">[5]</a></sup>. The leaderboard data (SongJam mention counts by user) can be fetched via a Cloudflare Workers API or direct API call to surface participant rankings in ZAO's Respect or community pages<sup class="cite"><a href="#ref4">[4]</a></sup>.</p>
+    </section>
+
+    <section>
+      <h2>Traction and current status</h2>
+      <div class="stat">
+        <b>SongJam integration to ZAO OS</b>
+        <span>Implementation plan documented (2026-03-23), spec finalized (2026-03-27), code deployed to production (latest commit 2026-06-21). The <code>/spaces</code> route is live and embedded as a core navigation item.</span>
+        <span class="src">bettercallzaal/ZAOOS repository, src/app/spaces/songjam/page.tsx (deployed), docs/superpowers/plans/2026-03-23-songjam-audio-spaces-embed.md, docs/superpowers/specs/2026-03-27-songjam-feature-integration-design.md</span>
+      </div>
+      <div class="stat">
+        <b>SongJam site and upstream product</b>
+        <span>SongjamSpace organization maintains the songjam-site repository. Last pushed 2026-06-21. Deployed to Vercel at songjam-site-delta.vercel.app. The upstream product is actively maintained.</span>
+        <span class="src">github.com/SongjamSpace/songjam-site, created 2025-08-17, last updated 2026-06-21</span>
+      </div>
+      <div class="stat">
+        <b>ZABAL leaderboard tracking</b>
+        <span>A dedicated API route <code>/api/songjam/leaderboard</code> fetches SongJam mention data via a Cloudflare Workers endpoint. This enables ZAO to surface ZABAL community leaderboard rankings in the Respect page or ecosystem dashboards.</span>
+        <span class="src">bettercallzaal/ZAOOS repository, src/app/api/songjam/leaderboard/route.ts</span>
+      </div>
+      <p><strong>Participation:</strong> As of July 2026, the /spaces route is live and discoverable in ZAO OS navigation. Usage metrics (join count, speaker events, leaderboard participation) are tracked by SongJam's own backend. ZAO does not publish public participation numbers yet.</p>
+    </section>
+
+    <section>
+      <h2>Team and ownership</h2>
+      <p>SongJam is built and maintained by the <strong>SongjamSpace</strong> team (an independent external organization)<sup class="cite"><a href="#ref1">[1]</a></sup>. The ZAO did not build SongJam; Zaal and the team integrated and wrapped it into ZAO OS for community use<sup class="cite"><a href="#ref3">[3]</a>, <a href="#ref5">[5]</a></sup>.</p>
+      <p>The ZAO's role is: (1) Branding the room for ZABAL at <code>songjam.space/zabal</code>, (2) Embedding it as a first-class route in ZAO OS navigation, (3) Connecting the leaderboard to Respect systems via API, (4) Hosting documentation and best practices for how members should use Spaces. The ZAO does not maintain SongJam's core codebase or audio infrastructure.</p>
+    </section>
+
+    <section>
+      <h2>Roadmap and future</h2>
+      <h3>Near-term (built)</h3>
+      <p>Full integration to ZAO OS: <code>/spaces</code> route, navigation discovery, iframe permissions configured, leaderboard API connected<sup class="cite"><a href="#ref3">[3]</a>, <a href="#ref5">[5]</a></sup>.</p>
+
+      <h3>Planned (spec'd, not yet built)</h3>
+      <p>The feature integration spec outlines four SongJam-derived features for potential build-out in ZAO OS: (1) Native Stream.io audio rooms at <code>/spaces</code> with ZAO identity and Supabase backend (to replace the SongJam iframe), (2) 100ms live audio integration for the social feed, (3) Mindshare leaderboard enhancement, and (4) Farcaster cast action buttons<sup class="cite"><a href="#ref6">[6]</a></sup>. None of these are built yet; they represent options if ZAO wants to own more of the audio infrastructure. For now, the SongJam embed is the live solution.</p>
+
+      <h3>Open questions</h3>
+      <p>Should ZAO eventually build its own audio rooms (using Stream.io or 100ms SDKs) to fully own the experience, or continue partnering with SongJam? Should leaderboard participation be gamified with ZABAL rewards? How does Spaces fit into the broader Respect and Zao ecosystem economy?</p>
+    </section>
+
+    <section>
+      <h2>Integration with The ZAO ecosystem</h2>
+      <p>Spaces is one layer in The ZAO's media and community infrastructure. Live sessions are recorded and clipped (via poidh bounties), clips are shared on social, and participants earn Respect (via Farcaster reputation and leaderboard tracking).</p>
+      <p>In practice: Spaces is where ZABAL community members gather and speak live. Participation is tracked. Top speakers and mentors build reputation on the leaderboard. This reputation can later be monetized via COC Concertz promoter rewards (ZABAL earned for creating show recaps and promo content) or FISHBOWLZ (earn while hosting or speaking)<sup class="cite"><a href="#ref7">[7]</a></sup>.</p>
+      <p>The SANG token connection: SongJam's own product has roots in $SANG tokenomics (SongJam is the original SongJam protocol, with SANG as its native token)<sup class="cite"><a href="#ref8">[8]</a></sup>. The ZABAL community room at songjam.space/zabal does not itself mint or distribute SANG today - it's purely an audio infrastructure service. However, The ZAO's research on ZABAL-SANG swaps and wallet agents notes that SongJam represents one possible integration point for future token-gated audio experiences<sup class="cite"><a href="#ref7">[7]</a></sup>.</p>
+    </section>
+
+    <section>
+      <h2>How to get involved</h2>
+      <p><b>For members:</b> Navigate to <code>/spaces</code> in ZAO OS. Join as a listener (no auth required) or sign in with Farcaster to request speaking. Check the leaderboard after you participate to see how your engagement is tracked.</p>
+      <p><b>For hosts/moderators:</b> Contact Zaal or Kenny to set up a new audio session. Specify the time, topic, and expected participants. A SongJam room can be created and promoted via Farcaster and other channels. Once live, it runs on SongJam's infrastructure; moderation and speaker approval happens in-app.</p>
+      <p><b>For builders:</b> If you want to enhance Spaces - e.g., add real-time transcription, create session archives, or build a scheduling interface - coordinate with The ZAO's dev team. See the feature integration spec (doc 6) for planned audio infrastructure builds.</p>
+    </section>
+
+  </div>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">SongjamSpace GitHub Organization. <a href="https://github.com/SongjamSpace" target="_blank" rel="noopener">github.com/SongjamSpace</a>. External audio platform organization, created 2020-11-26. Maintains songjam-site and related repositories. 2026.</li>
+      <li id="ref2">songjam-space library constant. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/src/lib/spaces/songjam.ts" target="_blank" rel="noopener">bettercallzaal/ZAOOS src/lib/spaces/songjam.ts</a>. SONGJAM_SPACE_URL = 'https://www.songjam.space/zabal', SONGJAM_SPACE_LABEL = 'ZABAL Live', SONGJAM_SPACE_DESCRIPTION, iframe sandbox and allow attributes. 2026-07-09.</li>
+      <li id="ref3">Spaces page implementation. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/src/app/spaces/songjam/page.tsx" target="_blank" rel="noopener">bettercallzaal/ZAOOS src/app/spaces/songjam/page.tsx</a>. Full-page SongJam iframe at /spaces/songjam route, header with back button and open-in-new-tab link, Next.js metadata configuration. 2026-06-21.</li>
+      <li id="ref4">Songjam leaderboard API route. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/src/app/api/songjam/leaderboard/route.ts" target="_blank" rel="noopener">bettercallzaal/ZAOOS src/app/api/songjam/leaderboard/route.ts</a>. GET endpoint that fetches leaderboard data from Cloudflare Workers backend (songjamspace-leaderboard.logesh-063.workers.dev), supports projectId and timeframe query params, caches for 60 seconds. 2026-07-09.</li>
+      <li id="ref5">Songjam audio spaces embed implementation plan. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/docs/superpowers/plans/2026-03-23-songjam-audio-spaces-embed.md" target="_blank" rel="noopener">bettercallzaal/ZAOOS docs/superpowers/plans/2026-03-23-songjam-audio-spaces-embed.md</a>. Full implementation plan including /spaces route creation, BottomNav and EcosystemPanel updates, navigation integration, iframe permissions fix. 2026-03-23.</li>
+      <li id="ref6">Songjam feature integration design spec. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/docs/superpowers/specs/2026-03-27-songjam-feature-integration-design.md" target="_blank" rel="noopener">bettercallzaal/ZAOOS docs/superpowers/specs/2026-03-27-songjam-feature-integration-design.md</a>. Design spec for four potential features: Stream.io audio rooms, 100ms live audio, mindshare leaderboard, Farcaster cast actions. Auth adaptation (Farcaster instead of Firebase), database schema (rooms, ms_rooms, speaker_requests, space_participant_points tables), build order. 2026-03-27.</li>
+      <li id="ref7">ZABAL-SANG wallet agent tokenomics research. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/research/business/324-zabal-sang-wallet-agent-tokenomics/README.md" target="_blank" rel="noopener">bettercallzaal/ZAOOS research/business/324-zabal-sang-wallet-agent-tokenomics/README.md</a>. Tokenomics design for COC Concertz promoter rewards, agent swap flows, x402 commerce, SongJam mentioned as integration point for token-gated audio. 2026-04-11.</li>
+      <li id="ref8">SongJam site repository. <a href="https://github.com/SongjamSpace/songjam-site" target="_blank" rel="noopener">github.com/SongjamSpace/songjam-site</a>. Next.js website with leaderboard frontpage. Repository created 2025-08-17, last pushed 2026-06-21. Deployed to Vercel at songjam-site-delta.vercel.app.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
+</main>
+<script src="/papers/quote.js"></script>
+</body></html>
