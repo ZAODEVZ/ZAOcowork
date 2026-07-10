@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The ZAO - ZABAL Token Whitepaper (DRAFT)">
+<meta property="og:description" content="The front-end coordination token for The ZAO ecosystem. Designed for promoter rewards, SANG routing, and Empire Builder integration on Base.">
+<meta property="og:image" content="https://thezao.xyz/papers-og.png">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/zabal-token">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The ZAO - ZABAL Token Whitepaper (DRAFT)">
+<meta name="twitter:description" content="The front-end coordination token for The ZAO ecosystem. Designed for promoter rewards, SANG routing, and Empire Builder integration on Base.">
+<meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<title>The ZAO - ZABAL Token Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"ZABAL Token Whitepaper","description":"The front-end coordination token for The ZAO ecosystem on Base. Tokenomics, mechanics, and role in Empire Builder and SongJam.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/zabal-token","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-10","dateModified":"2026-07-10","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
+</style>
+
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers" class="home">Back to Papers</a><span class="arrows"><a href="/papers" title="Papers home">Home</a></span></div>
+<main>
+  <div class="wrap">
+    <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
+    <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://docs.google.com/document/d/1JxlPtfFj7pGVMclBNRaRHmjeX-U69LWLGcrXot3makM/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
+    <p class="eyebrow">ZABAL - Token (draft v0.1)</p>
+    <h1>ZABAL</h1>
+    <p class="thesis">The <b>front-end coordination token</b> for The ZAO ecosystem on Base. Designed to reward creators, route through SANG, and integrate with Empire Builder and SongJam.</p>
+
+    <section><h2>What it is</h2>
+    <p>ZABAL is an ERC-20 token on Base (chainId 8453) launched January 1, 2026, with a total supply of 100 billion tokens and 18 decimals.<sup class="cite"><a href="#ref1">[1]</a></sup> It is designed as the primary user-facing token for The ZAO ecosystem - a way to reward content creators, coordinate across integrations, and route liquidity to paired protocols like SongJam via SANG.</p>
+    <p>The name reflects its role: ZABAL is the token you interact with as a creator or user participating in The ZAO. It is paired with SANG, a sister token that routes through SongJam's reward mechanics. The designed flow is not ZABAL to ETH directly, but ZABAL to ETH to SANG - a three-hop route that optimizes pricing through a multi-path swap aggregator on thin liquidity pools.</p></section>
+
+    <section><h2>Tokenomics</h2>
+    <p>ZABAL operates on a deflationary model with fixed creator rewards and a burn mechanism. The economics are designed around COC Concertz promoter incentives and are meant to grow with ecosystem adoption.</p>
+    <div class="table-wrapper"><table>
+      <tr><th>Parameter</th><th>Value</th></tr>
+      <tr><td>Token</td><td>ZABAL</td></tr>
+      <tr><td>Contract (Base)</td><td>0xbB48f19B0494Ff7C1fE5Dc2032aeEE14312f0b07</td></tr>
+      <tr><td>Chain</td><td>Base (chainId 8453)</td></tr>
+      <tr><td>Total Supply</td><td>100,000,000,000 (100B)</td></tr>
+      <tr><td>Decimals</td><td>18</td></tr>
+      <tr><td>Standard</td><td>ERC-20 with delegation + permit</td></tr>
+      <tr><td>Treasury Address</td><td>0x7234c36A71ec237c2Ae7698e8916e0735001E9Af</td></tr>
+      <tr><td>Burn Address</td><td>0x000000000000000000000000000000000000dEaD</td></tr>
+    </table></div></section>
+
+    <section><h2>Creator rewards</h2>
+    <p>Content creators earn fixed ZABAL rewards for participation in The ZAO ecosystem, with a 10 percent automatic burn on all earned amounts to create deflationary pressure as adoption grows.</p>
+    <div class="table-wrapper"><table>
+      <tr><th>Action</th><th>ZABAL Earned</th><th>Burn (10%)</th><th>Net to Creator</th></tr>
+      <tr><td>Newsletter published</td><td>50,000</td><td>5,000</td><td>45,000</td></tr>
+      <tr><td>Social post</td><td>10,000</td><td>1,000</td><td>9,000</td></tr>
+      <tr><td>Show recap</td><td>100,000</td><td>10,000</td><td>90,000</td></tr>
+      <tr><td>Artist spotlight</td><td>25,000</td><td>2,500</td><td>22,500</td></tr>
+      <tr><td>Weekly bonus (3+ posts)</td><td>50,000</td><td>5,000</td><td>45,000</td></tr>
+    </table></div>
+    <p class="note">Rewards are designed for COC Concertz promoters but the token mechanics are general. Any role that routes through the reward system follows the same burn pattern. Vesting was intentionally skipped - creators get instant access to keep friction low, and the 10 percent burn achieves the same deflationary effect without restricting behavior.</p></section>
+
+    <section><h2>The ZABAL-SANG routing mechanic</h2>
+    <p>ZABAL does not have deep liquidity paired directly with ETH or USDC. Instead, the designed swap path is ZABAL to ETH to SANG using a smart order router like 0x Swap API v2, which aggregates liquidity across 150+ sources including Uniswap, Aerodrome, Curve, and other liquidity venues on Base.<sup class="cite"><a href="#ref1">[1]</a></sup></p>
+    <p>The rationale: SANG (SongJam's token) is the protocol's connection to music earnings, and routing through SANG deepens liquidity for both tokens while aligning with SongJam's tokenomics. A direct ZABAL-to-ETH or ZABAL-to-USDC swap would fragment the liquidity. The multi-hop route - handled transparently by the aggregator - optimizes pricing and keeps transaction cost at roughly 0.1 percent 0x affiliate fee plus gas sponsorship via Base Paymaster.</p></section>
+
+    <section><h2>Integration with Empire Builder and SongJam</h2>
+    <p>ZABAL is intended as the front-end token inside two key applications:</p>
+    <div class="lane"><span class="tag">Empire Builder</span><p>Farcaster mini-app where users earn ZABAL for engagement and contribution. ZABAL balance unlocks social features and leaderboard standings.</p></div>
+    <div class="lane"><span class="tag">SongJam</span><p>Music earning protocol. ZABAL can be routed to SANG and then to SongJam's reward pool for artists and supporters. Part of The ZAO's onchain music rails.</p></div></section>
+
+    <section><h2>Role in The ZAO</h2>
+    <p>ZABAL is the lightweight front-end coin. It sits between the user layer (creators, traders, fans) and the protocol layer (SANG, WaveWarZ, Respect tokens, governance). It rewards participation without imposing complex vesting or governance overhead. It is paired with SANG not as a competitor but as a complement - ZABAL gets you in the door, SANG routes you deeper into music earnings.</p>
+    <p>It does not replace Respect tokens (OG Respect on Optimism, ZOR Respect for long-term governance contributors). It does not replace ZOUNZ (the Nouns-style governance NFT). It is not meant to be the primary liquidity venue for artists or collectors. It is the onboarding token for The ZAO community.</p></section>
+
+    <section><h2>Current on-chain state</h2>
+    <p>ZABAL contract is live and verified on Base. Real-time stats as of July 10, 2026:</p>
+    <div class="stat">
+      <strong>360 token holders</strong> across all Base addresses.
+      <span class="src">BaseScan, 0xbB48f19B0494Ff7C1fE5Dc2032aeEE14312f0b07, July 10, 2026</span>
+    </div>
+    <div class="stat">
+      <strong>$552 total liquidity</strong> in the ZABAL/ETH Uniswap V4 pool on Base.
+      <span class="src">research/business/324-zabal-sang-wallet-agent-tokenomics, April 11, 2026. Current live pool may differ.</span>
+    </div>
+    <div class="stat">
+      <strong>26 transfers in 24 hours</strong> (July 9-10, 2026), representing 136 percent volume change from the prior day.
+      <span class="src">BaseScan token tracker, July 10, 2026</span>
+    </div>
+    <p class="note">The token exists and functions. Supply tracking, burn mechanics, and delegation are implemented. Adoption remains minimal - the token has not yet achieved the scale of activity the original design anticipated. This is not a technical failure; it is an adoption reality.</p></section>
+
+    <section><h2>Comparison: design vs. reality</h2>
+    <p>The research documents from April 2026 describe ZABAL as operational and integrated with COC Concertz promoter rewards, agent wallet swaps via Privy and 0x, and SongJam routing. The contract, architecture, and mechanics are all deployed and proven to work. What has not happened is adoption at scale. 360 holders is a working network but a small one. $552 in liquidity is real but minimal. 26 transfers in a day shows the token is being used, but not widely.</p>
+    <p>This is not uncommon for coordination tokens in early-stage ecosystems. The question is not "does this work?" but "what would it take to accelerate adoption?" The answer is not more engineering; the infrastructure is done. It is more integration with the tools creators already use (newsletters, social, content platforms), more WaveWarZ battles driving visibility, and more SongJam momentum to make the SANG route valuable.</p></section>
+
+    <section><h2>Risks and open questions</h2>
+    <p><strong>Liquidity depth.</strong> At $552 in the ZABAL/ETH pool, slippage on trades larger than a few thousand dollars is severe. Adoption depends on liquidity bootstrapping - either through concentrated LP incentives or through organic growth as more creators earn and hold ZABAL.</p>
+    <p><strong>Adoption and ecosystem integration.</strong> The token was designed for COC Concertz promoters and agent swaps. COC Concertz is live but creator participation varies. Agent wallet integration (via Privy + 0x) is built but not actively in use at scale. Empire Builder, the intended Farcaster front-end, exists but has not reached the adoption that would drive ZABAL volume.</p>
+    <p><strong>SANG dependency.</strong> The designed ZABAL-to-SANG routing means ZABAL's utility is tied to SANG's growth. If SongJam does not accelerate, the route remains theoretical rather than practiced. Conversely, if SongJam gains traction, ZABAL becomes essential to the path.</p>
+    <p><strong>Price discovery.</strong> Current price is effectively zero on-chain ($0.0000001429 as of April 2026, unchanged in practice). This is not indicative of a failed token - many sub-cent tokens function fine at scale. But it means early holders, including creators who earned ZABAL, are not seeing the speculative or long-term wealth-creation dynamics that drive adoption narratives.</p>
+    <p><strong>Regulatory clarity.</strong> ZABAL is a utility token on a public blockchain. The regulatory environment for utility tokens on Base (an Ethereum L2) is still evolving. This is a known, shared risk across The ZAO's tokenomics, not unique to ZABAL.</p></section>
+
+    <section><h2>What's next / how to get involved</h2>
+    <p><strong>Creators.</strong> Earn ZABAL through COC Concertz newsletters, social posts, and show recaps. ZABAL appears in your balance and can be held, traded via 0x, or routed to SANG.</p>
+    <p><strong>Builders and integrators.</strong> The contract and agent wallet flows are open and verified. If you are building on Base and want to integrate ZABAL rewards or routing, the infrastructure exists. Reach out through The ZAO.</p>
+    <p><strong>Liquidity providers.</strong> The ZABAL/ETH pool at $552 is an opportunity for LPs to capture concentrated fees as volume grows. Uniswap V4 concentrated liquidity structures are live for this pair.</p>
+    <p><strong>Ecosystem partners.</strong> SANG integration partners (SongJam, WaveWarZ, Empire Builder) drive the value of the ZABAL-SANG route. Expanding integration with SongJam in particular would increase the utility of holding and routing ZABAL.</p></section>
+
+    <section><h2>Find it</h2>
+    <p>Contract: <code>0xbB48f19B0494Ff7C1fE5Dc2032aeEE14312f0b07</code> on Base (chainId 8453). Block explorer: <a href="https://basescan.org/token/0xbB48f19B0494Ff7C1fE5Dc2032aeEE14312f0b07" target="_blank" rel="noopener">BaseScan</a>. Integration guide: see ZABAL snap app in <a href="https://github.com/bettercallzaal/ZAOOS" target="_blank" rel="noopener">bettercallzaal/ZAOOS</a> at /apps/zabal-snap.</p></section>
+  </div>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.1, 2026-07-10 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">Panthaki, Z. "324 -- ZABAL/SANG Wallet Agent System." Research repository, bettercallzaal/ZAOOS. Primary source for tokenomics design, COC Concertz rewards schedule, 0x Swap API v2 aggregator selection, Privy wallet architecture, and SANG routing mechanics. Status: research-complete. Last validated: 2026-05-21. <a href="https://github.com/bettercallzaal/ZAOOS/tree/main/research/business/324-zabal-sang-wallet-agent-tokenomics" target="_blank" rel="noopener">github.com/bettercallzaal/ZAOOS</a></li>
+      <li id="ref2">ZABAL Token Contract. BaseScan block explorer. <a href="https://basescan.org/token/0xbB48f19B0494Ff7C1fE5Dc2032aeEE14312f0b07" target="_blank" rel="noopener">0xbB48f19B0494Ff7C1fE5Dc2032aeEE14312f0b07</a>. Real-time holder count (360), transfer activity (26 in 24h as of July 10, 2026), and contract verification. Live source, checked directly July 10, 2026.</li>
+      <li id="ref3">Panthaki, Z. "2026-05-04 Protocol Whitepaper Rebuild Spec." Protocol specification, bettercallzaal/ZAOOS. Describes ZABAL as "launched Jan 1 2026 on Base, front-end coin of BCZ ecosystem. Empire Builder + SongJam integrations." Status: planned rebuild as of May 4, 2026. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/docs/specs/2026-05-04-protocol-whitepaper-rebuild-spec.md" target="_blank" rel="noopener">github.com/bettercallzaal/ZAOOS</a></li>
+      <li id="ref4">ZABAL token.ts. ZAO OS snap app source. <a href="https://github.com/bettercallzaal/ZAOOS/blob/main/apps/zabal-snap/src/token.ts" target="_blank" rel="noopener">github.com/bettercallzaal/ZAOOS/apps/zabal-snap</a>. Hardcoded contract address, liquidity tracking ($552 ZABAL/ETH pool), and dashboard data fetch logic. Reflects implementation as of codebase state.</li>
+      <li id="ref5">Ethereum Foundation. "ERC-20: Token Standard." Solidity documentation. <a href="https://eips.ethereum.org/EIPS/eip-20" target="_blank" rel="noopener">eips.ethereum.org</a>. Standard for fungible tokens on EVM chains, including Base.</li>
+      <li id="ref6">Uniswap V4. <a href="https://uniswap.org/blog/uniswap-v4" target="_blank" rel="noopener">uniswap.org</a>. Concentrated liquidity structure used for ZABAL/ETH pair on Base.</li>
+      <li id="ref7">0x Labs. "0x Swap API v2." Aggregator documentation. <a href="https://0x.org/docs/0x-swap-api/guides/swap-tokens" target="_blank" rel="noopener">0x.org</a>. Smart order routing across 150+ liquidity sources on Base, designed for thin-pool swaps like ZABAL routing.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
+</main>
+<script>
+  const readProgress = document.getElementById('readProgress');
+  if (readProgress) {
+    document.addEventListener('scroll', () => {
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = totalScroll > 0 ? window.scrollY / totalScroll : 0;
+      readProgress.style.setProperty('--progress', Math.min(progress, 1));
+      readProgress.style.opacity = progress > 0 ? '1' : '0';
+    });
+  }
+</script>
+</body></html>
