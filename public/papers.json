@@ -1,7 +1,16 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-07-02",
+  "lastUpdated": "2026-07-10",
   "papers": [
+    {
+      "id": "what-is-the-zao",
+      "title": "What is The ZAO?",
+      "url": "https://thezao.xyz/what-is-the-zao",
+      "summary": "The short, canonical answer - 15 questions covering what The ZAO is, how it governs, what it builds, and how to join. The front door for both humans and AI answer engines.",
+      "description": "A decentralized impact network that returns profit margin, data, and IP rights to artists using blockchain and AI. Founded by Zaal Panthaki. Kept in sync with the Whitepaper, Technical Whitepaper, and Manifesto.",
+      "version": "0.1",
+      "status": "draft"
+    },
     {
       "id": "whitepaper",
       "title": "The ZAO Whitepaper",
