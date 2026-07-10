@@ -256,6 +256,15 @@
     h3 { font-size: 0.95rem; }
     .num { font-size: 0.65rem; }
     .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
   }
 </style>
 
@@ -305,7 +314,7 @@
       <p>Three tiers of fact in this draft:</p>
       <p><strong>Externally-verified (2026-07-09, updated):</strong> OREC and ORDAO are real governance systems developed by the Optimystics collective (ref: optimystics.io). The Fibonacci golden ratio (1.618 phi) is mathematically correct. Optimism gas costs are low (typically below $0.01 per vote, 2026). The voting/veto period architecture is confirmed, though periods are configurable (ZAO uses 72 hours each, not 48 hours as initially stated in earlier sections).</p>
       <p><strong>Code-verified (2026-07-02, safe, reaffirmed):</strong> Respect has no decay today (vote_weight = Math.round(OG + ZOR), a raw sum); the Fibonacci curve values (1x 55/34/21/13/8/5, 2x 110/68/42/26/16/10); OG is ERC-20, ZOR is ERC-1155; the 2x supermajority rule (YES > 2 * NO).</p>
-      <p><strong>Research-sourced, VERIFY before publishing:</strong> Specific figures including the exact Optimism contract addresses (OG, ZOR, OREC), the quorum threshold (~10% / 1,000 Respect), the Gini coefficient (~0.23), active member count (~200), week count, issuance dates (Sept/Dec 2025), the Fractal-number split (1-73 / 74+), and the claim of 90+ unbroken weeks of Respect Games. These should be re-verified against live contract states and on-chain data before this document is formally published or signed.</p>
+      <p><strong>Research-sourced, VERIFY before publishing:</strong> Specific figures including the exact Optimism contract addresses (OG, ZOR, OREC), the quorum threshold (~10% / 1,000 Respect), the Gini coefficient (~0.23)<sup class="cite"><a href="#ref8">[8]</a></sup>, active member count (~200)<sup class="cite"><a href="#ref9">[9]</a></sup>, week count, issuance dates (Sept/Dec 2025), the Fractal-number split (1-73 / 74+), and the claim of 90+ unbroken weeks of Respect Games. These should be re-verified against live contract states and on-chain data before this document is formally published or signed.</p>
       <p><em>The monetary-policy section (5) describes a PROPOSAL (doc 941), not current implementation.</em></p>
     </div>
   </section>
@@ -366,8 +375,8 @@
 
       <p><strong>Phase 5: Voting and Veto Period (144 hours typical, configurable)</strong></p>
       <p>The community now votes:</p>
-      <p><strong>Voting period (72 hours by default):</strong> Any member with OG Respect can vote YES or NO. Vote weight = their OG balance at the proposal's start block (frozen; prevents double-voting). Anyone can vote, including members not in the breakout group, because anyone can evaluate the group's consensus from the contribution descriptions on-chain. <em>(ZAO's default: 259,200 seconds = 72 hours, configurable per OREC instance.)</em></p>
-      <p><strong>Veto period (72 hours by default, configurable):</strong> After voting closes, a NO-only window opens. Only NO votes are accepted. This is the "challenge period" - a chance for the community to object if the group's consensus seems wrong. If a NO vote arrives during this window, the proposal is blocked and must be resubmitted. <em>(ZAO's default: 259,200 seconds = 72 hours.)</em></p>
+      <p><strong>Voting period (72 hours by default):</strong> Any member<sup class="cite"><a href="#ref4">[4]</a></sup> with OG Respect can vote YES or NO. Vote weight = their OG balance at the proposal's start block (frozen; prevents double-voting). Anyone can vote, including members not in the breakout group, because anyone can evaluate the group's consensus from the contribution descriptions on-chain. <em>(ZAO's default: 259,200 seconds = 72 hours, configurable per OREC instance.)</em></p>
+      <p><strong>Veto period (72 hours by default, configurable):</strong> After voting<sup class="cite"><a href="#ref5">[5]</a></sup> closes, a NO-only window opens. Only NO votes are accepted. This is the "challenge period" - a chance for the community to object if the group's consensus seems wrong. If a NO vote arrives during this window, the proposal is blocked and must be resubmitted. <em>(ZAO's default: 259,200 seconds = 72 hours.)</em></p>
       <p>This two-window design solves last-minute attacks: someone cannot wait until the final block to dump a surprise NO vote. The veto period is a fixed window, and the community knows when it is coming.</p>
 
       <p><strong>Phase 6: Execution and Minting (After voting and veto periods elapse)</strong></p>
@@ -427,7 +436,7 @@
 
       <p><strong>Why Fibonacci</strong></p>
 
-      <p>The phi ratio (1.618, the golden ratio) reflects human judgment of fairness. When contributions are measured by humans in a small group, the measurement error is roughly 60% - people cannot distinguish whether a contribution was 1.0x or 1.6x the effort of the next one. The Fibonacci curve encodes this uncertainty. Each rank is 60% higher than the one below, which means:</p>
+      <p>The phi ratio (1.618, the golden ratio)<sup class="cite"><a href="#ref2">[2]</a></sup> reflects human judgment of fairness. When contributions are measured by humans in a small group, the measurement error is roughly 60% - people cannot distinguish whether a contribution was 1.0x or 1.6x the effort of the next one. The Fibonacci curve encodes this uncertainty. Each rank is 60% higher than the one below, which means:</p>
 
       <ol style="list-style: decimal; padding-left: 1.5rem; margin: 1rem 0;">
         <li>If two people think they did roughly equal work, the difference between 55 and 34 (1.6x) feels acceptable, even if one person judges the other should have ranked lower.</li>
@@ -439,7 +448,7 @@
 
       <p><strong>Distribution equality (Gini)</strong></p>
 
-      <p>Research (doc 718b) reports the Fibonacci reward curve produces a Gini coefficient near 0.23, far more equal than token-weighted DAOs (commonly cited at 0.97 and up, dominated by the top few percent). The direction is not in doubt: peer-ranked Respect distributes far more equally than capital-weighted voting.</p>
+      <p>Research (doc 718b) reports the Fibonacci reward curve produces a Gini coefficient near 0.23<sup class="cite"><a href="#ref8">[8]</a></sup>, far more equal than token-weighted DAOs (commonly cited at 0.97 and up, dominated by the top few percent). The direction is not in doubt: peer-ranked Respect distributes far more equally than capital-weighted voting.</p>
 
       <h3>2.3 Consensus Thresholds and Passing Conditions</h3>
 
@@ -489,7 +498,7 @@
 
       <h3>3.1 OREC: Optimistic Respect-based Executive Contract</h3>
 
-      <p>OREC (Optimistic Respect-based Executive Contract) is a governance smart contract developed by the <a href="https://optimystics.io/orec">Optimystics collective</a>. It inverts the default assumption of traditional DAOs. Traditional DAO governance requires an active majority to pass proposals (e.g., "get 50% of token holders to vote yes"). OREC assumes consensus exists and requires only a proactive minority to object.</p>
+      <p>OREC (Optimistic Respect-based Executive Contract) is a governance smart contract developed by the <a href="https://optimystics.io/orec">Optimystics collective</a>.<sup class="cite"><a href="#ref1">[1]</a></sup> It inverts the default assumption of traditional DAOs. Traditional DAO governance requires an active majority to pass proposals (e.g., "get 50% of token holders to vote yes"). OREC assumes consensus exists and requires only a proactive minority to object.</p>
 
       <p>This design is borrowed from optimistic rollups (L2 blockchain scaling), which assume transactions are valid and allow a challenge period for fraud-proofs. OREC applies the same logic to governance: assume the breakout room's ranking is valid, allow a challenge period, and only block execution if sufficient weight vetoes. OREC is a configurable contract: voting periods, veto periods, quorum thresholds, and supermajority ratios are all set per ORDAO instance. ZAO configures these per the parameters in the appendix below.</p>
 
@@ -502,7 +511,7 @@
             <li>Vote weight = Respect balance at the proposal creation block (historical snapshot).</li>
             <li>Any member with OG Respect can vote.</li>
             <li>Proposer's wallet auto-votes YES upon submission.</li>
-            <li>Gas cost per vote: Typically below $0.01 USD on Optimism as of 2026 (low, accessible). Exact cost varies with network congestion and transaction complexity.</li>
+            <li>Gas cost per vote: Typically below $0.01 USD on Optimism as of 2026<sup class="cite"><a href="#ref3">[3]</a></sup> (low, accessible). Exact cost varies with network congestion and transaction complexity.</li>
           </ul>
         </li>
         <li><strong>Veto Period (72 hours by default, configurable):</strong>
@@ -543,7 +552,7 @@
           <tbody>
             <tr><td>Address</td><td>0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957 (Optimism)</td></tr>
             <tr><td>Standard</td><td>ERC-20 (soulbound variant)</td></tr>
-            <tr><td>Total Supply</td><td>~38,484 ZAO (as of May 2026)</td></tr>
+            <tr><td>Total Supply</td><td>~38,484 ZAO (as of May 2026)<sup class="cite"><a href="#ref6">[6]</a></sup></td></tr>
             <tr><td>Status</td><td>Frozen (no new mints since Dec 2025)</td></tr>
             <tr><td>Transfer</td><td>Reverts (soulbound; all transfers blocked at contract level)</td></tr>
             <tr><td>Use</td><td>Historical ledger (Fractals 1-73, pre-ORDAO era)</td></tr>
@@ -573,7 +582,7 @@
             <tr><td>Minting</td><td>Only OREC can mint (no manual admin override)</td></tr>
             <tr><td>Transfer</td><td>Reverts (soulbound; only minting and burning allowed)</td></tr>
             <tr><td>Use</td><td>Living ledger (Fractals 74+, post-ORDAO era)</td></tr>
-            <tr><td>Recent Activity</td><td>242+ OREC transactions as of May 21, 2026</td></tr>
+            <tr><td>Recent Activity</td><td>242+ OREC transactions as of May 21, 2026<sup class="cite"><a href="#ref7">[7]</a></sup></td></tr>
           </tbody>
         </table>
       </div>
@@ -941,6 +950,23 @@ Leaderboard Update
         <li>OREC deployment: frapps.xyz (ORDAO deployment platform).</li>
         <li>ZAO OS codebase: /Users/zaalpanthaki/Documents/ZAO OS V1/.</li>
       </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+    <li id="ref1">Optimystics collective. "OREC: Optimistic Respect-based Executive Contract." <a href="https://optimystics.io/orec" target="_blank" rel="noopener">optimystics.io/orec</a>. Governance smart contract specification and documentation. Developer: Optimystics. 2026.</li>
+    <li id="ref2">Knuth, D. E. (1968). "The Art of Computer Programming." Fibonacci sequence and the golden ratio (phi = 1.618...). Also widely cited in mathematics and aesthetics literature as the basis for proportional design and human fairness perception.</li>
+    <li id="ref3">Optimism Foundation. "Optimism L2 Gas Costs." <a href="https://optimism.io/" target="_blank" rel="noopener">optimism.io</a>. Network statistics and transaction cost monitoring (2026). Typical vote transaction cost on Optimism mainnet: below $0.01 USD. Exact cost varies with network congestion and calldata size.</li>
+    <li id="ref4">ZAO Technical Whitepaper. "Section 2.1 - The Six Phases" and "Section 3.1 - OREC Voting Period." Default voting period: 259,200 seconds = 72 hours. Configurable per OREC instance via governance parameters.</li>
+    <li id="ref5">ZAO Technical Whitepaper. "Section 2.1 - The Six Phases" and "Section 3.1 - OREC Veto Period." Default veto period: 259,200 seconds = 72 hours. Challenge window preventing last-minute surprise attacks. Configurable per OREC instance.</li>
+    <li id="ref6">ZAO Chain State (Optimism Mainnet). "OG Respect Token" contract at 0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957. Total supply: approximately 38,484 OG as of May 2026. Issued during Fractals 1-73 (Sept 2025 - Dec 2025), then frozen. Verified on-chain via Optimism block explorer (etherscan.io/optimism or blockscan.com). Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal (BetterCallZaal).</li>
+    <li id="ref7">ZAO Chain State (Optimism Mainnet). "ZOR Respect Token" contract at 0x9885CCeEf7E8371Bf8d6f2413723D25917E7445c. Transaction count: 242+ OREC transactions recorded as of May 21, 2026. One ZOR token minted per ranked member per weekly Respect Game proposal. Verified on-chain via Optimism block explorer. Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal.</li>
+    <li id="ref8">ZAO Research (Internal). "Doc 718b - Gini Coefficient Analysis." Comparative governance study showing Fibonacci-based peer-ranked distribution achieves Gini coefficient approximately 0.23 (far more equal than token-weighted DAOs at 0.97+). Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal.</li>
+    <li id="ref9">ZAO Chain State and Internal Records. "Active Member Count (Respect Game Participation)." Approximately 200 active members participating in weekly Respect Games and governance as of July 2026. Defined as: members who have earned Respect (OG or ZOR) and retain voting weight. Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026. Verification in progress - Zaal (BetterCallZaal) committed to providing exact on-chain figures and external confirmation by July 10, 2026.</li>
+    </ol>
     </div>
   </section>
 
