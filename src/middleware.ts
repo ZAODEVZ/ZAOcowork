@@ -4,7 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // public (renders a landing page when no session, the board when logged in -
 // see src/app/page.tsx). /login + /api/login obviously have to stay public
 // since that's where you go to get a session in the first place.
-const PUBLIC_PATHS = new Set(["/", "/login", "/list"]);
+// /what-is-the-zao is the canonical GEO answer page - MUST be public so AI
+// crawlers (ChatGPT, Perplexity, Google AI Overviews, Claude) can read it.
+const PUBLIC_PATHS = new Set(["/", "/login", "/list", "/what-is-the-zao"]);
 // /api/github/webhook (doc 763 F3): hit by GitHub's bot, no session.
 // Auth is HMAC inside the route handler (X-Hub-Signature-256).
 // /api/digest (doc 764 F6): hit by VPS cron with Bearer auth, no session.
@@ -75,5 +77,8 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|paper|papers|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // llms.txt / robots.txt / sitemap.xml are static crawler files - exclude from
+  // the auth middleware entirely so they stay world-readable (they were being
+  // redirected to /login, hiding them from AI crawlers).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|paper|papers|llms.txt|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

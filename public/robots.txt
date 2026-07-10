@@ -1,0 +1,24 @@
+# The ZAO - robots.txt
+# AI answer engines are explicitly welcome to read the public GEO surfaces.
+
+User-agent: *
+Allow: /$
+Allow: /what-is-the-zao
+Allow: /llms.txt
+Allow: /list
+Allow: /papers
+Allow: /paper
+
+# AI crawlers (GEO): read the canonical answer + llms.txt
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+
+# Canonical AI-readable context: /llms.txt

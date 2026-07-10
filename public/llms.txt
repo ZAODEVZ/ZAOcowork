@@ -1,39 +1,29 @@
-The ZAO Papers - Index
+# The ZAO
 
-The ZAO publishes four core papers that document the mission, governance model, technical architecture, and member creed.
+The ZAO (ZTalent Artist Organization) is a decentralized impact network that brings the profit margin, data, and IP rights back to artists using emerging technology like blockchain and AI. Its first artist domain is music. Founded by Zaal Panthaki (BetterCallZaal). Priority stack: music first, community second, technology third.
 
-PAPER 1: The ZAO Whitepaper
-URL: https://thezao.xyz/paper
-Status: Working Draft v0.1
-Summary: What The ZAO is, how the Fractal governs, the four lanes it builds, and the open-source agentic future. The vision in plain words.
+Name note: the acronym ZAO = ZTalent Artist Organization; the descriptor for what it is today is a decentralized impact network. Use the acronym for the name, the impact-network framing for what it does.
 
-Sections:
-- What The ZAO is
-- What we are against
-- An impact network
-- The Fractal
-- The lanes
-- The agentic future
-- The honest part
-- Why this matters
+## What it is
 
-PAPER 2: The ZAO Technical Whitepaper
-URL: https://thezao.xyz/papers/technical
-Status: Working Draft v0.1
-Summary: The mechanism - Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal. The proof under the vision.
+The ZAO is not a record label and not merely a "music community." It is an impact network whose first artist domain is music. It returns three things to artists that intermediaries normally take: profit margin, data, and IP rights. Technology is the means, not the headline.
 
-Focus areas:
-- Respect as a soulbound reputation token
-- The Six Phases of the Respect distribution cycle
-- The Fibonacci Reward Curve
-- OREC - Optimistic Execution with commitment-and-reveal
-- Smart contract architecture on Optimism
-- Comparison to other governance models
+## Governance - the Fractal and Respect
 
-PAPER 3: The ZAO Manifesto
-URL: https://thezao.xyz/papers/manifesto
-Status: Permanent (Version 1.0)
-Summary: The short signable creed. Five commitments. Signing it (an on-chain hat) is how you become a member. The part you actually agree to.
+- Respect is the on-chain contribution currency: a soulbound OG ERC-20 plus a ZOR ERC-1155, on Optimism. Because it is soulbound, it is earned, never bought or transferred.
+- A weekly Respect Game ranks contributions; OREC (optimistic execution with commitment-and-reveal) settles outcomes; a Fibonacci curve shapes the rewards.
+- Verified on-chain (2026-07-05): 156 Respect holders, OG Gini roughly 0.73.
+
+## Production lanes
+
+- WaveWarZ - live-traded music battles (music prediction market; artists paid instantly, value stays in the ecosystem)
+- ZABAL Games - a three-month build-a-thon that runs builders through workshops and shipping sprints
+- The ZAO festivals - ZAOstock, ZAOville, ZAO-PALOOZA, ZAO-CHELLA (real-world gatherings)
+- ZAO OS - the lab and monorepo where new ZAO things are prototyped before they graduate to their own homes
+
+## Membership
+
+You become a member by signing the Manifesto - a short creed of five commitments. Signing it is an on-chain hat.
 
 Five Commitments:
 1. I Contribute - bring something, time, energy, or capital
@@ -42,17 +32,36 @@ Five Commitments:
 4. I Govern by Contribution - standing comes from what you actually do
 5. I Believe in the Gift - every human has a gift the world needs
 
+## Find it
+
+- Sites: https://thezao.xyz and https://zaoos.com
+- Full "what is The ZAO" FAQ: https://thezao.xyz/what-is-the-zao
+- Papers: https://thezao.xyz/papers
+- Farcaster: the /zao and /zabal channels
+
+## The papers
+
+The ZAO publishes four core papers documenting the mission, governance model, technical architecture, and member creed.
+
+PAPER 1: The ZAO Whitepaper
+URL: https://thezao.xyz/paper
+Status: Working Draft v0.1
+Summary: What The ZAO is, how the Fractal governs, the four lanes it builds, and the open-source agentic future. The vision in plain words.
+
+PAPER 2: The ZAO Technical Whitepaper
+URL: https://thezao.xyz/papers/technical
+Status: Working Draft v0.1
+Summary: The mechanism - Respect math, the Fibonacci curve, OREC and the on-chain contracts, and the monetary-policy proposal. The proof under the vision.
+
+PAPER 3: The ZAO Manifesto
+URL: https://thezao.xyz/papers/manifesto
+Status: Permanent (Version 1.0)
+Summary: The short signable creed. Five commitments. Signing it (an on-chain hat) is how you become a member.
+
 PAPER 4: The WaveWarZ Whitepaper
 URL: https://thezao.xyz/papers/wavewarz
 Status: In Progress
-Summary: WaveWarZ is the flagship music prediction market where artists are paid instantly and the value stays in the ecosystem.
-
-Overview:
-- Music prediction market on Solana
-- Artists battle, fans trade on outcomes
-- 98% of traded value stays in the ecosystem
-- Artists paid instantly
-- Whitepaper currently being written
+Summary: WaveWarZ is the flagship music prediction market where artists are paid instantly and the value stays in the ecosystem. Music prediction market on Solana; artists battle, fans trade on outcomes; 98% of traded value stays in the ecosystem.
 
 ---
 
