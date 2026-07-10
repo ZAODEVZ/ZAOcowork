@@ -39,11 +39,30 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
+// Organization structured data - site-wide. Gives AI answer engines
+// (ChatGPT, Perplexity, Google AI Overviews, Claude) a grounded entity for
+// "The ZAO". Facts from research/identity/icm-boxes/thezao.llm.txt.
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "The ZAO",
+  alternateName: "ZTalent Artist Organization",
+  url: "https://thezao.xyz",
+  description:
+    "A decentralized impact network returning profit margin, data, and IP rights to artists using blockchain and AI. Music first, community second, technology third.",
+  founder: { "@type": "Person", name: "Zaal Panthaki", alternateName: "BetterCallZaal" },
+  sameAs: ["https://zaoos.com", "https://warpcast.com/~/channel/zao"],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
       </head>
       <body className="min-h-screen antialiased">
         {children}
