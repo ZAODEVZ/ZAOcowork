@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="FISHBOWLZ Whitepaper (DRAFT)">
+<meta property="og:description" content="Persistent audio rooms with hot seat rotation, live transcription, and Farcaster-native identity. Conversations that live forever.">
+<meta property="og:image" content="https://thezao.xyz/papers-og.png">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/fishbowlz">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FISHBOWLZ Whitepaper (DRAFT)">
+<meta name="twitter:description" content="Persistent audio rooms with hot seat rotation, live transcription, and Farcaster-native identity. Conversations that live forever.">
+<meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/papers-og.png","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/technical","splashImageUrl":"https://thezao.xyz/papers-og.png","splashBackgroundColor":"#141e27"}}}'>
+<title>The ZAO - FISHBOWLZ Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"FISHBOWLZ Whitepaper","description":"Persistent audio discussion rooms with hot seat rotation, live transcription, and Farcaster-native identity. Built on The ZAO.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/fishbowlz","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-09","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  /* Hero */
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  /* Sections */
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  /* Gates / lists */
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .lane { border-top: 1px solid var(--line); padding: 1.3rem 0; }
+  .lane:first-of-type { border-top: none; }
+  .lane .tag { font-family: var(--sans); font-weight: 700; color: var(--accent); font-size: 1rem; letter-spacing: 0.01em; }
+  .lane p { margin: 0.5rem 0 0; color: var(--ink-soft); }
+
+  .faq { border-top: 1px solid var(--line); padding: 1rem 0; }
+  .faq .q { font-family: var(--sans); font-weight: 700; font-size: 1rem; margin: 0 0 0.3rem; }
+  .faq .a { margin: 0; color: var(--ink-soft); font-size: 1.02rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  /* Code blocks */
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
+</style>
+
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers" class="home">Back to Papers</a><span class="arrows"><a href="/papers" title="Papers home">Home</a></span></div>
+<main>
+  <div class="wrap">
+    <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
+    <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://docs.google.com/document/d/1Z8C9vQr3KmP9dL5xY2nB7wQ4jH6kT5mR8pS3vF1gX9y/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
+    <p class="eyebrow">FISHBOWLZ - Whitepaper (draft v0.1)</p>
+    <h1>FISHBOWLZ</h1>
+    <p class="thesis">Persistent audio rooms where speakers rotate through a hot seat, everything is transcribed and archived forever, and <b>every conversation becomes a searchable, shareable asset in The ZAO ecosystem</b><sup class="cite"><a href="#ref1">[1]</a></sup>.</p>
+
+    <section><h2>What it is</h2>
+    <p>FISHBOWLZ is a live-audio discussion platform built on Farcaster and The ZAO. Speakers sit in a rotating hot seat for configurable intervals (typically 5, 10, or 15 minutes), listeners ask questions and raise hands, the entire conversation is transcribed in real-time, and the room persists after it ends.<sup class="cite"><a href="#ref2">[2]</a></sup> No other platform combines persistent rooms, live transcription, hot seat rotation, and Farcaster-native identity in a single product.</p>
+    <p>Imagine a podcast that's live, interactive, rotating, searchable, and permanent. That's FISHBOWLZ.</p></section>
+
+    <section><h2>Why it exists</h2>
+    <p>Most live-audio platforms - Spaces, Clubhouse, Discord voice - treat conversations as ephemeral. The moment a room closes, the knowledge inside it evaporates. FISHBOWLZ flips this: conversations are The ZAO's most durable asset. A room that begins as a one-time discussion becomes a permanent reference, archived by timestamp, transcribed for search, and embedded back into The ZAO ecosystem for long-form discovery.</p>
+    <p>The hot-seat format (not open mic, not moderator-only) ensures structured discussion. Listeners can reach the hot seat by raising their hand and winning host approval, making the dynamic participatory without chaos. Transcription makes the room accessible to async readers, international audiences, and agents that index and learn from The ZAO's collective knowledge.</p>
+    <p>In The ZAO, FISHBOWLZ serves as a complement to WaveWarZ (a front-door funnel) and ZABAL Games (a builder's entry point). FISHBOWLZ is The ZAO's knowledge engine - the place conversations that matter get preserved and become part of the community record.</p></section>
+
+    <section><h2>How it works</h2>
+    <p><strong>Room Creation</strong> is simple: set a title, optional description, host (you), speaker limit (default 3-5), and hot-seat rotation timer (default 10 minutes). Rooms can be public or token-gated (require a Farcaster power badge, ERC-20 balance on Base, or FC identity quality score). Scheduled rooms countdown and auto-start or wait for the host to press Start Now.</p>
+    <p><strong>Audio Infrastructure</strong> runs on 100ms, a production-grade audio API. Speakers connect as the <code>speaker</code> role (audio + video, can be seen), listeners join as <code>listener</code> (audio off by default, can be unmuted to ask a question), and the host is a <code>moderator</code> (full control, can kick speakers, end room, rotate the hot seat).</p>
+    <p><strong>The Hot Seat</strong> rotates automatically every N minutes. When the timer expires, the current speaker is moved to listeners, and the next person in the queue (or a hand-raised listener promoted by the host) becomes the active speaker. This ensures no single voice dominates and encourages turnover.</p>
+    <p><strong>Transcription</strong> happens in real-time via browser speech recognition (updated on every 2-3 second chunk) and manual fallback (listeners can type corrections or add context). Each segment is timestamped and linked to the speaker who said it. At room end, a Claude-powered AI summary is auto-generated from the full transcript.</p>
+    <p><strong>Chat & Reactions</strong> run alongside audio: real-time text chat for questions and side discussions, and emoji reactions that float across the screen IG-Live-style for non-verbal engagement.</p>
+    <p><strong>Persistence</strong> is the core. Rooms never disappear. They move to an ended state, but their full transcript, chat log, and metadata stay indexed and searchable. Listeners can revisit, export to Markdown, or share a slug link like <code>fishbowlz.com/fishbowlz/my-room</code> on Farcaster, Twitter, or anywhere else.</p>
+    <p><strong>User Presence</strong> is tracked via heartbeat: every connected participant sends a keep-alive ping every 45 seconds, and stale users (disconnected for 2+ minutes) are auto-pruned from the speaker/listener lists, ensuring the room state stays accurate.</p></section>
+
+    <section><h2>The graduation story</h2>
+    <p>FISHBOWLZ originally lived inside ZAOOS, The ZAO's monorepo, as a feature module alongside WaveWarZ, ZABAL Games, and the core community platform. By April 2026, it was feature-complete: live audio, transcription, chat, reactions, tipping, token gating, export, scheduling, hand raise, AI summaries, and mobile polish were all working.<sup class="cite"><a href="#ref3">[3]</a></sup></p>
+    <p>In June 2026, FISHBOWLZ graduated out of ZAOOS into its own standalone repository and Supabase project, following The ZAO's "monorepo-as-lab, graduate-to-own-repo" pattern. This was not a pause, as an older spec incorrectly suggested - it was a promotion. The code was extracted and verified, a new repo was created at <code>github.com/bettercallzaal/fishbowlz</code>, and the product went live at <code>fishbowlz.com</code> with its own independent deployment pipeline, database, and team ownership.<sup class="cite"><a href="#ref4">[4]</a></sup></p>
+    <p>The graduation reflects a deliberate ZAO pattern: when a product is stable and has its own identity, it graduates to own the full stack (repo, DB, deployment) rather than remain nested in the shared OS. This reduces friction for independent shipping and allows teams to move fast without monorepo coordination overhead. FISHBOWLZ's graduation is a success story of that model working in practice.</p></section>
+
+    <section><h2>Core features</h2>
+    <ul class="gates">
+      <li><b>Hot Seat Rotation</b><span>Configurable rotation timer (5/10/15 min), auto-advance to next speaker in queue or hand-raised listener.</span></li>
+      <li><b>Live Audio</b><span>Powered by 100ms SDK, speaker/listener/moderator roles, one-click unmute for listeners.</span></li>
+      <li><b>Live Transcription</b><span>Browser speech API + manual input, timestamped, speaker-attributed, Claude-powered summary on room end.</span></li>
+      <li><b>Room Chat</b><span>Real-time text chat, separate from audio, for questions and side discussions.</span></li>
+      <li><b>Emoji Reactions</b><span>IG Live-style floating reactions, non-verbal engagement during active rooms.</span></li>
+      <li><b>Hand Raise</b><span>Listeners request the hot seat; host approves or denies, keeping queue fair and manageable.</span></li>
+      <li><b>Speaker Tipping</b><span>Tip speakers ETH during live rooms, settled on Base L2, instant and transparent.</span></li>
+      <li><b>Scheduled Rooms</b><span>Set a future start time, countdown clock, option to auto-start or wait for host trigger.</span></li>
+      <li><b>Token Gating</b><span>Require Farcaster power badge, ERC-20 balance on Base, or FC quality score to join or speak.</span></li>
+      <li><b>FC Identity Gating</b><span>Optional Farcaster quality-score threshold to prevent low-quality accounts from disrupting rooms.</span></li>
+      <li><b>Host Controls</b><span>Kick speakers, end room with confirmation, rotate manually, export transcript, view analytics.</span></li>
+      <li><b>Transcript Export</b><span>Download full transcript as Markdown, including chat and timestamps, ready to share or publish.</span></li>
+      <li><b>OG Images</b><span>Dynamic social cards on room links, showing title, speaker count, status (live/ended).</span></li>
+      <li><b>Persistence & Search</b><span>Rooms stay archived forever, indexed for full-text search, discoverable in The ZAO.</span></li>
+      <li><b>Mobile-First</b><span>Responsive layout, 44px tap targets, bottom-sheet modals, optimized for on-the-go participation.</span></li>
+      <li><b>Onboarding</b><span>3-step intro for new users explaining hot seat, transcription, and how to participate.</span></li>
+      <li><b>Dark Theme</b><span>Navy/gold color scheme inspired by Spotify, dark by default with light mode option.</span></li>
+      <li><b>Loading Skeletons</b><span>Smooth loading states, no blank screens, perceived performance optimized.</span></li>
+    </ul></section>
+
+    <section><h2>Tech stack</h2>
+    <div class="table-wrapper"><table>
+      <tr><th>Layer</th><th>Technology</th></tr>
+      <tr><td>Framework</td><td>Next.js 16 (App Router, Turbopack)</td></tr>
+      <tr><td>Audio</td><td>100ms React SDK</td></tr>
+      <tr><td>Authentication</td><td>Privy (Farcaster, wallet, email, Google, Discord)</td></tr>
+      <tr><td>Database</td><td>Supabase (PostgreSQL + RLS policies)</td></tr>
+      <tr><td>Social / Identity</td><td>Neynar (Farcaster API, casting)</td></tr>
+      <tr><td>Transcription</td><td>Browser Web Speech API + manual input</td></tr>
+      <tr><td>AI Summaries</td><td>Anthropic Claude API</td></tr>
+      <tr><td>Styling</td><td>Tailwind CSS v4</td></tr>
+      <tr><td>Deployment</td><td>Vercel</td></tr>
+      <tr><td>Blockchain</td><td>Base L2 (token gating, tipping)</td></tr>
+    </table></div>
+    <p>The standalone repo at <code>github.com/bettercallzaal/fishbowlz</code> includes a complete architecture: Next.js pages and API routes for room CRUD, 100ms WebRTC orchestration, Supabase real-time updates, and Farcaster integration via Neynar. Database migrations initialize core tables (<code>fishbowl_rooms</code>, <code>fishbowl_transcripts</code>, <code>fishbowl_chat</code>, <code>fishbowl_events</code>, etc.) with row-level security (RLS) policies scoped per user.</p></section>
+
+    <section><h2>Traction</h2>
+    <p>FISHBOWLZ is live and operational at <code>fishbowlz.com</code><sup class="cite"><a href="#ref1">[1]</a></sup> as of June 2026. Specific user, room, or conversation metrics are not yet published in this draft. The product is actively being used and developed; future versions of this paper will include audited traction numbers once The ZAO's data-collection practices are formalized.</p></section>
+
+    <section><h2>Role in The ZAO ecosystem</h2>
+    <p>FISHBOWLZ serves The ZAO ecosystem as the knowledge engine and persistence layer. WaveWarZ is the front door (funnel for newcomers through trading and competition), ZABAL Games is the builder's entry point (workshops, education, skills), and FISHBOWLZ is the archive and async-discovery surface where high-value conversations live forever.</p>
+    <p>The three platforms are complementary: a WaveWarZ battle might spawn a post-event FISHBOWLZ room where artists discuss the outcome; a ZABAL Games workshop might be recorded and re-watched as a FISHBOWLZ archive; a FISHBOWLZ discussion might spark the next WaveWarZ partnership. They feed the same community and serve different discovery and engagement modes.</p></section>
+
+    <section><h2>Roadmap</h2>
+    <ol class="fivec">
+      <li><b>Foundation</b> - done. Audio, transcription, hot seat rotation, chat, reactions, token gating, export, and scheduling all shipped. Standalone repo live at fishbowlz.com.</li>
+      <li><b>Knowledge Discovery</b> - in progress. Search, tagging, and series (multi-room collections) to make archives more browsable and connectable.</li>
+      <li><b>Creator Tools</b> - next. Analytics dashboards (listener counts, engagement), sponsor integration, monetization for room hosts.</li>
+      <li><b>Ecosystem Integration</b> - planned. Deep linking from The ZAO OS, auto-casting room links to Farcaster, embedding rooms in articles and essays.</li>
+      <li><b>Scale</b> - not yet. No celebrity-tier partnerships or high-volume room scheduling yet.</li>
+    </ol></section>
+
+    <section><h2>Open questions</h2>
+    <p>Several design choices remain open for future iteration:</p>
+    <div class="lane"><span class="tag">Moderation at Scale</span><p>Current tooling is host-only (kick, end room). As room size grows, should There be community moderation, flagging, or automated content screening?</p></div>
+    <div class="lane"><span class="tag">Monetization Model</span><p>Today, rooms are free to create and join. Should there be paid creator tiers, sponsorship slots, or listener tips going to creators as well as speakers?</p></div>
+    <div class="lane"><span class="tag">Farcaster Frames Integration</span><p>Should FISHBOWLZ rooms become Farcaster Frames, playable inline on client feeds? This could increase discovery but risks fragmentation from the core app.</p></div>
+    <div class="lane"><span class="tag">Automation and AI Moderators</span><p>Could an autonomous agent moderate a FISHBOWLZ room, rotate the hot seat, or facilitate high-volume community discussions without human host overhead?</p></div>
+    <div class="lane"><span class="tag">Persistent Network Effects</span><p>How should the product surface and reward contributors (speakers, questioners) who appear in many high-value rooms over time? Leaderboards? Creator badges?</p></div>
+  </section>
+
+    <section><h2>How to get involved</h2>
+    <p><strong>Create a room:</strong> Head to <a href="https://fishbowlz.com" target="_blank" rel="noopener">fishbowlz.com</a>, connect with Farcaster or a wallet, and set up your first discussion. Rooms are free to create.</p>
+    <p><strong>Host a series:</strong> Regular hosts (daily standups, weekly AMAs, monthly interviews) can make FISHBOWLZ a recurring part of their community ritual and build archive depth.</p>
+    <p><strong>Transcribe and export:</strong> Run a room, export the transcript to Markdown, and republish it as a blog post, essay, or linked reference in The ZAO.</p>
+    <p><strong>Builders and developers:</strong> The standalone repo is open source. Fork it, build extensions (custom transcription, moderation bots, archive search UI), and contribute back to the ecosystem.</p>
+    <p><strong>Integration partners:</strong> Connect FISHBOWLZ to your platform - embed rooms, auto-cast endpoints, or surface archives in your app. Reach The ZAO team through <a href="https://zaoos.com" target="_blank" rel="noopener">zaoos.com</a>.</p></section>
+
+    <section><h2>Find it</h2>
+    <p><a href="https://fishbowlz.com" target="_blank" rel="noopener">fishbowlz.com</a> - live app, create and join rooms. On Farcaster: <a href="https://warpcast.com/~/channel/fishbowlz" target="_blank" rel="noopener">/fishbowlz channel</a>. On GitHub: <a href="https://github.com/bettercallzaal/fishbowlz" target="_blank" rel="noopener">bettercallzaal/fishbowlz</a> (open source). Part of <a href="https://zaoos.com" target="_blank" rel="noopener">The ZAO</a> ecosystem.</p></section>
+  </div>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">FISHBOWLZ live application. <a href="https://fishbowlz.com" target="_blank" rel="noopener">fishbowlz.com</a>. Canonical source for product features, live rooms, and user sign-up. Accessed July 2026.</li>
+      <li id="ref2">FISHBOWLZ standalone repository README. <a href="https://github.com/bettercallzaal/fishbowlz" target="_blank" rel="noopener">github.com/bettercallzaal/fishbowlz</a>. Primary source for architecture, tech stack, feature list, and getting-started guide. Self-authored by the FISHBOWLZ team.</li>
+      <li id="ref3">"FISHBOWLZ MVP Completion Plan" and "FISHBOWLZ Testing & Polish Design Spec." ZAO OS superpowers documentation, bettercallzaal/ZAOOS. April-May 2026. Detailed step-by-step implementation plans for stale user cleanup, host end room, navigation entry, and mobile layout pass.</li>
+      <li id="ref4">"FISHBOWLZ - Standalone Product" (SKILL.md) and "research/agents/601-agent-stack-cleanup-decision." ZAO OS documentation, bettercallzaal/ZAOOS. June 2026. Graduation decision, rationale, and confirmation that FISHBOWLZ is a promoted standalone product, not paused or deprecated.</li>
+      <li id="ref5">"FISHBOWLZ Standalone Extraction" (fishbowlz-standalone-files.md). ZAO OS archive documentation, bettercallzaal/ZAOOS. April-May 2026. Complete file list of pages, API routes, components, hooks, and database migrations extracted from ZAOOS monorepo to the standalone repo.</li>
+      <li id="ref6">The ZAO ecosystem and community. <a href="https://zaoos.com" target="_blank" rel="noopener">zaoos.com</a> and <a href="https://thezao.xyz" target="_blank" rel="noopener">thezao.xyz</a>. ZAO OS platform, Farcaster community hub, and papers collection. Context for FISHBOWLZ's role as one of three major product lines alongside WaveWarZ and ZABAL Games.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
+</main>
+<script src="/papers/quote.js"></script>
+</body>
+</html>
