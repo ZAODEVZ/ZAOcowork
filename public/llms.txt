@@ -12,7 +12,7 @@ The ZAO is not a record label and not merely a "music community." It is an impac
 
 - Respect is the on-chain contribution currency: a soulbound OG ERC-20 plus a ZOR ERC-1155, on Optimism. Because it is soulbound, it is earned, never bought or transferred.
 - A weekly Respect Game ranks contributions; OREC (optimistic execution with commitment-and-reveal) settles outcomes; a Fibonacci curve shapes the rewards.
-- Verified on-chain (2026-07-05): 156 Respect holders, OG Gini roughly 0.73.
+- Verified on-chain (2026-07-10): 122 Respect holders, OG Gini roughly 0.73 (concentrated: top 5 holders hold ~34% of supply, top 10 hold ~53%).
 
 ## Production lanes
 
