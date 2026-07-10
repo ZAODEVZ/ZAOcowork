@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The History of The ZAO (DRAFT)">
+<meta property="og:description" content="A dated index of what The ZAO has actually shipped - events, products, and milestones, each linked to its source.">
+<meta property="og:image" content="https://thezao.xyz/papers-og.png">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/history">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The History of The ZAO (DRAFT)">
+<meta name="twitter:description" content="A dated index of what The ZAO has actually shipped - events, products, and milestones, each linked to its source.">
+<meta name="twitter:image" content="https://thezao.xyz/papers-og.png">
+<title>The ZAO - History (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"The History of The ZAO","description":"A dated index of what The ZAO has actually shipped - events, products, and milestones, each linked to its source.","image":"https://thezao.xyz/papers-og.png","url":"https://thezao.xyz/papers/drafts/history","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/papers-og.png"}},"datePublished":"2026-07-09","dateModified":"2026-07-09","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 42rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --ground:#f3efe2; --surface:#faf7ec; --ink:#1a2530; --ink-soft:rgba(26,37,48,0.72); --ink-faint:rgba(26,37,48,0.45); --accent:#b06f13; --line:rgba(26,37,48,0.13); }
+  }
+  :root[data-theme="dark"]{--ground:#141e27;--surface:#1b2732;--ink:#e8e4c4;--ink-soft:rgba(232,228,196,0.70);--ink-faint:rgba(232,228,196,0.45);--accent:#f5a623;--line:rgba(232,228,196,0.14);}
+  :root[data-theme="light"]{--ground:#f3efe2;--surface:#faf7ec;--ink:#1a2530;--ink-soft:rgba(26,37,48,0.72);--ink-faint:rgba(26,37,48,0.45);--accent:#b06f13;--line:rgba(26,37,48,0.13);}
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:var(--serif); font-size:clamp(1rem,2vw,1.125rem); line-height:1.7; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width: var(--measure); margin:0 auto; padding:0 clamp(1rem,4vw,1.5rem); }
+
+  .hero { border-bottom:1px solid var(--line); padding: clamp(3rem,10vh,6rem) 0 clamp(2rem,6vh,3rem); }
+  .eyebrow { font-family:var(--sans); font-size:0.72rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--accent); font-weight:600; margin:0 0 1.2rem; }
+  h1 { font-family:var(--sans); font-weight:800; letter-spacing:-0.03em; font-size:clamp(2.6rem,10vw,4.5rem); line-height:0.95; margin:0 0 1.2rem; }
+  .thesis { font-size:clamp(1.2rem,3vw,1.6rem); line-height:1.4; max-width:38rem; margin:0 0 1.5rem; }
+  .thesis b { color:var(--accent); font-weight:600; }
+
+  .note { font-family:var(--sans); font-size:0.9rem; color:var(--ink-soft); background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--accent); border-radius:8px; padding:1rem 1.2rem; margin:1.6rem 0; }
+
+  main { padding: clamp(2rem,6vh,3.5rem) 0 4rem; }
+
+  .year { padding: 2.2rem 0 0.6rem; border-top: 1px solid var(--line); margin-top: 1.4rem; }
+  .year:first-of-type { border-top: none; margin-top: 0; }
+  .year h2 { font-family:var(--sans); font-weight:800; letter-spacing:-0.02em; font-size:clamp(1.6rem,4vw,2.2rem); color:var(--accent); margin:0; }
+
+  .entry { display: grid; grid-template-columns: 7.5rem 1fr; gap: 1.2rem; padding: 1.1rem 0; border-top: 1px solid var(--line); }
+  .entry:first-of-type { border-top: none; }
+  .entry .date { font-family:var(--sans); font-size:0.85rem; color:var(--ink-faint); padding-top:0.15rem; }
+  .entry .body h3 { font-family:var(--sans); font-weight:700; font-size:1.08rem; margin:0 0 0.3rem; }
+  .entry .body p { margin: 0 0 0.4rem; color:var(--ink-soft); font-size:1rem; max-width: 32rem; }
+  .entry .body a.linkout { font-family:var(--sans); font-size:0.85rem; font-weight:600; }
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+
+  @media (max-width: 640px) {
+    .entry { grid-template-columns: 1fr; gap: 0.3rem; }
+    .entry .date { padding-top: 0; font-weight: 700; }
+  }
+
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+
+  .read-progress { position:fixed; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform:scaleX(var(--progress, 0)); transform-origin:left; transition:opacity 0.2s ease-out; z-index:9998; pointer-events:none; opacity:0; }
+  .nav-bar { display:flex; gap:1rem; justify-content:space-between; align-items:center; padding:1rem clamp(1rem,4vw,1.5rem); border-bottom:1px solid var(--line); font-family:var(--sans); font-size:0.85rem; }
+  .nav-bar a { color:var(--accent); text-decoration:none; padding:0.5rem 1rem; border-radius:6px; }
+  .nav-bar a:hover { background:var(--surface); }
+</style>
+
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers" class="home">Back to Papers</a><span class="arrows"><a href="/papers/drafts" title="All drafts">All Drafts</a></span></div>
+<main>
+  <div class="wrap">
+    <header class="hero">
+      <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working index, open to iteration.</p>
+      <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://drive.google.com/drive/folders/1Ee-p9DsswH8kIb5KmRSyXGKPMjucKuNK" target="_blank" rel="noopener">Comment on this draft (Google Doc folder)</a></p>
+      <p class="eyebrow">The ZAO - History (draft v0.1)</p>
+      <h1>History</h1>
+      <p class="thesis">A dated index of what The ZAO has actually shipped - events, products, partnerships - each entry linked to where you can read more. Not a story yet. <b>A table of contents for one.</b></p>
+      <p class="note">This is the paper version: a plain, linkable timeline. The real ask - a smooth, collaborative UI where anyone in the community can submit their own entry to the timeline - is a separate, bigger build. This page is the scaffold for that: get the dates and links right first, then build the interface on top.</p>
+    </header>
+
+    <section class="year">
+      <h2>Before this timeline</h2>
+      <div class="entry">
+        <div class="date">Undated</div>
+        <div class="body">
+          <h3>The ZAO's founding</h3>
+          <p>The exact founding date is not yet confirmed in the research library. The earliest dated, sourced entry below is April 2024 (ZAO-PALOOZA). If The ZAO's community and governance predate that - which they likely do - that history is not yet written down anywhere this index can cite. Open gap, not an invented date.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="year">
+      <h2>2024</h2>
+      <div class="entry">
+        <div class="date">April 2024</div>
+        <div class="body">
+          <h3>ZAO-PALOOZA - New York City</h3>
+          <p>The first ZAO in-real-life meetup, tied to NFT NYC 2024. Twelve artists performed; the event broke even. The proof-of-concept that the community could organize live.<sup class="cite"><a href="#ref1">[1]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zao-festivals.html">Read: ZAO Festivals -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Dec 6, 2024</div>
+        <div class="body">
+          <h3>ZAO-CHELLA - Miami</h3>
+          <p>Ten artists, set during Art Basel Miami Week. Featured a WaveWarZ LIVE rematch battle on stage and a Student $LOANZ Token sponsorship.<sup class="cite"><a href="#ref1">[1]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zao-festivals.html">Read: ZAO Festivals -&gt;</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="year">
+      <h2>2025</h2>
+      <div class="entry">
+        <div class="date">Mar 29, 2025</div>
+        <div class="body">
+          <h3>COC Concertz #1</h3>
+          <p>The first edition of The ZAO's recurring concert series, on Spatial.io, with AttaBotty and Clejan.<sup class="cite"><a href="#ref2">[2]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/coc-concertz.html">Read: COC Concertz -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">~Sep 2025</div>
+        <div class="body">
+          <h3>The Fractal goes weekly</h3>
+          <p>Weekly Respect issuance (ZOR) begins - the start of what the main Whitepaper calls "over a year of unbroken weekly practice," 90+ weeks as of July 2026.<sup class="cite"><a href="#ref3">[3]</a></sup></p>
+          <a class="linkout" href="/paper">Read: The ZAO Whitepaper -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Oct 2025</div>
+        <div class="body">
+          <h3>WaveWarZ whitepaper v1</h3>
+          <p>WaveWarZ's own canonical Hackmd whitepaper, Solana-native at the time. Battle history on the platform traces back to around this period.<sup class="cite"><a href="#ref4">[4]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/wavewarz.html">Read: WaveWarZ -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Oct 11, 2025</div>
+        <div class="body">
+          <h3>COC Concertz #2</h3>
+          <p>Tom Fellenz, Stilo World, and AttaBotty, at the SaltyVerse Auditorium.<sup class="cite"><a href="#ref2">[2]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/coc-concertz.html">Read: COC Concertz -&gt;</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="year">
+      <h2>2026</h2>
+      <div class="entry">
+        <div class="date">Jan 1, 2026</div>
+        <div class="body">
+          <h3>The ZAO Newsletter launches</h3>
+          <p>"Year of the ZABAL - Day 1." Daily, in BetterCallZaal's voice, on Paragraph. 190+ consecutive issues as of July 2026.<sup class="cite"><a href="#ref5">[5]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zao-newsletter.html">Read: ZAO Newsletter -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Feb 21, 2026</div>
+        <div class="body">
+          <h3>WaveWarZ Base contracts deployed</h3>
+          <p>Three Solidity/Foundry contracts verified on Base Sepolia (chain 84532): WaveWarzBase, WaveWarzMarketplace, WaveWarzMusicNFT. 134/135 tests passing. Still needs a technical co-founder to reach mainnet.<sup class="cite"><a href="#ref6">[6]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/wavewarz.html">Read: WaveWarZ -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Mar 7, 2026</div>
+        <div class="body">
+          <h3>COC Concertz #3</h3>
+          <p>Held at StiloWorld; artist details archived, pending fuller documentation.<sup class="cite"><a href="#ref2">[2]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/coc-concertz.html">Read: COC Concertz -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Apr 2026</div>
+        <div class="body">
+          <h3>COC Concertz #4</h3>
+          <p>Joseph Goats, Tom Fellenz, and Stilo World, including a 3-song live set from Joseph Goats in Caracas.<sup class="cite"><a href="#ref2">[2]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/coc-concertz.html">Read: COC Concertz -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">May 31, 2026</div>
+        <div class="body">
+          <h3>poidh x ZAO session closeout</h3>
+          <p>zpoidh repository shipped, Round 3 (Best ad for ZABAL Gamez) live and later fully resolved, best practices documented.<sup class="cite"><a href="#ref7">[7]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/poidh.html">Read: PoidH -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Jun 2026</div>
+        <div class="body">
+          <h3>ZABAL Games - workshops (Year 1)</h3>
+          <p>Month one of the three-month builder onboarding event: recorded sessions on ZAO governance, Respect, and ecosystem tools.<sup class="cite"><a href="#ref8">[8]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zabalgamez.html">Read: ZABAL Games -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Jun 14, 2026</div>
+        <div class="body">
+          <h3>poidh Round 3 closes</h3>
+          <p>Best ad for ZABAL Gamez - fully resolved, winner paid on-chain.<sup class="cite"><a href="#ref7">[7]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/poidh.html">Read: PoidH -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Jul 2026</div>
+        <div class="body">
+          <h3>ZABAL Games - open build (Year 1)</h3>
+          <p>Month two: public submission window, goal of 200 distinct builders across three tracks.<sup class="cite"><a href="#ref8">[8]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zabalgamez.html">Read: ZABAL Games -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Jul 2026</div>
+        <div class="body">
+          <h3>ZAOville - Washington DC metro area</h3>
+          <p>A day-party artist showcase at Dcoop's residence; a dry run for content capture and production ahead of ZAOstock.<sup class="cite"><a href="#ref1">[1]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zao-festivals.html">Read: ZAO Festivals -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Mid-Jul 2026</div>
+        <div class="body">
+          <h3>COC Concertz #7</h3>
+          <p>In planning as of this writing; artist roster forming. Likely the last edition on the current Spatial.io/StiloWorld setup before the venue-direction decision lands.<sup class="cite"><a href="#ref2">[2]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/coc-concertz.html">Read: COC Concertz -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Jul 27, 2026</div>
+        <div class="body">
+          <h3>Spatial.io sunsets its free/pro tiers</h3>
+          <p>Not a ZAO milestone, but forces one: COC Concertz's primary virtual venue (StiloWorld) loses its hosting tier. Decision on what replaces it targeted for the week before.<sup class="cite"><a href="#ref9">[9]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/coc-concertz.html">Read: COC Concertz -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Aug 2026</div>
+        <div class="body">
+          <h3>ZABAL Games - Finals (Year 1)</h3>
+          <p>72-hour mentor-and-builder sprint, live reveal stream, USDC prize pool, Hats Protocol credential on Base.<sup class="cite"><a href="#ref8">[8]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zabalgamez.html">Read: ZABAL Games -&gt;</a>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="date">Oct 3, 2026</div>
+        <div class="body">
+          <h3>ZAOstock - Ellsworth, Maine</h3>
+          <p>The flagship festival. Goal: 250 total attendees. Tied to the Art of Ellsworth and Maine Craft Weekend calendar.<sup class="cite"><a href="#ref1">[1]</a></sup></p>
+          <a class="linkout" href="/papers/drafts/zao-festivals.html">Read: ZAO Festivals -&gt;</a>
+        </div>
+      </div>
+    </section>
+
+    <section style="padding: 2rem 0;">
+      <h2 style="font-family:var(--sans); font-size:1.3rem;">What's missing</h2>
+      <p style="color:var(--ink-soft); max-width:36rem;">Zuke's founding/launch date, the exact history of the Fractal's design (versus just when weekly Respect issuance began), and anything before April 2024 are all open gaps - not filled with invented dates. If you have the real dates, add them; that is exactly what the collaborative version of this page is for.</p>
+    </section>
+  </div>
+
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.1, 2026-07-09 - not published</p>
+    <h3 style="font-family:var(--sans); font-size:1rem; margin-top:2rem;">References</h3>
+    <ol class="references">
+      <li id="ref1">"ZAO Festivals" draft whitepaper, thezao.xyz/papers/drafts/zao-festivals.html - event dates, artist counts, ZAOstock goal.</li>
+      <li id="ref2">"COC Concertz" draft whitepaper, thezao.xyz/papers/drafts/coc-concertz.html - show history table, venue status.</li>
+      <li id="ref3">The ZAO Whitepaper, thezao.xyz/paper, section 04 ("The Fractal") - governance timeline, per the 2026-07-09 deep-research pass citing the Technical Whitepaper.</li>
+      <li id="ref4">"743 - WaveWarZ Whitepaper v2 Deep Dive," ZAO OS research library, bettercallzaal/ZAOOS.</li>
+      <li id="ref5">"ZAO Newsletter" draft whitepaper, thezao.xyz/papers/drafts/zao-newsletter.html - launch date, issue count.</li>
+      <li id="ref6">Panthaki, Z. "WaveWarz Base" (README), github.com/bettercallzaal/wwbase - contract deployment date, addresses, test status.</li>
+      <li id="ref7">"PoidH" draft whitepaper, thezao.xyz/papers/drafts/poidh.html - round history and dates.</li>
+      <li id="ref8">"ZABAL Games" draft whitepaper, thezao.xyz/papers/drafts/zabalgamez.html - timeline and structure.</li>
+      <li id="ref9">Spatial. "A Note to Our Creator Community." spatial.io/blog/spatial-creator-platform-sunsetting, 2026-05-28.</li>
+    </ol>
+    <p>Part of the ZAO papers - thezao.xyz/papers</p>
+  </div></footer>
+</main>
+<script src="/papers/quote.js"></script>
+<script>
+(function() {
+  var bar = document.getElementById('readProgress');
+  if (!bar) return;
+  function updateProgress() {
+    var h = document.documentElement, b = document.body;
+    var pos = window.scrollY || window.pageYOffset;
+    var height = Math.max(b.scrollHeight, h.scrollHeight, b.offsetHeight, h.offsetHeight, b.clientHeight, h.clientHeight) - window.innerHeight;
+    var pct = height > 0 ? (pos / height) * 100 : 0;
+    bar.style.setProperty('--progress', pct + '%');
+    bar.style.opacity = pct > 0 && pct < 100 ? '1' : '0';
+  }
+  window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', updateProgress, { passive: true });
+  updateProgress();
+})();
+</script>
+</body></html>
