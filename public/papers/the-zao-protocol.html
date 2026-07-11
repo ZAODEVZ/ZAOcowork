@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The ZAO Protocol - Capstone Whitepaper</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #fafafa;
+      padding: 2rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #0d0d0d;
+        color: #e5e5e5;
+      }
+      a { color: #5eb3f6; }
+      .draft-banner { background: #7f2c2c; color: #ffcccc; }
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    @media (prefers-color-scheme: dark) {
+      header { border-bottom-color: #333; }
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: #666;
+      margin-bottom: 1rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      .subtitle { color: #aaa; }
+    }
+
+    .metadata {
+      font-size: 0.9rem;
+      color: #999;
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+    @media (prefers-color-scheme: dark) {
+      .metadata { color: #777; }
+    }
+
+    .draft-banner {
+      background: #ffe6e6;
+      color: #8b0000;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 2rem;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    nav {
+      background: #f5f5f5;
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 2rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      nav { background: #1a1a1a; }
+    }
+
+    nav ul {
+      list-style: none;
+      columns: 2;
+      gap: 2rem;
+    }
+
+    nav a {
+      color: #0066cc;
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      nav a { color: #5eb3f6; }
+    }
+
+    nav a:hover { text-decoration: underline; }
+
+    section {
+      margin-bottom: 3rem;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      margin-top: 2rem;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin-bottom: 0.8rem;
+      margin-top: 1.5rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    strong { font-weight: 600; }
+    em { font-style: italic; }
+
+    blockquote {
+      border-left: 4px solid #ddd;
+      padding-left: 1.5rem;
+      margin: 1.5rem 0;
+      font-style: italic;
+      color: #666;
+    }
+    @media (prefers-color-scheme: dark) {
+      blockquote {
+        border-left-color: #444;
+        color: #aaa;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+    }
+
+    th, td {
+      border: 1px solid #e0e0e0;
+      padding: 0.75rem;
+      text-align: left;
+    }
+    @media (prefers-color-scheme: dark) {
+      th, td { border-color: #333; }
+    }
+
+    th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+    @media (prefers-color-scheme: dark) {
+      th { background: #1a1a1a; }
+    }
+
+    tr:nth-child(even) td {
+      background: #fafafa;
+    }
+    @media (prefers-color-scheme: dark) {
+      tr:nth-child(even) td { background: #0d0d0d; }
+    }
+
+    .footnote {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid #e0e0e0;
+    }
+    @media (prefers-color-scheme: dark) {
+      .footnote {
+        color: #999;
+        border-top-color: #333;
+      }
+    }
+
+    .unverified {
+      background: #fff3cd;
+      padding: 0.5rem;
+      border-radius: 3px;
+      font-size: 0.9rem;
+      margin: 0.5rem 0;
+    }
+    @media (prefers-color-scheme: dark) {
+      .unverified { background: #332701; }
+    }
+
+    .source-link {
+      display: inline;
+      font-size: 0.85rem;
+      color: #999;
+    }
+    @media (prefers-color-scheme: dark) {
+      .source-link { color: #777; }
+    }
+
+    .comment-link-placeholder {
+      background: #e3f2fd;
+      padding: 1rem;
+      border-radius: 4px;
+      margin: 2rem 0;
+      text-align: center;
+    }
+    @media (prefers-color-scheme: dark) {
+      .comment-link-placeholder { background: #0d1d33; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>The ZAO Protocol</h1>
+      <p class="subtitle">A Capstone Framework for Creator-Economy Dominance and Global Impact Networks</p>
+      <div class="metadata">
+        <span>2026</span>
+        <span>Capstone Synthesis</span>
+        <span>Public Research</span>
+      </div>
+    </header>
+
+    <div class="draft-banner">
+      DRAFT - <a href="https://docs.google.com/document/d/1Gwi8V4VH2a26U8SOQS3_Y_3svBTnBA52omcHJvv35vI/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a>
+    </div>
+
+    <nav>
+      <ul>
+        <li><a href="#intro">Introduction</a></li>
+        <li><a href="#vision">The 2040 Vision</a></li>
+        <li><a href="#protocol">The Protocol</a></li>
+        <li><a href="#ecosystem">The Ecosystem</a></li>
+        <li><a href="#impact-networks">Impact Networks</a></li>
+        <li><a href="#implementation">Implementation</a></li>
+        <li><a href="#sources">Sources</a></li>
+      </ul>
+    </nav>
+
+    <section id="intro">
+      <h2>Introduction: The Problem and the Vision</h2>
+
+      <p>The creator economy is broken. Artists earn $0.003 per stream on Spotify. Labels take 80-85% of all revenue. Platforms own the data, the audience, and the algorithm. When a platform changes its rules or shuts down, creators lose everything they've built.</p>
+
+      <p>The ZAO began in 2023 with a single insight: <strong>the tools exist to fix this, but the people teaching artists how to use them don't have the distribution to reach them</strong>. Four years of research, fractal governance, and ecosystem building have proven the model works at community scale. Now we scale it globally.</p>
+
+      <p>This paper synthesizes five years of ZAO research into a unified protocol for creator-economy dominance: not a company, not a token, not a DAO in name alone, but a federation of impact networks that can manifest what they want, fund artists with whatever they need, then export that capability to under-resourced places worldwide.</p>
+    </section>
+
+    <section id="vision">
+      <h2>The 2040 Vision</h2>
+
+      <blockquote>
+        "A media/developer/culture/art empire that can manifest what we want, fund artists with whatever they need, then export that capability to under-resourced places worldwide."
+      </blockquote>
+
+      <h3>What This Means</h3>
+
+      <p><strong>Manifest what we want:</strong> The ZAO ecosystem has proven it can coordinate around shared purpose and ship products (WaveWarZ, ZAO OS, festivals, governance infrastructure). The goal is to scale this coordination so that any music creator, developer, or artist in the network can propose a project and the ecosystem can fund and support it without centralized gatekeepers.</p>
+
+      <p><strong>Fund artists with whatever they need:</strong> From the Whitepaper, the ZAO has generated $10,000+ in self-generated revenue and tracks 22 artists with 378,000+ combined Spotify listeners. WaveWarZ alone moved 472.71 SOL (~$37,845 USD) across 735 battles. The goal is a treasury and revenue-sharing model where artists can sustainably earn from engagement, not just streams - and where the community can fund artist needs (technical, marketing, production) without extractive platforms taking a cut.</p>
+
+      <p><strong>Export capability to under-resourced places worldwide:</strong> David Ehrlichman's impact networks framework (Doc 622) provides the structural model. By organizing the ZAO as a federation of independent impact networks - each operating its own governance, treasury, and projects but sharing principles, infrastructure, and knowledge - the entire system becomes forkable. A music community in Zambia, Colombia, or rural Maine can adopt the ZAO protocol, tools, governance structure, and knowledge base, then operate independently while remaining connected to a global federation. This is not diaspora or extraction - it is structural export of agency.</p>
+    </section>
+
+    <section id="protocol">
+      <h2>The Protocol: Five Pillars</h2>
+
+      <p>The ZAO Protocol is organized around five interlocking pillars that work together to enable creator autonomy at global scale.</p>
+
+      <h3>1. Artist Organization (Social Layer)</h3>
+
+      <p>A gated community built on portable identity and decentralized social infrastructure.</p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>Portable identity:</strong> ZID (Zero-ID) membership numbers. ZID 1 = Founder. ZID 2 = First community member. Permanent. Not tradeable. Your identity in the federation is yours alone.</li>
+        <li><strong>Farcaster-native:</strong> ZAO OS runs as a custom client on Farcaster, giving artists portable social identity across the protocol. Inline music players, encrypted XMTP DMs, music queue, song submission.</li>
+        <li><strong>Peer discovery:</strong> The network knows you by name, not by follower count. Relationships are primary. Reputation (Respect tokens) is peer-verified, not algorithmic.</li>
+      </ul>
+
+      <p>Status: Live. ZAO OS deployed with 54 research documents guiding architecture. Open source (MIT license). <span class="source-link">[Whitepaper, Section 4: What We Built]</span></p>
+
+      <h3>2. Autonomous Organization (Governance Layer)</h3>
+
+      <p>Peer-ranked governance that distributes power by contribution, not capital.</p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>Respect Game:</strong> Weekly circles of 3-6 people. Each shares what they've built. Peers rank contributions using Fibonacci-weighted distribution (top rank = 55 Respect). 90+ consecutive meetings proves the model works. <span class="source-link">[Whitepaper, Section 7]</span></li>
+        <li><strong>Soulbound reputation:</strong> $ZAO Respect tokens on Base. Not tradeable. Not for sale. Your reputation unlocks governance weight and role access, but cannot be financialized.</li>
+        <li><strong>Role-based authority:</strong> Hats Protocol on Base to formalize node roles (Project Lead, Governance, Treasury, Community). Each project is a Hats tree with delegated authority. No single person controls the protocol. <span class="source-link">[Doc 622: Impact Networks, Section on Hats]</span></li>
+        <li><strong>Async proposals:</strong> Hivemind-style governance for members across time zones. Decisions don't require all-hands synchronous meetings.</li>
+      </ul>
+
+      <p>Status: Partially live. $ZAO Respect deployed on Base. Fractal Mondays running for 90+ weeks. Hats Protocol planned for Q3 2026. <span class="source-link">[Whitepaper, Section 13: What's Next]</span></p>
+
+      <h3>3. Operating System (Tools Layer)</h3>
+
+      <p>Open-source infrastructure that artists own and can fork.</p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>ZAO OS:</strong> Gated Farcaster client with music-first features. Inline Spotify, SoundCloud, Audius, YouTube, Sound.xyz, and direct audio players. XMTP encrypted DMs. Followers/following with sorting. MIT licensed.</li>
+        <li><strong>Coordination engine (ZABAL):</strong> Connects SongJam (voice verification + engagement tracking), Magnetiq (Proof of Meet for IRL connections), and Empire Builder (token rewards). One place to see who's showing up and contributing.</li>
+        <li><strong>Cross-chain identity:</strong> ZID resolves your Base wallet, Solana wallet, and Farcaster FID to one identity. Coming in Q2 2026.</li>
+        <li><strong>AI agent (ElizaOS + Claude):</strong> Welcomes new members, answers questions, discovers music. Planned for Q4 2026.</li>
+      </ul>
+
+      <p>Status: Partially live. ZAO OS deployed. ZABAL in development. ZID and AI agent planned. <span class="source-link">[Whitepaper, Section 6: Four Pillars]</span></p>
+
+      <h3>4. Open Source (Contribute Layer)</h3>
+
+      <p>All tools belong to everyone. Forkable, modifiable, redistributable.</p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>MIT-licensed codebase:</strong> 65+ GitHub repos, all public. Anyone can fork and modify.</li>
+        <li><strong>Research library:</strong> 52+ research documents (~300,000+ words) on community building, governance, artist economics, blockchain, and coordination. Public knowledge, not trade secrets.</li>
+        <li><strong>Community-configurable:</strong> One-file forkability via community.config.ts. A music community in Zambia can fork ZAO OS, change the culture doc, colors, and music genres, then run independently.</li>
+      </ul>
+
+      <p>Status: Live. Code at github.com/bettercallzaal/ZAOOS. Research at github.com/bettercallzaal/ZAOOS/tree/main/research. <span class="source-link">[Whitepaper, Section 6: Four Pillars]</span></p>
+
+      <h3>5. Impact Networks (Federation Layer)</h3>
+
+      <p>Distributed coordination that scales without centralization.</p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>Node, not hub:</strong> Each ZAO Project (WaveWarZ, ZAO Stock, COC Concertz, FISHBOWLZ, etc.) operates as an autonomous node. Zaal and Founding Council facilitate, not control. <span class="source-link">[Doc 622: Impact Networks, Section 5]</span></li>
+        <li><strong>Federated projects:</strong> Each project is its own LLC or cooperative. Retains IP and decision-making. Federation agreement template codifies how projects relate to the ZAO umbrella while staying independent.</li>
+        <li><strong>Shared principles:</strong> All nodes commit to mission (support creators), trust (earned relationships), node architecture (decentralization), and generosity (share learnings, hire from community first).</li>
+        <li><strong>Coordinated action:</strong> Monthly standups. Cross-project resource sharing. Prevents siloing. Surfaces collaboration opportunities (e.g., ZAO Stock uses WaveWarZ music; Bonfire indexes both).</li>
+      </ul>
+
+      <p>Status: In development. WaveWarZ and ZAO Stock beginning federation model. Hats Protocol will formalize roles. <span class="source-link">[Doc 622: Impact Networks, Section 5]</span></p>
+    </section>
+
+    <section id="ecosystem">
+      <h2>The Ecosystem: What's Shipping</h2>
+
+      <h3>Music Infrastructure</h3>
+
+      <table>
+        <tr>
+          <th>Project</th>
+          <th>What It Does</th>
+          <th>Status</th>
+          <th>Evidence</th>
+        </tr>
+        <tr>
+          <td>WaveWarZ</td>
+          <td>Onchain music prediction market on Solana. Artists battle, fans trade, artists earn from engagement.</td>
+          <td>Live</td>
+          <td>472.71 SOL volume (~$37,845 USD) across 735 battles (May 2026) <span class="source-link">[Whitepaper, Section 4]</span></td>
+        </tr>
+        <tr>
+          <td>ZAO Cypher</td>
+          <td>Multi-artist collaboration. Revenue split via 0xSplits. Every penny on-chain and traceable. Artists keep 85-90%.</td>
+          <td>In Progress</td>
+          <td>First release planned Q4 2026. Producers: Clejan (289K Spotify), GodCloud (Forbes) <span class="source-link">[Whitepaper, Section 8]</span></td>
+        </tr>
+        <tr>
+          <td>SongJam</td>
+          <td>Voice verification via zkProofs. Engagement tracking. $SANG token.</td>
+          <td>Partner</td>
+          <td>Integrated into ZAO ecosystem <span class="source-link">[Whitepaper, Section 9: Network]</span></td>
+        </tr>
+      </table>
+
+      <h3>Community Infrastructure</h3>
+
+      <table>
+        <tr>
+          <th>Project</th>
+          <th>What It Does</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>ZAO Fractal</td>
+          <td>Weekly governance circles using Respect Game. Peer-ranked contributions. Fibonacci-weighted soulbound tokens.</td>
+          <td>Live - 90+ meetings</td>
+        </tr>
+        <tr>
+          <td>Hats Protocol</td>
+          <td>On-chain role system for permissions and accountability across nodes.</td>
+          <td>Q3 2026</td>
+        </tr>
+        <tr>
+          <td>Community Treasury</td>
+          <td>3-of-5 Safe multisig. Funded by Hypersub memberships, NFT drops, incubator revenue share.</td>
+          <td>Q3 2026</td>
+        </tr>
+      </table>
+
+      <h3>Media + Education</h3>
+
+      <table>
+        <tr>
+          <th>Project</th>
+          <th>Content</th>
+          <th>Status</th>
+        </tr>
+        <tr>
+          <td>Let's Talk About Web3 Podcast</td>
+          <td>19+ episodes with Ohnahji and EZ. Builders, ecosystems, creator economy. Wednesdays 6 PM EST.</td>
+          <td>Live</td>
+        </tr>
+        <tr>
+          <td>Year of the ZAO Newsletter</td>
+          <td>400+ daily editions. Build-in-public. 78 paid supporters.</td>
+          <td>Live <span class="source-link">[Whitepaper, Section 4]</span></td>
+        </tr>
+        <tr>
+          <td>Ohnahji University</td>
+          <td>"Web3's First HBCU." Weekly ONJU Saturdays educator with global reach.</td>
+          <td>Live</td>
+        </tr>
+      </table>
+
+      <h3>Real World Culture</h3>
+
+      <p>Four festivals bridging onchain culture to physical space:</p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>ZAO-PALOOZA</strong> (NYC, NFT NYC 2024) - 12 artists, ZAO Cards on Manifold</li>
+        <li><strong>ZAO-CHELLA</strong> (Miami, Art Basel 2024) - 10 artists, WaveWarZ LIVE, AR art</li>
+        <li><strong>ZAO-PROS</strong> (ETH Denver 2025) - Conference activation</li>
+        <li><strong>ZAO Stock</strong> (Maine, October 2026) - Recurring annual music festival</li>
+      </ul>
+
+      <p><span class="source-link">[Whitepaper, Section 4: What We Shipped]</span></p>
+    </section>
+
+    <section id="impact-networks">
+      <h2>Impact Networks: Scaling Beyond the Founder</h2>
+
+      <p>David Ehrlichman's impact networks framework (Doc 622) is the structural DNA of the ZAO Protocol. An impact network is <strong>"a living system of people, organizations, and resources deliberately organized around shared purpose to coordinate actions across complex problems"</strong>.</p>
+
+      <p>The difference from traditional organizations:</p>
+
+      <table>
+        <tr>
+          <th>Model</th>
+          <th>Decision-Making</th>
+          <th>Structure</th>
+          <th>Scalability</th>
+        </tr>
+        <tr>
+          <td>Traditional Org (LLC)</td>
+          <td>Founder/CEO centralized</td>
+          <td>Hub-and-spoke</td>
+          <td>Breaks at Dunbar's 150</td>
+        </tr>
+        <tr>
+          <td>DAO (token voting)</td>
+          <td>Whale-capture risk (large holders dominate)</td>
+          <td>Centralized on-chain ledger</td>
+          <td>Scales but plutocratic</td>
+        </tr>
+        <tr>
+          <td>Impact Network + Hats</td>
+          <td>Node-based (each project autonomous)</td>
+          <td>Federation of independent nodes</td>
+          <td>Scales to 1000+ via trust infrastructure + role clarity</td>
+        </tr>
+      </table>
+
+      <h3>The Five Principles (Ehrlichman)</h3>
+
+      <ol style="margin-left: 1.5rem;">
+        <li><strong>Trust, not control:</strong> Authority comes from earned relationships, not hierarchy.</li>
+        <li><strong>Humility, not brand:</strong> Individual orgs fade into background. Focus on shared mission.</li>
+        <li><strong>Node, not hub:</strong> Every participant is a peer. Network is decentralized. No bottleneck at center.</li>
+        <li><strong>Mission, not organization:</strong> Success measured by progress on shared problem, not growth of any single org.</li>
+        <li><strong>Generous collaboration:</strong> Assumption of positive intent. Share resources and credit.</li>
+      </ol>
+
+      <p><span class="source-link">[Doc 622: Impact Networks, Section 3: Core Principles]</span></p>
+
+      <h3>How This Enables Global Export</h3>
+
+      <p>Because the ZAO is structured as a federation of independent nodes with shared principles and open-source tools:</p>
+
+      <ol style="margin-left: 1.5rem;">
+        <li>A music community in Zambia can fork ZAO OS and governance infrastructure.</li>
+        <li>They run their own governance circles (Fractal Mondays, Respect Game) with local leaders.</li>
+        <li>They deploy their own Hats trees for role clarity.</li>
+        <li>They connect their node to the global federation via shared principles and monthly cross-node coordination.</li>
+        <li>Knowledge, tools, and successful patterns flow bidirectionally (not extraction from center).</li>
+        <li>Each node retains 100% of locally generated revenue.</li>
+      </ol>
+
+      <p>This is not diaspora. This is structural export of agency and economic autonomy. <span class="source-link">[Doc 622: Impact Networks, Section 5: Federated Model]</span></p>
+    </section>
+
+    <section id="implementation">
+      <h2>Implementation Roadmap</h2>
+
+      <h3>Q2 2026: Foundation</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li>Activate $ZAO Respect on-chain (off-chain ledger first, then on-chain)</li>
+        <li>Deploy ZID (sequential membership numbers for all 40 founding members)</li>
+        <li>Engagement streaks (show up daily, earn bonus Respect)</li>
+        <li>OG Badge (permanent, non-mintable badge for founding 40)</li>
+      </ul>
+
+      <h3>Q3 2026: Governance</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li>Deploy Hats Protocol on Base (Council, Curator, Artist, Moderator, Developer roles)</li>
+        <li>Async proposals via Hivemind</li>
+        <li>Community treasury (3-of-5 Safe multisig)</li>
+      </ul>
+
+      <h3>Q4 2026: Music Intelligence</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li>Track of the Day (community-curated daily highlight)</li>
+        <li>ZAO Cypher release (first Collaborative Track, on-chain splits)</li>
+        <li>AI agent (ElizaOS + Claude + Hindsight memory)</li>
+        <li>Mystery flash listening parties (unannounced, 1-hour notice, double Respect)</li>
+      </ul>
+
+      <h3>2027: Distribution</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li>Publish everywhere (Farcaster, Lens, Bluesky, Hive, Nostr, X from one compose bar)</li>
+        <li>WaveWarZ on Farcaster (battle mechanics as Mini App)</li>
+        <li>Sync licensing collective ($650M market, 55% of all placements are micro-syncs)</li>
+        <li>ZAO Stock recurring annual Maine festival</li>
+        <li>Global node expansion (Zambia, Colombia, rural communities)</li>
+      </ul>
+
+      <p><span class="source-link">[Whitepaper, Section 13: What's Next]</span></p>
+
+      <h3>2028-2040: Global Federation</h3>
+
+      <p class="unverified">
+        <strong>Unverified:</strong> Specific targets for node expansion (Zambia, Colombia, etc.) and timeline are not yet locked. This section reflects the strategic intent from Zaal but roadmap details need validation as projects develop.
+      </p>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li>Deploy ZAO Protocol nodes in 10+ countries (Africa, Latin America, Asia, rural US)</li>
+        <li>Each node operates independent governance, treasury, projects</li>
+        <li>Global federation dashboard shows impact metrics (artists supported, revenue generated, communities formed)</li>
+        <li>Cross-node resource sharing (e.g., Kenya node lends technical support to Colombia node; Colombia node shares cultural/music expertise)</li>
+        <li>By 2040: 100,000+ artists across global federation. $1B+ annual artist income generated. Creator autonomy exported to every continent.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>The Team: Who's Building This</h2>
+
+      <table>
+        <tr>
+          <th>Person</th>
+          <th>Role</th>
+          <th>Background</th>
+        </tr>
+        <tr>
+          <td>Zaal Panthaki</td>
+          <td>Founder, Head of Ecosystem</td>
+          <td>Electrical engineer (RIT). Former automation lead ($1.5M robotics project). 400+ daily newsletters. 65+ GitHub repos.</td>
+        </tr>
+        <tr>
+          <td>Hurric4n3IKE</td>
+          <td>WaveWarZ Founder, Developer</td>
+          <td>Solana smart contract developer (Anchor/Rust). Audio engineer. Musician. Built WaveWarZ from scratch.</td>
+        </tr>
+        <tr>
+          <td>Candy</td>
+          <td>Co-Founder, Marketing & Design</td>
+          <td>CC0 artist. CandyToyBox.eth. Web3 Academy Writers Guild. Agentic automation.</td>
+        </tr>
+        <tr>
+          <td>AttaBotty</td>
+          <td>Co-Founder, Festivals & Production</td>
+          <td>20+ years music production. 10,000+ NFTs sold. Base Onchain Registry. Co-founded AttaBotty Productions.</td>
+        </tr>
+      </table>
+
+      <p><span class="source-link">[Whitepaper, Section 3: Who We Are]</span></p>
+    </section>
+
+    <section>
+      <h2>Why This Works: Evidence</h2>
+
+      <h3>Proof of Consistent Execution</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>90+ Fractal meetings:</strong> A governance ritual that runs every week without fail for 18+ months. <span class="source-link">[Whitepaper, Section 4]</span></li>
+        <li><strong>400+ newsletter editions:</strong> Build-in-public discipline. 78 paid supporters. <span class="source-link">[Whitepaper, Section 4]</span></li>
+        <li><strong>$50K+ in revenue:</strong> WaveWarZ volume alone: 472.71 SOL (~$37,845 USD). Self-generated, bootstrapped. <span class="source-link">[Whitepaper, Section 4]</span></li>
+        <li><strong>Zero exploits:</strong> 18+ months of smart contracts. No security breaches. <span class="source-link">[Whitepaper, Section 4]</span></li>
+      </ul>
+
+      <h3>Why Community Came First (Not Technology)</h3>
+
+      <p>The Whitepaper documents a graveyard of failed music web3 projects: Sound.xyz (offline), Catalog (shut down), Async Art (shut down 2023), Royal.io, Arpeggi Labs, Stems DAO, Noise DAO, Dreams Never Die, HIFI Labs.</p>
+
+      <p><strong>Pattern:</strong> Projects that started with technology and hoped community would follow - failed. Projects that started with community and layered technology on top - survived.</p>
+
+      <p>The ZAO started with community. "We are still here" is the strongest possible claim. <span class="source-link">[Whitepaper, Section 5: What We Learned]</span></p>
+
+      <h3>Why the Impact Network Model Scales</h3>
+
+      <p>Traditional organizations fail at Dunbar's 150 - the number of people a single leader can maintain trust-based relationships with. Hats Protocol (co-founded by Ehrlichman) solves this by encoding role-based permission and accountability on-chain. Each node can be led by different people, but accountability is transparent and automated.</p>
+
+      <p>This means:<strong> The ZAO doesn't break if Zaal leaves. It doesn't centralize power if WaveWarZ becomes valuable. It distributes resilience.</strong> <span class="source-link">[Doc 622: Impact Networks, Section 5: Hats Protocol]</span></p>
+    </section>
+
+    <section>
+      <h2>Risks and Mitigations</h2>
+
+      <table>
+        <tr>
+          <th>Risk</th>
+          <th>Mitigation</th>
+        </tr>
+        <tr>
+          <td>Farcaster could fail to grow</td>
+          <td>ZAO OS is Farcaster-native today, but cross-platform publishing (planned 2027) reduces dependency. Community exists beyond any protocol. <span class="source-link">[Whitepaper, Section 16]</span></td>
+        </tr>
+        <tr>
+          <td>Key contributors could leave</td>
+          <td>MIT-licensed code, public research, distributed governance via Hats. Incubator journey creates new leaders. <span class="source-link">[Whitepaper, Section 16]</span></td>
+        </tr>
+        <tr>
+          <td>Gated model limits growth</td>
+          <td>Phased opening. Founding 40 set culture, then 100 -> 300 -> 1000 via referral + vouch. <span class="source-link">[Whitepaper, Section 16]</span></td>
+        </tr>
+        <tr>
+          <td>Multi-chain complexity</td>
+          <td>Each chain serves one purpose. Base is home. Others are extensions, not dependencies. <span class="source-link">[Whitepaper, Section 12]</span></td>
+        </tr>
+        <tr>
+          <td>Web3 music remains niche</td>
+          <td>ZAO value is in community, governance, education - not in any token or NFT. Guild works even if "music NFTs" never mainstream. <span class="source-link">[Whitepaper, Section 16]</span></td>
+        </tr>
+      </table>
+    </section>
+
+    <section id="sources">
+      <h2>Sources and References</h2>
+
+      <h3>Primary Sources</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li><strong>Whitepaper (051):</strong> The ZAO — 2026 Whitepaper. "A Decentralized Impact Network for the Creator Economy." Draft 4.5 — March 2026 (Re-validated May 21, 2026). <a href="https://github.com/bettercallzaal/ZAOOS/tree/main/research/community/051-zao-whitepaper-2026">github.com/bettercallzaal/ZAOOS/research/community/051-zao-whitepaper-2026</a></li>
+
+        <li><strong>Doc 622:</strong> Impact Networks (David Ehrlichman framework) applied to The ZAO. Research-complete, last validated May 21, 2026. <a href="https://github.com/bettercallzaal/ZAOOS/tree/main/research/community/622-impact-networks-david-ehrlichman">github.com/bettercallzaal/ZAOOS/research/community/622-impact-networks-david-ehrlichman</a></li>
+
+        <li><strong>WaveWarZ Whitepaper (101):</strong> WaveWarZ project documentation. <a href="https://github.com/bettercallzaal/ZAOOS/tree/main/research/wavewarz/101-wavewarz-zao-whitepaper">github.com/bettercallzaal/ZAOOS/research/wavewarz/101-wavewarz-zao-whitepaper</a></li>
+
+        <li><strong>ZAO OS Research Library:</strong> 52+ documents (~300,000+ words). Open source at <a href="https://github.com/bettercallzaal/ZAOOS/tree/main/research">github.com/bettercallzaal/ZAOOS/tree/main/research</a></li>
+      </ul>
+
+      <h3>Key Citations</h3>
+
+      <ul style="margin-left: 1.5rem; list-style: disc;">
+        <li>Ehrlichman, David. (2021). <em>Impact Networks: Rise of the Relationship Economy.</em> Converge.net.</li>
+        <li>Kelly, Kevin. (2008). "1,000 True Fans." <em>The Technium.</em> kk.org/thetechnium/1000-true-fans/</li>
+        <li>Chou, Yu-kai. (2014). <em>Actionable Gamification.</em></li>
+        <li>Larimer, Daniel. (2021). <em>More Equal Animals.</em> moreequalanimals.com</li>
+        <li>Hats Protocol. <em>GitHub Repository.</em> github.com/Hats-Protocol/hats-protocol</li>
+        <li>Nakamoto, Satoshi. (2008). "Bitcoin: A Peer-to-Peer Electronic Cash System." bitcoin.org</li>
+      </ul>
+    </section>
+
+    <div class="comment-link-placeholder">
+      <p><a href="https://docs.google.com/document/d/1Gwi8V4VH2a26U8SOQS3_Y_3svBTnBA52omcHJvv35vI/edit" target="_blank" rel="noopener">Comment on this draft (Google Doc)</a></p>
+    </div>
+
+    <div class="footnote">
+      <p><strong>Paper Info:</strong></p>
+      <ul style="margin-left: 1.5rem; list-style: disc; font-size: 0.9rem;">
+        <li>Title: The ZAO Protocol - Capstone Whitepaper</li>
+        <li>Status: DRAFT</li>
+        <li>Last Updated: 2026-07-11</li>
+        <li>Type: Capstone Synthesis - Synthesizes Whitepaper (051), Technical Framework (Doc 622), and Ecosystem Research into a unified protocol vision.</li>
+        <li>License: This research is part of the ZAO public knowledge library and is available for reference and forking under the same terms as ZAO OS (MIT).</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
