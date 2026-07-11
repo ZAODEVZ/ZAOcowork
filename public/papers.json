@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-07-10",
+  "lastUpdated": "2026-07-11",
   "papers": [
     {
       "id": "what-is-the-zao",
@@ -102,6 +102,45 @@
       "description": "A music prediction market on Solana where artists battle and fans trade on the outcome. Nearly 98 cents of every dollar traded stays in the ecosystem.",
       "version": "0.0",
       "status": "in-progress"
+    },
+    {
+      "id": "the-zao-protocol",
+      "title": "The ZAO Protocol",
+      "url": "https://thezao.xyz/papers/the-zao-protocol",
+      "summary": "Capstone synthesis: A unified framework for creator-economy dominance through decentralized impact networks, federated governance, and the export of artist autonomy to every continent.",
+      "description": "Synthesizes five years of ZAO ecosystem research into a unified protocol for the 2040 vision: manifest what we want, fund artists with whatever they need, export capability to under-resourced places worldwide. Built on five pillars: Artist Organization, Autonomous Organization, Operating System, Open Source, and Impact Networks.",
+      "version": "0.1",
+      "status": "draft",
+      "sections": [
+        {
+          "id": "intro",
+          "title": "Introduction"
+        },
+        {
+          "id": "vision",
+          "title": "The 2040 Vision"
+        },
+        {
+          "id": "protocol",
+          "title": "The Protocol: Five Pillars"
+        },
+        {
+          "id": "ecosystem",
+          "title": "What's Shipping"
+        },
+        {
+          "id": "impact",
+          "title": "Impact Networks"
+        },
+        {
+          "id": "roadmap",
+          "title": "Implementation Roadmap"
+        },
+        {
+          "id": "sources",
+          "title": "Sources"
+        }
+      ]
     }
   ]
 }
