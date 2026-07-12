@@ -80,6 +80,11 @@ export default async function BoardPage({
 
   const userLabelStr = userLabel(user);
 
+  // CockpitBrief gate: show if ?cockpit=1 (opt-in), or auto-show for leads/admins
+  // Allow ?cockpit=0 to force-hide it
+  const shouldShowCockpit =
+    cockpit === "0" ? false : cockpit === "1" || (await isAdmin(user)) || isLead(user);
+
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#041225] overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.18),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(14,165,233,0.10),transparent_60%)]" />
@@ -121,7 +126,7 @@ export default async function BoardPage({
 
         <ForecastWidget forecast={forecast} brand={urlBrand} />
 
-        {cockpit === "1" && (
+        {shouldShowCockpit && (
           <CockpitBrief
             items={portalItems}
             currentUser={user}
