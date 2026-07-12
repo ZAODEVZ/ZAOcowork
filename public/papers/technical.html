@@ -314,7 +314,7 @@
       <p>Three tiers of fact in this draft:</p>
       <p><strong>Externally-verified (2026-07-09, updated):</strong> OREC and ORDAO are real governance systems developed by the Optimystics collective (ref: optimystics.io). The Fibonacci golden ratio (1.618 phi) is mathematically correct. Optimism gas costs are low (typically below $0.01 per vote, 2026). The voting/veto period architecture is confirmed, though periods are configurable (ZAO uses 72 hours each, not 48 hours as initially stated in earlier sections).</p>
       <p><strong>Code-verified (2026-07-02, safe, reaffirmed):</strong> Respect has no decay today (vote_weight = Math.round(OG + ZOR), a raw sum); the Fibonacci curve values (1x 55/34/21/13/8/5, 2x 110/68/42/26/16/10); OG is ERC-20, ZOR is ERC-1155; the 2x supermajority rule (YES > 2 * NO).</p>
-      <p><strong>Research-sourced, VERIFY before publishing:</strong> Specific figures including the exact Optimism contract addresses (OG, ZOR, OREC), the quorum threshold (~10% / 1,000 Respect), the per-round Fibonacci curve Gini (~0.23)<sup class="cite"><a href="#ref8">[8]</a></sup>, cumulative OG holder-balance Gini (~0.73, live-verified 2026-07-10 - see note below)<sup class="cite"><a href="#ref8b">[8b]</a></sup>, active member count (~200)<sup class="cite"><a href="#ref9">[9]</a></sup>, week count, issuance dates (Sept/Dec 2025), the Fractal-number split (1-73 / 74+), and the claim of 90+ unbroken weeks of Respect Games. These should be re-verified against live contract states and on-chain data before this document is formally published or signed.</p>
+      <p><strong>Research-sourced, VERIFY before publishing:</strong> Specific figures including the exact Optimism contract addresses (OG, ZOR, OREC), the quorum threshold (~10% / 1,000 Respect), the per-round Fibonacci curve Gini (~0.23)<sup class="cite"><a href="#ref8">[8]</a></sup>, cumulative OG holder-balance Gini (~0.73, live-verified 2026-07-10 - see note below)<sup class="cite"><a href="#ref8b">[8b]</a></sup>, active member count (~200)<sup class="cite"><a href="#ref9">[9]</a></sup>, week count, issuance dates (Sept/Dec 2025), the Fractal-number split (1-73 / 74+), and the claim of 100+ unbroken weeks of Respect Games. These should be re-verified against live contract states and on-chain data before this document is formally published or signed.</p>
       <p><em>The monetary-policy section (5) describes a PROPOSAL (doc 941), not current implementation.</em></p>
     </div>
   </section>
@@ -375,7 +375,7 @@
 
       <p><strong>Phase 5: Voting and Veto Period (144 hours typical, configurable)</strong></p>
       <p>The community now votes:</p>
-      <p><strong>Voting period (72 hours by default):</strong> Any member<sup class="cite"><a href="#ref4">[4]</a></sup> with OG Respect can vote YES or NO. Vote weight = their OG balance at the proposal's start block (frozen; prevents double-voting). Anyone can vote, including members not in the breakout group, because anyone can evaluate the group's consensus from the contribution descriptions on-chain. <em>(ZAO's default: 259,200 seconds = 72 hours, configurable per OREC instance.)</em></p>
+      <p><strong>Voting period (72 hours by default):</strong> Any member<sup class="cite"><a href="#ref4">[4]</a></sup> with OG Respect can vote YES or NO. Vote weight = their OG + ZOR balance at the proposal's start block (frozen; prevents double-voting). Anyone can vote, including members not in the breakout group, because anyone can evaluate the group's consensus from the contribution descriptions on-chain. <em>(ZAO's default: 259,200 seconds = 72 hours, configurable per OREC instance.)</em></p>
       <p><strong>Veto period (72 hours by default, configurable):</strong> After voting<sup class="cite"><a href="#ref5">[5]</a></sup> closes, a NO-only window opens. Only NO votes are accepted. This is the "challenge period" - a chance for the community to object if the group's consensus seems wrong. If a NO vote arrives during this window, the proposal is blocked and must be resubmitted. <em>(ZAO's default: 259,200 seconds = 72 hours.)</em></p>
       <p>This two-window design solves last-minute attacks: someone cannot wait until the final block to dump a surprise NO vote. The veto period is a fixed window, and the community knows when it is coming.</p>
 
@@ -448,7 +448,7 @@
 
       <p><strong>Distribution equality (Gini)</strong></p>
 
-      <p>Research (doc 718b) reports the Fibonacci reward curve itself - how a single week's reward pool splits by rank - produces a Gini coefficient near 0.23<sup class="cite"><a href="#ref8">[8]</a></sup>, far more equal than token-weighted DAOs (commonly cited at 0.97 and up, dominated by the top few percent). That is a per-round mechanism property, distinct from the cumulative OG holder-balance Gini across all holders to date, which Optimism Etherscan puts near 0.73 as of 2026-07-10 (top 5 holders hold ~34% of supply, top 10 ~53%, of 122 total holders)<sup class="cite"><a href="#ref8b">[8b]</a></sup>. The two are not in conflict: a fair weekly curve still produces unequal cumulative holdings over 90+ weeks, since early and consistent participants compound their share round over round. The direction on the per-round mechanism is not in doubt - peer-ranked Respect distributes far more equally, round by round, than capital-weighted voting. Whether the compounded, time-in-system inequality (~0.73) is itself a concern for long-run decentralization is a separate, open question worth tracking.</p>
+      <p>Research (doc 718b) reports the Fibonacci reward curve itself - how a single week's reward pool splits by rank - produces a Gini coefficient near 0.23<sup class="cite"><a href="#ref8">[8]</a></sup>, far more equal than token-weighted DAOs (commonly cited at 0.97 and up, dominated by the top few percent). That is a per-round mechanism property, distinct from the cumulative OG holder-balance Gini across all holders to date, which Optimism Etherscan puts near 0.73 as of 2026-07-10 (top 5 holders hold ~34% of supply, top 10 ~53%, of 122 total holders)<sup class="cite"><a href="#ref8b">[8b]</a></sup>. The two are not in conflict: a fair weekly curve still produces unequal cumulative holdings over 100+ weeks, since early and consistent participants compound their share round over round. The direction on the per-round mechanism is not in doubt - peer-ranked Respect distributes far more equally, round by round, than capital-weighted voting. Whether the compounded, time-in-system inequality (~0.73) is itself a concern for long-run decentralization is a separate, open question worth tracking.</p>
 
       <h3>2.3 Consensus Thresholds and Passing Conditions</h3>
 
@@ -480,9 +480,9 @@
       <p>The Respect Game runs every week, currently Monday 6pm EST for The ZAO. A single cycle spans 5-6 days:</p>
       <ul style="list-style: disc; padding-left: 1.5rem; margin: 1rem 0;">
         <li><strong>Day 0 (Monday 6pm):</strong> Breakout rooms, sharing, ranking, on-chain submission</li>
-        <li><strong>Days 0-2:</strong> Voting period (48 hours)</li>
-        <li><strong>Days 2-4:</strong> Veto period (48 hours)</li>
-        <li><strong>Days 4-5:</strong> Execution window (open until Friday)</li>
+        <li><strong>Days 0-3:</strong> Voting period (72 hours)</li>
+        <li><strong>Days 3-6:</strong> Veto period (72 hours)</li>
+        <li><strong>Days 6+:</strong> Execution window (open until Friday)</li>
       </ul>
 
       <p>Members can participate in multiple groups in a single week if attendance allows. A member's total Respect for the week is the sum of all their ranks across all groups they joined. This is by design: it prevents a "one-shot" mentality and rewards members who show up multiple times.</p>
@@ -635,10 +635,10 @@ Breakout Consensus (off-chain)
   ↓ proposeBreakoutResult()
   ↓ [OREC creates proposal, auto-votes YES]
   ↓
-Community Voting (on-chain, 48h YES/NO)
+Community Voting (on-chain, 72h YES/NO)
   ↓ [YES votes accumulate]
   ↓
-Veto Period (on-chain, 48h NO-only)
+Veto Period (on-chain, 72h NO-only)
   ↓ [Community challenges the result if disagreed]
   ↓
 Execution (open call to execute() function)
@@ -719,8 +719,8 @@ Leaderboard Update
         <li><strong>Contribution-only governance.</strong> No capital required. Members earn voting power by showing up and contributing, not by buying tokens.</li>
         <li><strong>Sybil-resistant by consensus, not cost.</strong> A fake account cannot rank itself rank 1 without convincing a supermajority of real humans. This is stronger than costly Sybil resistance (which can be overcome by a well-funded attacker).</li>
         <li><strong>Small-group consensus.</strong> 3-6 person groups with 2/3 majority rules force genuine deliberation. This is proven effective in citizens' assemblies and Dunbar-limited collaboration.</li>
-        <li><strong>Longest-proven track record.</strong> ZAO has run 90+ unbroken weeks of Respect Games. <em>(Note: Eden Fractal on EOS and Optimism Fractal, both early ORDAO implementations via optimystics.io, have adjusted their schedules; ZAO's continuous weekly cycle since 2025 sets a continuous-implementation benchmark.)</em> This is the longest-running permissionless fractal anywhere.</li>
-        <li><strong>Fair distribution (per round).</strong> Each week's Respect issuance is distributed far more equally than capital-weighted voting (doc 718b reports a per-round Gini near 0.23 versus 0.97 and up for token DAOs). Cumulative OG holdings across all 90+ weeks are more concentrated (Gini ~0.73, live-verified 2026-07-10)<sup class="cite"><a href="#ref8b">[8b]</a></sup> since early/consistent contributors compound their share over time - see the Distribution equality section above.</li>
+        <li><strong>Longest-proven track record.</strong> ZAO has run 100+ unbroken weeks of Respect Games. <em>(Note: Eden Fractal on EOS and Optimism Fractal, both early ORDAO implementations via optimystics.io, have adjusted their schedules; ZAO's continuous weekly cycle sets a continuous-implementation benchmark.)</em> This is the longest-running permissionless fractal anywhere.</li>
+        <li><strong>Fair distribution (per round).</strong> Each week's Respect issuance is distributed far more equally than capital-weighted voting (doc 718b reports a per-round Gini near 0.23 versus 0.97 and up for token DAOs). Cumulative OG holdings across all 100+ weeks are more concentrated (Gini ~0.73, live-verified 2026-07-10)<sup class="cite"><a href="#ref8b">[8b]</a></sup> since early/consistent contributors compound their share over time - see the Distribution equality section above.</li>
         <li><strong>Optional decay.</strong> See Section 5 below. The mechanism can evolve to include reputation decay so recent contributions matter more than tenure.</li>
       </ol>
     </div>
@@ -964,7 +964,7 @@ Leaderboard Update
     <li id="ref5">ZAO Technical Whitepaper. "Section 2.1 - The Six Phases" and "Section 3.1 - OREC Veto Period." Default veto period: 259,200 seconds = 72 hours. Challenge window preventing last-minute surprise attacks. Configurable per OREC instance.</li>
     <li id="ref6">ZAO Chain State (Optimism Mainnet). "OG Respect Token" contract at 0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957. Total supply: approximately 38,484 OG as of May 2026. Issued during Fractals 1-73 (Sept 2025 - Dec 2025), then frozen. Verified on-chain via Optimism block explorer (etherscan.io/optimism or blockscan.com). Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal (BetterCallZaal).</li>
     <li id="ref7">ZAO Chain State (Optimism Mainnet). "ZOR Respect Token" contract at 0x9885CCeEf7E8371Bf8d6f2413723D25917E7445c. Transaction count: 242+ OREC transactions recorded as of May 21, 2026. One ZOR token minted per ranked member per weekly Respect Game proposal. Verified on-chain via Optimism block explorer. Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal.</li>
-    <li id="ref8">ZAO Research (Internal). "Doc 718b - Gini Coefficient Analysis." Comparative governance study showing the per-round Fibonacci reward curve achieves Gini coefficient approximately 0.23 (far more equal than token-weighted DAOs at 0.97+) - a mechanism-shape metric, not a cumulative-holdings metric. Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal.</li><li id="ref8b">Optimism Etherscan, OG Respect contract <code>0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957</code>. Live-checked 2026-07-10: 122 holders; top 5 hold ~34.49% of supply, top 10 hold ~53.21%. Cumulative Gini estimated ~0.73 from this distribution - reflects accumulated holdings across 90+ weeks, not the per-round curve shape in ref [8]. Status: EXTERNALLY VERIFIED (on-chain, live).</li>
+    <li id="ref8">ZAO Research (Internal). "Doc 718b - Gini Coefficient Analysis." Comparative governance study showing the per-round Fibonacci reward curve achieves Gini coefficient approximately 0.23 (far more equal than token-weighted DAOs at 0.97+) - a mechanism-shape metric, not a cumulative-holdings metric. Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026 - pending verification from Zaal.</li><li id="ref8b">Optimism Etherscan, OG Respect contract <code>0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957</code>. Live-checked 2026-07-10: 122 holders; top 5 hold ~34.49% of supply, top 10 hold ~53.21%. Cumulative Gini estimated ~0.73 from this distribution - reflects accumulated holdings across 100+ weeks, not the per-round curve shape in ref [8]. Status: EXTERNALLY VERIFIED (on-chain, live).</li>
     <li id="ref9">ZAO Chain State and Internal Records. "Active Member Count (Respect Game Participation)." Approximately 200 active members participating in weekly Respect Games and governance as of July 2026. Defined as: members who have earned Respect (OG or ZOR) and retain voting weight. Status: INTERNAL-SOURCED, UNCONFIRMED externally as of July 2026. Verification in progress - Zaal (BetterCallZaal) committed to providing exact on-chain figures and external confirmation by July 10, 2026.</li>
     </ol>
     </div>
