@@ -7,8 +7,11 @@ const nextConfig = {
       { source: '/papers', destination: '/papers.html' },
       { source: '/papers/technical', destination: '/papers/technical.html' },
       { source: '/papers/manifesto', destination: '/papers/manifesto.html' },
+      { source: '/papers/the-zao-protocol', destination: '/papers/the-zao-protocol.html' },
       { source: '/papers/drafts', destination: '/papers/drafts/index.html' },
       { source: '/papers/team', destination: '/papers/team/index.html' },
+      { source: '/papers/team/django', destination: '/papers/team/django.html' },
+      { source: '/papers/team/candy', destination: '/papers/team/candy.html' },
       // Main whitepaper reading page (kept; the /papers index links to it)
       { source: '/paper', destination: '/paper.html' },
       // Canonical GEO front door - static paper, not a React route, so it's
