@@ -13,6 +13,14 @@ import { FocusWidget } from "@/components/FocusWidget";
 import { computeTopFive } from "@/lib/focus";
 import { SlaGridChip } from "@/components/SlaGridChip";
 import { getDependencyCounts } from "@/lib/dependencies";
+import { CockpitBrief } from "@/components/CockpitBrief";
+import {
+  computeDoFirst,
+  computeNeedsYou,
+  computeOpenPRs,
+  computeIdeaInbox,
+  computeStale,
+} from "@/lib/cockpit";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
@@ -20,9 +28,9 @@ export const dynamic = "force-dynamic";
 export default async function BoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ brand?: string; project?: string }>;
+  searchParams: Promise<{ brand?: string; project?: string; cockpit?: string }>;
 }) {
-  const { brand: rawBrand, project: rawProject } = await searchParams;
+  const { brand: rawBrand, project: rawProject, cockpit } = await searchParams;
   const user = await getSession();
   if (!user) redirect("/");
 
@@ -112,6 +120,20 @@ export default async function BoardPage({
         <FocusWidget entries={computeTopFive(scoped, user, { isLead: isLead(user) })} user={user} />
 
         <ForecastWidget forecast={forecast} brand={urlBrand} />
+
+        {cockpit === "1" && (
+          <CockpitBrief
+            items={portalItems}
+            currentUser={user}
+            sections={{
+              doFirst: computeDoFirst(scoped),
+              needsYou: computeNeedsYou(scoped, user),
+              openPRs: computeOpenPRs(scoped),
+              ideaInbox: computeIdeaInbox(scoped),
+              stale: computeStale(scoped),
+            }}
+          />
+        )}
 
         <div className="rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-4 md:p-5">
           <div className="mb-4 flex items-center gap-2">
