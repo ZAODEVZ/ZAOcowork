@@ -9,6 +9,7 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "check:papers": "node scripts/check-paper-rewrites.mjs",
     "db:list": "supabase migration list",
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
