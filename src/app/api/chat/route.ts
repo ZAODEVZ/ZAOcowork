@@ -83,7 +83,7 @@ function boardSnapshot(items: ActionItem[]): string {
   return sections.join("\n\n") || "The board is empty.";
 }
 
-function systemPrompt(user: string, items: ActionItem[]): string {
+function systemPrompt(user: string, items: ActionItem[], isTaskChat: boolean = false): string {
   const who = userLabel(user as SessionUser);
   const open = items.filter((x) => x.status !== "DONE").length;
   const blocked = items.filter((x) => x.status === "BLOCKED").length;
@@ -91,7 +91,7 @@ function systemPrompt(user: string, items: ActionItem[]): string {
     (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,
   ).length;
 
-  return [
+  const baseRules = [
     `You are the Co-Works Assistant for "The Zao Co-Works" — a shared action tracker run by Zaal and Iman.`,
     `You are talking to ${who} right now.`,
     ``,
@@ -110,9 +110,26 @@ function systemPrompt(user: string, items: ActionItem[]): string {
     `- Answer using the board snapshot above. Reference items by their #id.`,
     `- Be concise and direct. Plain text, short paragraphs or hyphen bullets. No emojis, no em dashes.`,
     `- When asked what to work on, prioritize: blocked items needing a nudge, then P1, then aging items, then WIP over the limit.`,
-    `- You cannot edit the board yourself — tell the user the exact change to make (e.g. "move #12 to BLOCKED", "set #7 to P1").`,
-    `- If the answer is not in the snapshot, say so plainly.`,
-  ].join("\n");
+  ];
+
+  if (isTaskChat) {
+    return [
+      ...baseRules,
+      `- You ARE able to suggest actions. When the user asks to close/create/update tasks, respond with:`,
+      `  1. A natural language message explaining what you will do.`,
+      `  2. Then, on a new line, add exactly this format: [ACTIONS]{"actions":[{"id":12,"action":"close"}]}[/ACTIONS]`,
+      `- Action types: "close" (move to DONE), "create" (new task), "update" (modify notes), "snooze" (bump due date).`,
+      `- Never auto-execute. Always suggest in [ACTIONS] blocks so the user taps the button to confirm.`,
+      `- If you don't have enough info (e.g., task title for create), ask the user first.`,
+      `- If the answer is not in the snapshot, say so plainly.`,
+    ].join("\n");
+  } else {
+    return [
+      ...baseRules,
+      `- You cannot edit the board yourself — tell the user the exact change to make (e.g. "move #12 to BLOCKED", "set #7 to P1").`,
+      `- If the answer is not in the snapshot, say so plainly.`,
+    ].join("\n");
+  }
 }
 
 /**
@@ -202,6 +219,9 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Detect task-chat mode for enhanced action suggestions.
+  const isTaskChat = req.nextUrl.searchParams.get("mode") === "task-chat";
+
   let body: unknown;
   try {
     body = await req.json();
@@ -258,7 +278,7 @@ export async function POST(req: NextRequest) {
         stream: true,
         max_tokens: 2048,
         messages: [
-          { role: "system", content: systemPrompt(user, doc.items) },
+          { role: "system", content: systemPrompt(user, doc.items, isTaskChat) },
           ...history,
         ],
       }),
