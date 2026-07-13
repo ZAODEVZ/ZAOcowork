@@ -4,6 +4,17 @@ Phase 1 ships now (UI/UX overhaul + Six Sigma structure). Everything below queue
 
 Order = roughly recommended sequence, not strict.
 
+**Update 2026-07-13 (audit correction):** Phase 2 and Phase 3 below are stale -
+both have shipped in substance (CLAUDE.md's own Architecture section has
+described Supabase as the live data layer, and the bot control plane, for a
+while). The individual checkboxes were never gone back and checked off, so
+don't take an unchecked box here as "not done" - verify against the live
+code/schema first (this file has a track record of drifting, see also
+`docs/MIGRATIONS.md`'s "Known drift" section). Not independently re-verified
+line by line: the realtime-subscription item, the OpenAPI spec, `/docs/api`
+page, and outbound webhook item specifically - those may still be genuinely
+open.
+
 ---
 
 ## Phase 2: Storage swap to Supabase

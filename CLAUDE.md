@@ -55,7 +55,7 @@ The only remote is `origin` → `https://github.com/ZAODEVZ/ZAOcowork`. Work hap
 
 **Stack:** Next.js 15 App Router, React 19, TypeScript, Tailwind v3. **Data layer: Supabase (Postgres).** `src/lib/data.ts` wraps Supabase with the service-role key; the schema lives in `supabase/migrations/*.sql` and `supabase/schema.sql`.
 
-This is a full ops/CRM/PM platform, not just a todo list — ~23 tables: tasks + dependencies + proposals, team/circles, brands/projects, events-CRM (sponsors/artists/volunteers/contacts/meeting-notes), budget/goals, activity/audit/notifications, and the bot control plane (`bot_heartbeats`, `bot_events`, `bot_commands`).
+This is a full ops/CRM/PM platform, not just a todo list — 28 tables as of 2026-07-13 (verified against the live schema, not just `supabase/migrations/`): tasks + dependencies + proposals, team/circles, brands/projects, events-CRM (sponsors/artists/volunteers/contacts/contact_log/meeting_notes), budget/goals, activity/audit/comment_notifications, the bot control plane (`bot_heartbeats`, `bot_events`, `bot_commands`, `bot_tokens`, `token_claims`, `task_source_cache`), and `photos` (the Fotocaster dashboard). **Several of these have no migration file in git** — see `docs/MIGRATIONS.md`'s "Known drift" section before assuming a table doesn't exist just because you can't find its `CREATE TABLE`.
 
 ### Data flow
 
@@ -82,7 +82,9 @@ The board UI, the Telegram agent, the `/meeting` flow, `zao-tracker`, the bot fl
 ### Two API surfaces
 
 - **Internal `/api/*`** — session-cookie auth, serves the board (digest, my-digest, my-mentions, team, github webhook, chat…).
-- **External `/api/v1/*`** — bot-token auth (`src/lib/bot-auth.ts` `authBot`, against `COWORK_BOT_TOKENS`). Reads (`GET /api/v1/bots`, `/api/v1/bots/:bot/events`) accept **either** a bot token **or** a logged-in session, so the board can render machine data. This is the **bot control plane** (doc 800): heartbeat, events, command queue (`/api/v1/bots/commands`).
+- **External `/api/v1/*`** — bot-token auth (`src/lib/bot-auth.ts` `authBot`, against `COWORK_BOT_TOKENS` env or the `bot_tokens` table, 60s cache). Reads (`GET /api/v1/bots`, `/api/v1/bots/:bot/events`) accept **either** a bot token **or** a logged-in session, so the board can render machine data. This is the **bot control plane** (doc 800): heartbeat, events, command queue (`/api/v1/bots/commands`, `commands/:id/result`), plus `/api/v1/claim` (redeem a one-time pairing code for a bot token — not currently in `docs/BOT-API.md`, see that doc's own note).
+
+  **Built but currently unused** (audited 2026-07-13): the heartbeat endpoint and the command queue both work end-to-end, but no bot in this repo (`agent/`, `research-dispatch/`) actually calls them — `agent/src/index.ts` never POSTs a heartbeat, and nothing pulls `GET /api/v1/bots/commands`. The only real consumer of this control plane today is ZAOpaperzBOT (a separate repo, `bettercallzaal/ZAOpaperzBOT`) reporting its own heartbeat/events. `/bots` will show ZAOpaperzBOT but not the in-repo agent/research-dispatch bots unless/until they're wired to call it.
 
 ### AI chat flow
 
@@ -111,6 +113,17 @@ The active roster is **dynamic** (teammates added via `/admin`), surfaced to ass
 
 Approval is **opt-in per task**, not forced by role: submissions apply directly (status change included) unless the task itself has `requiresApproval: true`.
 
+**Permission tier model** (audited 2026-07-13 — `src/lib/auth.ts:40-69`, enforced per-action across `src/app/actions.ts` and `src/app/admin/actions.ts`):
+
+| Tier | Gate | Routes / actions |
+|------|------|-------------------|
+| Auto | `requireSession()` | board read, search, `/chat`, own task edits, `claimTask`, `quickAdd` |
+| Notify | `requireSession()` + audit log | `bulkSetStatus`/`bulkSetOwner`/`bulkSetPriority`/`bulkAddBrand`, `bulkMoveToTriage`, comments |
+| Ask | `requireSession()` + `isLead()` OR `isAdmin()` | `/admin/triage`, `/admin/cleanup`, `/admin/proposals`, `/admin/feed`, `reviewUpdate`, `approveProposal`/`rejectProposal`, `bulkArchive`, `bulkAssignUnowned` |
+| Block | `requireAdmin()` | `/admin` Users/Brands/BulkOps/Audit panels, `/admin/projects`, `bulkDelete` |
+
+`isLead` is a hardcoded allowlist (`zaal`, `iman`, `shawn`) — a deliberate "founders can't get locked out" glass-break, not a DB-driven role. `isAdmin` is DB-role-driven (`team_members.role`) with the same zaal/iman fallback if the role column or row is ever missing. `deleteItem` is gated `isLead() OR isAdmin()`, not `requireAdmin()` alone — intentional (a comment at the call site notes this was changed so hardcoded leads without a DB admin role can't be locked out of deleting); if you're expecting Block-tier-only deletion, this is the one exception.
+
 ### Portals & pages
 
 | Route | Purpose |
@@ -123,6 +136,11 @@ Approval is **opt-in per task**, not forced by role: submissions apply directly 
 | `/activity` | Activity feed + my-mentions |
 | `/shipped` | Public shipped feed |
 | `/chat` | MiniMax Assistant |
+| `/crm` | Contacts (`contacts`/`contact_log` tables, 849 rows live as of 2026-07-13 — Airtable-imported, no import script lives in this repo) |
+| `/meetings` | Meeting scheduling + Google Calendar push (best-effort) + email `.ics` invites (best-effort, via Resend) |
+| `/calendar` | Tasks + meetings on one calendar view |
+| `/admin` | Ask/Block-tier panels: Triage, Cleanup, Proposals, Feed, Users/Brands/BulkOps/Audit (admin-only), Projects |
+| `/photos` | Fotocaster photo dashboard (Ask tier for uploads/status changes) — see `docs/PAPERS-AND-PHOTOS.md` |
 
 Each board portal is a server component that filters tasks by its category list and renders `<Board>`. Navigation via `<NavBar>`.
 
@@ -142,8 +160,12 @@ Each board portal is a server component that filters tasks by its category list 
 | `src/components/TaskRoom.tsx` | Full-screen slide-in panel for a task: details, timeline, comments, updates, review queue, assignee checkboxes. |
 | `src/components/TodoPanel.tsx` | Floating ✦ Todo button + 3-phase modal. Calls `todoProcess` and `claimTask`. |
 | `src/components/BotsBoard.tsx` | `/bots` fleet liveness + control-plane UI (admin-gated controls). |
-| `src/middleware.ts` | Edge middleware — redirects unauthenticated requests to `/login`. Cookie check only (HMAC is in `requireSession`). |
+| `src/middleware.ts` | Edge middleware — redirects unauthenticated requests to `/login`. Cookie check only (HMAC is in `requireSession`). Correctly excludes `/api/v1/*` (bot-token auth handled in-route, not here). |
 | `src/app/api/chat/route.ts` | `POST` MiniMax proxy — auth-gated, board-aware system prompt, streams tokens. **Server-only.** |
+| `src/lib/contacts.ts` | CRM data layer over the `contacts`/`contact_log` tables. **Server-only.** |
+| `src/lib/meetings.ts`, `google-calendar.ts`, `meeting-invite.ts` | Meetings CRUD + best-effort Google Calendar push + best-effort `.ics` email invites (Resend). Both integrations degrade gracefully when unconfigured — never block meeting creation. |
+| `src/lib/proposals.ts` | AI-proposal approval queue (`task_proposals` table) — `/admin/proposals`, Ask tier. |
+| `src/lib/photos.ts`, `src/app/photos/actions.ts` | Fotocaster photo dashboard data layer + server actions. **Separate from `src/app/actions.ts`** — a deliberate split-file convention this repo already uses for `admin/actions.ts` and `meetings/actions.ts`; new features should follow it rather than growing the 1486-line `src/app/actions.ts` further. |
 
 ### Client/server boundary
 
@@ -156,7 +178,7 @@ Each board portal is a server component that filters tasks by its category list 
 ```
 dbId (row UUID), id (= legacy_id, the route key), title, createdBy,
 owner (derived: Open|<name>|Both), assignees[] (the authoritative people list),
-status (TODO|WIP|BLOCKED|DONE), category, priority (P1|P2|P3), phase (DMAIC),
+status (TRIAGE|TODO|WIP|BLOCKED|DONE), category, priority (P1|P2|P3), phase (DMAIC),
 due, notes, important, urgent, createdAt, updatedAt, completedAt, completedBy
 taskType?, requiresApproval?, claimable?, serviceClass?, archivedAt?
 brands[]?, projectId?, source?, legacyId?, legacySource?
@@ -164,6 +186,18 @@ comments?: Comment[], updates?: TaskUpdate[], activity?: ActivityEvent[]
 ```
 
 `assignees` (lowercase login slugs) is the source of truth for "whose task is this" (`isAssignedTo`/`effectiveAssignees`); legacy `owner` is kept derived (0→Open, 1→that person, 2+→Both) for badges/filters. `Both` resolves to **Zaal + Iman only** — never "whoever's logged in" (that was the new-user "owns everything" bug). `claimable: true` marks Todo-created ownerless tasks — cards show an amber **CLAIM** badge.
+
+Note: the underlying `tasks` table's `status` CHECK constraint stores `in_progress`, not `wip` — `WIP` is only the UI display label (`types.ts`), never the raw DB value. Same pattern for `kind`: the column exists in the live schema (`'task'` / `'milestone'`) but isn't part of `TASK_COLUMNS` in `data.ts` and isn't used by the board today.
+
+**TRIAGE** (audited 2026-07-13) is a real status, not just a doc mention — external writers (the NL `/todo` parser, Telegram bot, `/meeting` skill, research-dispatcher) default new items to `TRIAGE` so a human picks owner/brand/priority/service-class before the card hits the main board. `Board.tsx` explicitly filters `TRIAGE` out of the main Kanban view; `/admin/triage` (Ask tier) is the only place to route a triage item onto the board or reject it.
+
+**Task `source`** (audited 2026-07-13, `src/lib/types.ts`) — every task carries provenance: `human-web`, `human-bot`, `meeting-capture`, `research-dispatch`, `pr-test-task`, `ai-proposal`, `system-cleanup`, `external-api`. Not previously documented here; useful for "find all tasks that came from X" sweeps (same idea as the `legacy_source` prefix convention above, but a real typed enum rather than a string-prefix match).
+
+**Archive** (audited 2026-07-13) is Ask tier (`bulkArchive` — `requireLeadOrAdmin()`), not open to workers; a code comment cites this as a deliberate tightening (workers could previously archive/hide tasks unilaterally). Auto-archive at a 30-day threshold also exists (`types.ts`).
+
+**Task dependencies auto-unblock**: when a task's status changes to `DONE` (via `patchField` or an approved `reviewUpdate`), tasks it was blocking are automatically unblocked (`onTaskClosed` in `actions.ts`) — not previously documented.
+
+**AI proposals** (`task_proposals` table, `src/lib/proposals.ts`) — a real, live approval queue at `/admin/proposals` (Ask tier). An external system (or a future agent) can propose a field change (`set_brands`/`set_owner`/`set_service_class`/`set_priority`/`flag_duplicate`/`add_comment`/`move_status`) with a confidence score and rationale; a lead/admin approves or rejects via `approveProposal`/`rejectProposal`. Not previously mentioned outside BACKLOG.md's stale "future work" framing — it's built and live.
 
 ### Todo feature
 
@@ -175,7 +209,7 @@ Opt-in: a task only needs review when flagged `requiresApproval: true`. Then `re
 
 ## Database migrations
 
-Schema is managed by `supabase/migrations/NNN_*.sql` (single source of truth). Apply with `supabase db push` (see `docs/MIGRATIONS.md` for the one-time `supabase link` + `migration repair` baseline). The read-only `supabase-cowork` MCP **cannot** run DDL — migrations go through the CLI or the dashboard SQL editor. When hand-applying in the dashboard, keep the migration file in the repo so git stays the source of truth.
+Schema is managed by `supabase/migrations/NNN_*.sql` (single source of truth, in theory). Apply with `supabase db push` (see `docs/MIGRATIONS.md` for the one-time `supabase link` + `migration repair` baseline). The read-only `supabase-cowork` MCP **cannot** run DDL — migrations go through the CLI or the dashboard SQL editor. When hand-applying in the dashboard, keep the migration file in the repo so git stays the source of truth. **In practice this hasn't always happened** — 16 of 28 live tables have no migration file (audited 2026-07-13). Before concluding a table doesn't exist because you can't find its `CREATE TABLE`, check the live schema directly; see `docs/MIGRATIONS.md`'s "Known drift" section for the full list and why it happened.
 
 ## UI conventions
 
