@@ -154,6 +154,7 @@ Adding a new writer = pick a unique prefix, write rows with `apikey + service-ro
 - `SIX-SIGMA.md` - DMAIC, 5S, TIMWOODS, weekly review
 - `BACKLOG.md` - Phase 2+ queue (mostly retired - most of it has shipped). Read before adding new features.
 - `CLAUDE.md` - guidance for Claude Code sessions touching this repo
+- `docs/shared-facts.md` - single-sourced facts (contract addresses, holder counts, the Fractal's week-count streak) that repeat across multiple ZAO papers. If a paper you're editing lives under `templates/`, edit there and run `npm run facts:apply` - `public/` for that page is generated output.
 
 ## Migration history
 
