@@ -156,6 +156,7 @@ Adding a new writer = pick a unique prefix, write rows with `apikey + service-ro
 - `CLAUDE.md` - guidance for Claude Code sessions touching this repo
 - `docs/shared-facts.md` - single-sourced facts (contract addresses, holder counts, the Fractal's week-count streak) that repeat across multiple ZAO papers. If a paper you're editing lives under `templates/`, edit there and run `npm run facts:apply` - `public/` for that page is generated output.
 - `docs/PAPER-EDITING.md` - how anyone can propose an edit to a ZAO paper (GitHub PR flow) and how contributor attribution works.
+- `docs/MANIFESTO-SIGNING-SETUP.md` - exact next steps to ship on-chain manifesto signing (Hats Protocol Agreement Eligibility) - what needs Zaal (deploy the hat/module, provision WalletConnect) vs. what's a normal build once those are done.
 
 ## Migration history
 
