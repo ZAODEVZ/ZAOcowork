@@ -90,6 +90,16 @@ const paperMetadata: Record<
     subtitle: "The in-real-life arm of The ZAO",
     accentColor: "#f5a623",
   },
+  candy: {
+    title: "Candy (Samantha Denton-Kinney)",
+    subtitle: "ZAO Co-Founder, WaveWarZ Co-Founder - ZID 2",
+    accentColor: "#f5a623",
+  },
+  django: {
+    title: "Django",
+    subtitle: "Musician, origin story figure - the seed of The ZAO",
+    accentColor: "#f5a623",
+  },
 };
 
 export async function GET(
