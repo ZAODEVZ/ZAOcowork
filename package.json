@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "facts:apply": "node scripts/apply-facts.mjs",
     "facts:check": "node scripts/apply-facts.mjs --check",
+    "check:papers": "node scripts/check-paper-rewrites.mjs",
     "db:list": "supabase migration list",
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
