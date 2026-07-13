@@ -1,3 +1,9 @@
+// Substitutes {{TOKEN}} placeholders from data/facts.json into every file
+// under templates/, writing the result to the matching path under public/.
+// See docs/shared-facts.md for the full workflow. Throws on a token with no
+// matching fact (typo protection); warns on a fact that no template uses
+// (dead-fact protection). --check diffs against the current public/ files
+// without writing, for CI/PR review.
 import { readFileSync, writeFileSync, readdirSync, statSync, mkdirSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";

@@ -19,6 +19,12 @@ npm run db:diff  # supabase db diff
 
 Validate changes with `npm run test` + `npx tsc --noEmit` (both run in CI), then `npm run build` and manual browser testing for UI work.
 
+## ZAO papers (public/, templates/)
+
+`public/*.html` and `public/papers/**/*.html` are the static ZAO whitepapers served at thezao.xyz/papers, wired up via rewrites in `next.config.mjs`. `npm run build` runs `node scripts/apply-facts.mjs` before `next build` - this regenerates 7 of those files from `templates/` + `data/facts.json` and **overwrites whatever is in `public/` for those 7 files**.
+
+**Before editing any paper, check `templates/` first** (`templates/paper.html`, `templates/papers/what-is-the-zao.html`, `templates/papers/technical.html`, `templates/papers/the-zao-protocol.html`, `templates/papers/drafts/history.html`, `templates/papers/drafts/wavewarz.html`, `templates/llms.txt`). If the paper you're touching has a matching path there, edit the template, not `public/` - edits to `public/` for these 7 files are silently overwritten on the next build or `npm run facts:apply`. Every other paper has no template and is still edited directly in `public/`. See `docs/shared-facts.md` for the full workflow and which facts are single-sourced.
+
 ## Environment variables
 
 Copy `.env.example` to `.env.local`. The data layer is **Supabase** — the two `SUPABASE_*` vars are required for the app to function locally.
