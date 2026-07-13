@@ -84,12 +84,12 @@ export const MUSIC_CATEGORIES: string[] = ["WaveWarZ Zambia", "Recording", "Dist
 export const MARKETING_CATEGORIES: string[] = ["Social", "Brand", "Content", "Campaigns"];
 
 // Tyler joined 2026-05-23 (PR #13). Shawn joined 2026-05-27 as ZAOstock
-// lead (via /admin Users panel). Real long-term fix: populate OWNERS
-// at runtime from team_members so adding via /admin reflects without a
-// code change. For now we manually mirror new users here so they appear
-// in dropdowns + parse-task + bulk reassign.
-export type Owner = "Zaal" | "Iman" | "Both" | "ThyRev" | "Samantha" | "Tyler" | "Shawn" | "Open";
-export const OWNERS: Owner[] = ["Zaal", "Iman", "Both", "ThyRev", "Samantha", "Tyler", "Shawn", "Open"];
+// lead (via /admin Users panel). Jose joined 2026-07-12 as testing teammate.
+// Real long-term fix: populate OWNERS at runtime from team_members so adding
+// via /admin reflects without a code change. For now we manually mirror new
+// users here so they appear in dropdowns + parse-task + bulk reassign.
+export type Owner = "Zaal" | "Iman" | "Jose" | "Both" | "ThyRev" | "Samantha" | "Tyler" | "Shawn" | "Open";
+export const OWNERS: Owner[] = ["Zaal", "Iman", "Jose", "Both", "ThyRev", "Samantha", "Tyler", "Shawn", "Open"];
 
 // Resolve the set of people (lowercase login slugs) effectively assigned to a
 // task. The explicit `assignees` list wins when present; otherwise we derive it
