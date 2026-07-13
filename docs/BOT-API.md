@@ -130,7 +130,7 @@ heartbeat as itself).
 
 ### 5. Command queue — `POST /api/v1/bots/commands`, `GET /api/v1/bots/commands`, `POST /api/v1/bots/commands/:id/result`
 
-**Added to this doc 2026-07-13 — implemented since the `bot_commands` table (migration 012) shipped, but never documented here until an audit found the gap.** As of this writing, no bot in this repo or ZAOOS actually calls the `GET`/`result` side yet — the board can enqueue, but nothing pulls. Wire a bot up to this before relying on it.
+**Added to this doc 2026-07-13 — implemented since the `bot_commands` table (migration 012) shipped, but never documented here until an audit found the gap.** Checked directly: `bot_commands` has 3 rows, all from 2026-06-07 — `zaostock` pulled and completed a `pause` and a `resume` within seconds of being enqueued, `zoe` did the same for an `ask`. So this has worked end-to-end before, by bots in the ZAOOS repo. It's been dormant since (no rows created after that date as of this check) and nothing in this repo's own code (`agent/`, `research-dispatch/`) calls it.
 
 **Enqueue a command** (board only — session + `isAdmin`, not bot-token):
 ```jsonc
