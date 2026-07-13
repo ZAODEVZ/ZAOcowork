@@ -37,6 +37,7 @@ import { NotificationBell } from "./NotificationBell";
 import { QuickAdd } from "./quickadd/QuickAdd";
 import { BulkActionBar } from "./BulkActionBar";
 import { InsightsPanel } from "./InsightsPanel";
+import { DailyView } from "./DailyView";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TRIAGE: "TRIAGE",
@@ -573,6 +574,7 @@ export function Board({
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
   const [dailyOpen, setDailyOpen] = useState(false);
+  const [dailyViewOpen, setDailyViewOpen] = useState(false);
   const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
   const prevById = useRef<Map<string, ActionItem>>(new Map());
 
@@ -877,7 +879,21 @@ export function Board({
               }`}
               aria-pressed={showInsights}
             >
-              📊 Insights
+              Insights
+            </button>
+          )}
+          {density !== "light" && (
+            <button
+              onClick={() => setDailyViewOpen((v) => !v)}
+              className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+                dailyViewOpen
+                  ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-200"
+                  : "bg-zao-ink border-white/10 text-white/55 hover:text-white/85"
+              }`}
+              aria-pressed={dailyViewOpen}
+              title="One-click daily standup by person"
+            >
+              Daily
             </button>
           )}
           {density === "power" && (
@@ -887,7 +903,7 @@ export function Board({
               title={`Export ${filtered.length} shown task${filtered.length === 1 ? "" : "s"} as CSV`}
               className="px-2.5 py-1 text-xs font-medium rounded-md border bg-zao-ink border-white/10 text-white/55 hover:text-white/85 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              ⤓ Export
+              Export
             </button>
           )}
           {/* Group-by selector — only meaningful in table view, power only */}
@@ -928,6 +944,10 @@ export function Board({
       </div>
 
       {showInsights && density !== "light" && <InsightsPanel items={filtered} />}
+
+      {dailyViewOpen && density !== "light" && (
+        <DailyView items={items} currentUser={currentUser} onOpenTask={setTaskRoomId} />
+      )}
 
       {density === "power" && view === "table" && (
         <TableView items={filtered} onOpenRoom={setTaskRoomId} groupBy={groupBy} />
