@@ -1,8 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { getActions, saveActions, type ActionItem } from "@/lib/data";
+import { getActions, saveActions, newId, normalizeItem, type ActionItem } from "@/lib/data";
 import { logAudit } from "@/lib/audit";
 import { onTaskClosed } from "@/lib/dep-flow";
+import {
+  routeToTeammate,
+  generateTestPlan,
+  isTestTaskAlreadyCreated,
+  buildTestTaskLegacySource,
+  TEAMMATE_CONFIG,
+} from "@/lib/teammate-test-tasks";
 
 // GitHub webhook handler (doc 763 F3).
 //
@@ -176,6 +183,78 @@ export async function POST(req: NextRequest) {
 
   if (touched > 0) {
     await saveActions(doc, actor, `github: pr_${action} touched ${touched} task${touched === 1 ? "" : "s"}`);
+  }
+
+  // Auto-create a test task when a PR merges (teammate learning system).
+  // Idempotent: check if a test task was already created for this PR.
+  if (pr.merged && action === "closed") {
+    try {
+      const repoName = payload.repository?.full_name ?? "unknown";
+      const repoShort = repoName.split("/")[1] ?? "repo";
+
+      // Idempotency: don't create if test task already exists for this PR
+      if (!isTestTaskAlreadyCreated(doc.items, repoShort, pr.number)) {
+        // Route to teammate based on PR area + round-robin
+        const teammate = routeToTeammate(repoShort, pr.title, []);
+        const config = TEAMMATE_CONFIG[teammate];
+
+        // Infer what changed from the PR title/body
+        const changeDescription =
+          pr.body && pr.body.trim().length > 0 ? pr.body.trim().split("\n")[0] : pr.title;
+
+        // Generate test plan at teammate's starting level
+        const testPlan = generateTestPlan(pr.title, pr.html_url, pr.number, changeDescription, config.startLevel);
+
+        // Create test task
+        const testTaskId = newId(doc.items);
+        const now = new Date().toISOString();
+        const testTask: ActionItem = normalizeItem({
+          id: testTaskId,
+          title: `Test: ${pr.title} (#${pr.number})`,
+          owner: config.name,
+          status: "TODO",
+          notes: testPlan,
+          createdBy: "github-webhook",
+          createdAt: now,
+          updatedAt: now,
+          source: "pr-test-task",
+          // Legacy source for idempotency: allows detecting if test task already exists
+          legacySource: buildTestTaskLegacySource(repoShort, pr.number),
+        });
+
+        testTask.activity = [
+          {
+            id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            userId: "github-webhook",
+            displayName: "GitHub",
+            action: "created_auto",
+            detail: `Test task auto-created for merged PR #${pr.number} (${config.startLevel} level for ${config.name})`,
+            createdAt: now,
+          },
+        ];
+
+        doc.items.push(testTask);
+        await saveActions(doc, "github-webhook", `auto-created test task #${testTaskId} for PR #${pr.number} merge (assigned to ${config.name} at ${config.startLevel})`);
+
+        await logAudit({
+          actor: "github-webhook",
+          entity_type: "task",
+          entity_id: testTaskId,
+          entity_label: testTask.title,
+          action: "auto_create_test_task",
+          detail: `Test task for PR #${pr.number}: ${pr.title} (routed to ${config.name} at ${config.startLevel})`,
+          metadata: {
+            pr_number: pr.number,
+            pr_url: pr.html_url,
+            assigned_to: teammate,
+            starting_level: config.startLevel,
+          },
+        });
+      }
+    } catch (err) {
+      // Log error but don't crash — we don't want webhook failures to impact PR workflow
+      console.error("Error creating test task on PR merge:", err);
+    }
   }
 
   // Auto-close tasks linked by legacy_id/legacy_source when PR merges (reverse mapping).
