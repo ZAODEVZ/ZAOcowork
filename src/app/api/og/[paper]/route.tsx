@@ -35,6 +35,61 @@ const paperMetadata: Record<
     subtitle: "Live-traded music battles where artists are paid instantly",
     accentColor: "#f5a623",
   },
+  "coc-concertz": {
+    title: "COC Concertz Whitepaper",
+    subtitle: "Recurring live concerts bringing independent artists and Web3 communities together",
+    accentColor: "#f5a623",
+  },
+  history: {
+    title: "The ZAO History",
+    subtitle: "A dated index of what The ZAO has actually shipped",
+    accentColor: "#f5a623",
+  },
+  fishbowlz: {
+    title: "FISHBOWLZ Whitepaper",
+    subtitle: "Persistent audio rooms with hot seat rotation and live transcription",
+    accentColor: "#f5a623",
+  },
+  poidh: {
+    title: "poidh Whitepaper",
+    subtitle: "An on-chain bounty platform that turns creative moments into paid work",
+    accentColor: "#f5a623",
+  },
+  zabalgamez: {
+    title: "ZABAL Games Whitepaper",
+    subtitle: "A Farcaster-native builder onboarding event - ship real, earn Respect",
+    accentColor: "#f5a623",
+  },
+  "zabal-token": {
+    title: "ZABAL Token Whitepaper",
+    subtitle: "The front-end coordination token for The ZAO ecosystem",
+    accentColor: "#f5a623",
+  },
+  songjam: {
+    title: "SongJam Whitepaper",
+    subtitle: "Live audio spaces for the ZABAL community",
+    accentColor: "#f5a623",
+  },
+  "zao-newsletter": {
+    title: "The ZAO Newsletter Whitepaper",
+    subtitle: "The daily build-in-public log of The ZAO ecosystem",
+    accentColor: "#f5a623",
+  },
+  zuke: {
+    title: "Zuke Whitepaper",
+    subtitle: "The ZAO's audio-spaces app, wired into the content pipeline",
+    accentColor: "#f5a623",
+  },
+  zounz: {
+    title: "ZOUNZ Whitepaper",
+    subtitle: "An ERC-721 NFT DAO on Base governing the ZABAL token treasury",
+    accentColor: "#f5a623",
+  },
+  "zao-festivals": {
+    title: "ZAO Festivals Whitepaper",
+    subtitle: "The in-real-life arm of The ZAO",
+    accentColor: "#f5a623",
+  },
 };
 
 export async function GET(
