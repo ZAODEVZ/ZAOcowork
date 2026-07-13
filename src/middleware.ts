@@ -14,7 +14,12 @@ const PUBLIC_PATHS = new Set(["/", "/login", "/list", "/what-is-the-zao"]);
 // tokens via COWORK_BOT_TOKENS) — bypass the cookie redirect. Covers auto-close,
 // items, and bots/heartbeat.
 // /api/my-digest: per-person digest, Bearer DIGEST_CRON_TOKEN or session.
-const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1", "/verify-"];
+// /api/og: per-paper social-preview images (audited 2026-07-13) - hit by
+// Farcaster/X/etc. link-preview crawlers, which never have a session cookie.
+// Was missing from this list, so every og:image tag across every paper was
+// silently redirecting to /login instead of returning an image - found by
+// checking the live response, not just the code.
+const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1", "/api/og", "/verify-"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
