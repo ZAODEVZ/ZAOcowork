@@ -1,0 +1,32 @@
+{
+  "WEEK_COUNT": {
+    "value": "100+",
+    "description": "The number of unbroken weeks the Fractal has run Respect Games, as of the current update. Bump this number alone when the streak count changes - do not add qualifying words here, each paper phrases the surrounding sentence in its own voice (e.g. \"100+ unbroken weeks\", \"100+ weeks\", \"over 100+ weeks\").",
+    "lastVerified": "2026-07-12"
+  },
+  "OG_RESPECT_CONTRACT": {
+    "value": "0x34cE89baA7E4a4B00E17F7E4C0cb97105C216957",
+    "description": "OG Respect (ERC-20) contract address on Optimism. Frozen as of December 2025 - should not change again, but centralized here in case of any future migration.",
+    "lastVerified": "2026-07-10"
+  },
+  "ZOR_RESPECT_CONTRACT": {
+    "value": "0x9885CCeEf7E8371Bf8d6f2413723D25917E7445c",
+    "description": "ZOR Respect (ERC-1155) contract address on Optimism, issued weekly via OREC starting Fractals 74+.",
+    "lastVerified": "2026-07-10"
+  },
+  "OG_HOLDER_COUNT": {
+    "value": "122",
+    "description": "Live OG Respect holder count on Optimism. Update alongside OG_HOLDER_ASOF_DATE whenever re-checked on-chain.",
+    "lastVerified": "2026-07-10"
+  },
+  "OG_HOLDER_ASOF_DATE": {
+    "value": "2026-07-10",
+    "description": "The date OG_HOLDER_COUNT (and the rounded top-5/top-10 concentration stats, which are NOT yet tokenized - see docs/shared-facts.md) was last live-checked against Optimism Etherscan.",
+    "lastVerified": "2026-07-10"
+  },
+  "WAVEWARZ_RETENTION_PCT": {
+    "value": "98.5",
+    "description": "Percent of every dollar traded in WaveWarZ that stays in the ecosystem (98.5% trader retention + artist bonuses, 1.5% platform fee). Identical precision in every paper that cites it, unlike the OG-holder concentration percentages which intentionally differ by audience (rounded vs exact).",
+    "lastVerified": "2026-07-09"
+  }
+}

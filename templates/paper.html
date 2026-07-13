@@ -298,7 +298,7 @@
       <span class="num">01 - What The ZAO is</span>
       <p class="lead">The ZAO is a decentralized impact network for musicians, builders, and creators. We exist for one reason: to bring the profit, the data, and the ownership of creative work back to the people who make it. Not a slice of it. As close to all of it as we can get, with no fees taken from what an artist earns.</p>
       <p>For a hundred years the deal has been the same. An artist makes the work. Someone else, a label, a platform, a middleman, keeps the profit, owns the data, and controls the rights. The artist does the hardest part and owns the least of it.</p>
-      <p>The ZAO is the other way to do it. A network where the people who contribute own the upside, decide the direction, and keep what they make. We have run this in the open, every week, for over 100+ unbroken weeks as of July 2026<sup class="cite"><a href="#ref1">[1]</a></sup>. This document is what we have learned, and how you join.</p>
+      <p>The ZAO is the other way to do it. A network where the people who contribute own the upside, decide the direction, and keep what they make. We have run this in the open, every week, for over {{WEEK_COUNT}} unbroken weeks as of July 2026<sup class="cite"><a href="#ref1">[1]</a></sup>. This document is what we have learned, and how you join.</p>
     </div>
   </section>
 
@@ -355,7 +355,7 @@
       <span class="num">05 - The lanes</span>
       <h2>What the network builds</h2>
       <p>Governance is the engine. The point of the engine is what it produces. Work in The ZAO grows in lanes, and a member can plug into any of them.</p>
-      <div class="lane"><span class="tag">Music</span><p>The original lane, and the clearest proof the mission works. WaveWarZ is a music prediction market on Solana where artists battle and fans trade on the outcome. The artist is paid instantly, and 98.5% of every dollar traded stays in the ecosystem rather than going to a middleman<sup class="cite"><a href="#ref3">[3]</a></sup> (per WaveWarZ Whitepaper: 98.5% trader retention + artist bonuses). That is the whole thesis running as a real product.</p></div>
+      <div class="lane"><span class="tag">Music</span><p>The original lane, and the clearest proof the mission works. WaveWarZ is a music prediction market on Solana where artists battle and fans trade on the outcome. The artist is paid instantly, and {{WAVEWARZ_RETENTION_PCT}}% of every dollar traded stays in the ecosystem rather than going to a middleman<sup class="cite"><a href="#ref3">[3]</a></sup> (per WaveWarZ Whitepaper: {{WAVEWARZ_RETENTION_PCT}}% trader retention + artist bonuses). That is the whole thesis running as a real product.</p></div>
       <div class="lane"><span class="tag">Builders</span><p>ZABAL Gamez is a three-month build-a-thon where a member who ships one small thing is a real contributor. It runs on the lab: an open-source monorepo where new ZAO tools get prototyped in public. The bar is one small, shippable move, not a big build.</p></div>
       <div class="lane"><span class="tag">Events and festivals</span><p>The network becomes real in a room. The ZAO has produced festivals from NYC to Miami to Denver, and ZAO Stock is the annual gathering, beginning this year. This is where online contribution turns into people standing next to each other.</p></div>
       <div class="lane"><span class="tag">Tools and agents</span><p>ZAO OS is the open-source social client the whole network runs on. The agent stack, ZOE and ZOL and the rest, is the leverage layer: open tools that give one member the reach of a team.</p></div>
@@ -428,9 +428,9 @@
       <p style="margin-top:0.8rem"><b>Editors.</b> This is a living document, edited in the open as the community weighs in. Feedback and edits get credited here as they land: Jose Cabrera.</p>
       <h3 style="margin-top:2rem">References</h3>
       <ol class="references">
-        <li id="ref1">The ZAO Technical Whitepaper. <a href="https://thezao.xyz/papers/technical" target="_blank" rel="noopener">thezao.xyz/papers/technical</a>. Governance timeline: The ZAO has run weekly Fractal meetings for over 100+ unbroken weeks as of July 2026.</li>
+        <li id="ref1">The ZAO Technical Whitepaper. <a href="https://thezao.xyz/papers/technical" target="_blank" rel="noopener">thezao.xyz/papers/technical</a>. Governance timeline: The ZAO has run weekly Fractal meetings for over {{WEEK_COUNT}} unbroken weeks as of July 2026.</li>
         <li id="ref2">Spotify. "Loud & Clear" 2025 report. <a href="https://loudandclear.byspotify.com/" target="_blank" rel="noopener">loudandclear.byspotify.com</a>. Music industry payment data: 11.3 billion dollars paid to music industry in 2025; 13,800+ artists earned 100,000 or more.</li>
-        <li id="ref3">WaveWarZ Whitepaper. <a href="https://thezao.xyz/papers/drafts/wavewarz" target="_blank" rel="noopener">thezao.xyz/papers/drafts/wavewarz</a>. Tokenomics: 98.5% of every dollar traded stays in the ecosystem (98.5% trader retention + artist bonuses), with 1.5% going to platform fees.</li>
+        <li id="ref3">WaveWarZ Whitepaper. <a href="https://thezao.xyz/papers/drafts/wavewarz" target="_blank" rel="noopener">thezao.xyz/papers/drafts/wavewarz</a>. Tokenomics: {{WAVEWARZ_RETENTION_PCT}}% of every dollar traded stays in the ecosystem ({{WAVEWARZ_RETENTION_PCT}}% trader retention + artist bonuses), with 1.5% going to platform fees.</li>
         <li id="ref4">Hats Protocol Documentation. <a href="https://docs.hatsprotocol.xyz/" target="_blank" rel="noopener">docs.hatsprotocol.xyz</a>. ERC-1155 soulbound credentials on Optimism; non-transferable proof of membership and contribution.</li>
       </ol>
       <p class="draft-flag" style="margin-top:1.4rem">Working draft v0.1 - not yet ratified - some figures pending final verification</p>
