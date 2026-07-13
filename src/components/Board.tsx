@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ViewAsBanner } from "./ViewAsBanner";
+import { ViewAsSwitcher } from "./ViewAsSwitcher";
 import {
   BOARD_STATUSES,
   type BoardStatus,
@@ -426,10 +428,29 @@ export function Board({
   depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const viewAsParam = searchParams.get("viewAs");
+  // effectiveUser is the user we're viewing as (may differ from currentUser when
+  // admin uses view-as feature). Defaults to currentUser. Read-only impersonation:
+  // filtering/display uses effectiveUser, but all writes stay attributed to currentUser.
+  const [effectiveUser, setEffectiveUser] = useState<string>(() => {
+    if (viewAsParam && currentUser === "zaal") {
+      return viewAsParam;
+    }
+    return currentUser;
+  });
+  useEffect(() => {
+    if (viewAsParam && currentUser === "zaal") {
+      setEffectiveUser(viewAsParam);
+    } else {
+      setEffectiveUser(currentUser);
+    }
+  }, [viewAsParam, currentUser]);
+
   // Land on "my open work" by default, not the full firehose. Subsequent
   // visits restore the last filter state from localStorage so the board picks
   // up where you left off (per-user key so teammates do not share state).
-  const filterStorageKey = `cowork-board-filters:${currentUser || "anon"}`;
+  const filterStorageKey = `cowork-board-filters:${effectiveUser || "anon"}`;
   // First render uses the SSR-safe default so server + client match (no
   // hydration mismatch). Saved filters are hydrated after mount.
   const [filters, setFilters] = useState<Filters>(() => ({ ...EMPTY_FILTERS, mineOnly: true }));
@@ -509,7 +530,6 @@ export function Board({
   // /todo/N permalink lands the user directly on the task. We sync both
   // ways - state -> URL (history.replaceState so back button works) and
   // URL -> state (initial load + back/forward navigation).
-  const searchParams = useSearchParams();
   const urlTaskParam = searchParams.get("task");
   const [taskRoomId, setTaskRoomId] = useState<string | null>(urlTaskParam);
   useEffect(() => {
@@ -569,7 +589,7 @@ export function Board({
     tyler: "Tyler",
     shawn: "Shawn",
   };
-  const lowered = currentUser.trim().toLowerCase();
+  const lowered = effectiveUser.trim().toLowerCase();
   const userLabel = KNOWN_LABELS[lowered] ?? (lowered ? lowered.charAt(0).toUpperCase() + lowered.slice(1) : "User");
   const storageUserKey = userLabel.trim().toLowerCase() || "user";
   const todayKey = new Date().toISOString().slice(0, 10);
@@ -601,10 +621,10 @@ export function Board({
     const lastSeenRaw =
       typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
     const lastSeenMs = lastSeenRaw ? new Date(lastSeenRaw).getTime() : 0;
-    const mine = storageUserKey;
+    const viewingUser = effectiveUser.trim().toLowerCase();
     const openMine = items.filter((it) => {
       if (it.status === "DONE") return false;
-      return isAssignedTo(it, mine);
+      return isAssignedTo(it, viewingUser);
     });
     const overdueMine = openMine.filter((it) => {
       const due = parseDueDate(it.due);
@@ -618,7 +638,7 @@ export function Board({
       if (!Number.isFinite(doneMs) || doneMs <= lastSeenMs) return false;
       const created = String(it.createdBy || "").toLowerCase();
       const completedBy = String(it.completedBy || "").toLowerCase();
-      return created === mine && completedBy && completedBy !== mine;
+      return created === viewingUser && completedBy && completedBy !== viewingUser;
     });
     const dailyKey = `zao-cowork-daily-v1:${storageUserKey}`;
     const shownFor =
@@ -684,7 +704,7 @@ export function Board({
       if (filters.mineOnly) {
         const o = String(it.owner).toLowerCase();
         const isOpenTask = it.claimable || o === "open";
-        if (!isAssignedTo(it, currentUser) && !isOpenTask) return false;
+        if (!isAssignedTo(it, effectiveUser) && !isOpenTask) return false;
       }
       if (filters.agingOnly && it.status !== "DONE") {
         if (ageDays(it.createdAt) <= 14) return false;
@@ -693,7 +713,7 @@ export function Board({
       }
       return true;
     });
-  }, [items, filters, currentUser, urlBrand, urlProjectId]);
+  }, [items, filters, effectiveUser, urlBrand, urlProjectId]);
 
   const byStatus = useMemo(() => {
     const map: Record<BoardStatus, ActionItem[]> = {
@@ -753,6 +773,9 @@ export function Board({
 
   return (
     <div className="space-y-4">
+      {currentUser === "zaal" && <ViewAsSwitcher currentUser={currentUser} isAdmin={true} />}
+      <ViewAsBanner effectiveUser={effectiveUser} currentUser={currentUser} />
+
       {welcomeOpen && (
         <WelcomeModal
           userLabel={userLabel}
@@ -825,7 +848,7 @@ export function Board({
         }}
       />
 
-      <SavedViews filters={filters} onApply={setFilters} userKey={currentUser} />
+      <SavedViews filters={filters} onApply={setFilters} userKey={effectiveUser} />
 
       <PortfolioRollup items={items} />
 
