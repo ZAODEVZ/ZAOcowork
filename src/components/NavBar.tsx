@@ -63,6 +63,7 @@ export function NavBar({
   const onCalendar = pathname === "/calendar";
   const onMeetings = pathname === "/meetings";
   const onCrm = pathname === "/crm";
+  const onPhotos = pathname === "/photos";
   const onSettings = pathname === "/settings";
   const onSummary = pathname === "/summary";
   const onAdmin = pathname.startsWith("/admin");
@@ -122,6 +123,7 @@ export function NavBar({
               calendar: onCalendar,
               meetings: onMeetings,
               crm: onCrm,
+              photos: onPhotos,
               activity: onActivity,
               chat: onChat,
               taskChat: onTaskChat,
@@ -204,7 +206,7 @@ function NavMenu({
   active,
 }: {
   showAdmin: boolean;
-  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; activity: boolean; chat: boolean; taskChat: boolean; admin: boolean; settings: boolean; summary: boolean };
+  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; photos: boolean; activity: boolean; chat: boolean; taskChat: boolean; admin: boolean; settings: boolean; summary: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -247,7 +249,7 @@ function NavMenu({
   }, [open]);
 
   const anyActive =
-    active.mine || active.calendar || active.meetings || active.crm || active.activity || active.chat || active.taskChat || active.admin || active.settings;
+    active.mine || active.calendar || active.meetings || active.crm || active.photos || active.activity || active.chat || active.taskChat || active.admin || active.settings;
 
   const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean }> = [
     { href: "/summary", label: "Summary", icon: "", active: active.summary },
@@ -258,6 +260,7 @@ function NavMenu({
     { href: "/chat", label: "Assistant", icon: "🤖", active: active.chat },
     { href: "/task-chat", label: "Task Chat", icon: "💬", active: active.taskChat },
     { href: "/crm", label: "CRM", icon: "👥", active: active.crm },
+    { href: "/photos", label: "Photos", icon: "", active: active.photos },
     ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
     { href: "/settings", label: "Settings", icon: "⚙", active: active.settings },
   ];
