@@ -150,6 +150,11 @@ export async function uploadPhotoFile(file: File, storagePath: string): Promise<
   if (error) throw error;
 }
 
+export async function deletePhotoFile(storagePath: string): Promise<void> {
+  const { error } = await serviceClient().storage.from("photos").remove([storagePath]);
+  if (error) throw error;
+}
+
 export async function getPhotoSignedUrl(storagePath: string): Promise<string | null> {
   const { data, error } = await serviceClient()
     .storage.from("photos")

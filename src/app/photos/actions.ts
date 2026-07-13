@@ -3,8 +3,11 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { requireSession, isLead, isAdmin } from "@/lib/auth";
-import { createPhoto, updatePhoto, uploadPhotoFile, type QuestionStatus } from "@/lib/photos";
+import { createPhoto, updatePhoto, uploadPhotoFile, deletePhotoFile, type QuestionStatus } from "@/lib/photos";
 import { logAudit } from "@/lib/audit";
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 function s(form: FormData, key: string): string {
   return String(form.get(key) ?? "").trim();
@@ -22,6 +25,8 @@ export async function uploadPhotoAction(form: FormData): Promise<void> {
 
   const file = form.get("file");
   if (!(file instanceof File) || file.size === 0) throw new Error("a photo file is required");
+  if (file.size > MAX_FILE_SIZE) throw new Error("photo is too large (max 25MB)");
+  if (!ALLOWED_TYPES.has(file.type)) throw new Error("unsupported file type - use JPEG, PNG, WebP, or GIF");
   const caption = s(form, "caption");
   if (!caption) throw new Error("caption is required");
 
@@ -30,15 +35,21 @@ export async function uploadPhotoAction(form: FormData): Promise<void> {
   await uploadPhotoFile(file, storagePath);
 
   const priceRaw = s(form, "priceUsd");
-  const photo = await createPhoto({
-    storagePath,
-    caption,
-    credit: s(form, "credit") || undefined,
-    event: s(form, "event") || undefined,
-    photoDate: s(form, "photoDate") || undefined,
-    priceUsd: priceRaw ? Number(priceRaw) : undefined,
-    createdBy: user,
-  });
+  let photo;
+  try {
+    photo = await createPhoto({
+      storagePath,
+      caption,
+      credit: s(form, "credit") || undefined,
+      event: s(form, "event") || undefined,
+      photoDate: s(form, "photoDate") || undefined,
+      priceUsd: priceRaw ? Number(priceRaw) : undefined,
+      createdBy: user,
+    });
+  } catch (error) {
+    await deletePhotoFile(storagePath).catch(() => {});
+    throw error;
+  }
 
   await logAudit({
     actor: user,
