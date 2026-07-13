@@ -55,6 +55,39 @@ After baselining, push the migration that isn't live yet:
   ```
   Note: old slug links (e.g. `?task=meeting-…`) stop resolving once applied.
 
+## Known drift: tables with no migration file (audited 2026-07-13)
+
+Despite the "always create a migration file, never ad-hoc in the dashboard"
+rule above, it hasn't been consistently followed. A live-schema audit found
+**16 of 28 tables in the actual database have no corresponding `CREATE TABLE`
+anywhere in `supabase/migrations/*.sql`** - they were created directly
+against Supabase (dashboard SQL editor, or an MCP connection, same as this
+session's own `photos` table) and never got a migration file committed
+after the fact.
+
+This matters practically: if you're investigating "does table X exist," **grep
+`supabase/migrations/` is not sufficient** - it will give false negatives.
+Two research passes during the 2026-07-13 audit independently concluded the
+`contacts`, `contact_log`, `meeting_notes`, `circles`, `circle_members`, and
+`comment_notifications` tables "don't exist" or are "orphaned schema,"
+purely because no migration file creates them. All of them exist in the
+live database, several with real data (`contacts`: 849 rows, `meeting_notes`:
+102 rows). Always verify against the live database (`mcp__supabase-cowork__execute_sql`
+or the Supabase dashboard), not just the migrations folder, before concluding
+a table doesn't exist.
+
+Tables confirmed live with no migration file, as of 2026-07-13:
+`activity_log`, `artists`, `budget_entries`, `circle_members`, `circles`,
+`comment_notifications`, `contact_log`, `contacts`, `goals`, `meeting_notes`,
+`photos`, `sponsors`, `suggestions`, `tasks`, `team_members`, `volunteers`.
+(`tasks` and `team_members` predate the migrations folder convention
+entirely; the rest were added after but never backfilled.)
+
+**If you create a table ad-hoc** (as this session did for `photos`, since
+the write-mode MCP connection wasn't available): run `npm run db:diff`
+afterward to capture it into a real migration file, closing the gap instead
+of adding to it.
+
 ## Optional: auto-apply on merge (CI)
 
 `docs/db-push.workflow.yml` runs `supabase db push` whenever a migration lands on

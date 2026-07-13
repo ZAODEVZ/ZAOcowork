@@ -82,16 +82,20 @@ Repo is already deployed and live at thezao.xyz. To set up a new deploy:
 
 ## Data model
 
-Live schema in `supabase/schema.sql` + `db/schema.sql`. Key table: `public.tasks`.
+Live schema in `supabase/migrations/*.sql` (in theory - see `docs/MIGRATIONS.md`'s
+"Known drift" section, several live tables have no migration file). `supabase/schema.sql`
+and `db/schema.sql` are a greenfield reference schema, not necessarily what's
+actually deployed - don't treat either as authoritative without checking the
+live database. Key table: `public.tasks`.
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `id` | uuid (pk) | Default `gen_random_uuid()`. Stable cross-source identifier. |
 | `project` | text | Bucket. Default `zaodevz`. |
-| `kind` | text | `task` / `note` / `decision`. |
+| `kind` | text | Real column, `'task'` / `'milestone'` (checked 2026-07-13) - **not** currently read by `data.ts`'s `TASK_COLUMNS` or used by the board UI. |
 | `title` | text | One-line summary. |
-| `status` | text | `todo` / `wip` / `blocked` / `done`. |
-| `owner_id` | uuid | FK to `team_members.id`. |
+| `status` | text | `todo` / `in_progress` / `blocked` / `done` (checked 2026-07-13 against the live CHECK constraint). The UI displays `in_progress` as **"WIP"** - that's a display label only, never the raw column value. |
+| `owner_id` | uuid | FK to `team_members.id`. Actively used (`src/lib/data.ts`). |
 | `category` | text | Free-form (`Ops`, `Tech`, `WaveWarZ Zambia`, etc.). |
 | `priority` | text | `P1` / `P2` / `P3`. |
 | `due` | date | Nullable. |
@@ -154,6 +158,7 @@ Adding a new writer = pick a unique prefix, write rows with `apikey + service-ro
 - `SIX-SIGMA.md` - DMAIC, 5S, TIMWOODS, weekly review
 - `BACKLOG.md` - Phase 2+ queue (mostly retired - most of it has shipped). Read before adding new features.
 - `CLAUDE.md` - guidance for Claude Code sessions touching this repo
+- `docs/PAPERS-AND-PHOTOS.md` - **start here** for the ZAO papers and the photo dashboard - overview + links to the docs below.
 - `docs/shared-facts.md` - single-sourced facts (contract addresses, holder counts, the Fractal's week-count streak) that repeat across multiple ZAO papers. If a paper you're editing lives under `templates/`, edit there and run `npm run facts:apply` - `public/` for that page is generated output.
 - `docs/PAPER-EDITING.md` - how anyone can propose an edit to a ZAO paper (GitHub PR flow) and how contributor attribution works.
 - `docs/MANIFESTO-SIGNING-SETUP.md` - exact next steps to ship on-chain manifesto signing (Hats Protocol Agreement Eligibility) - what needs Zaal (deploy the hat/module, provision WalletConnect) vs. what's a normal build once those are done.

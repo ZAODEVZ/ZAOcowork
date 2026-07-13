@@ -128,6 +128,54 @@ heartbeat as itself).
 ```
 `online` = status `up` and last heartbeat within 10 min.
 
+### 5. Command queue — `POST /api/v1/bots/commands`, `GET /api/v1/bots/commands`, `POST /api/v1/bots/commands/:id/result`
+
+**Added to this doc 2026-07-13 — implemented since the `bot_commands` table (migration 012) shipped, but never documented here until an audit found the gap.** As of this writing, no bot in this repo or ZAOOS actually calls the `GET`/`result` side yet — the board can enqueue, but nothing pulls. Wire a bot up to this before relying on it.
+
+**Enqueue a command** (board only — session + `isAdmin`, not bot-token):
+```jsonc
+// POST /api/v1/bots/commands
+{ "bot": "hermes", "command": "restart", "args": {} }  // args optional, default {}
+// command must be one of: restart, pause, resume, run_task, ask, start, stop
+// 200 -> { "ok": true, "id": 42, "bot": "hermes", "command": "restart" }
+// 400 if bot missing or command not in the allowed list
+// 401/403 if not a logged-in admin
+```
+
+**Pull + claim pending commands** (bot-token auth — pulling atomically flips `pending` -> `claimed` so two pollers can't double-execute):
+```jsonc
+// GET /api/v1/bots/commands?bot=<self>
+// A token may only pull its own bot's queue (bot param must equal the caller's
+// resolved identity, or be omitted). Only these commands are claimable this way:
+// restart, pause, resume, run_task, ask
+// 200 -> { "ok": true, "commands": [{ "id": 42, "bot": "hermes", "command": "restart", "args": {}, "status": "claimed", "created_at": "..." }] }
+
+// GET /api/v1/bots/commands?scope=host
+// Only the token that resolves to bot name "fleet" may call this - it claims
+// host lifecycle ops (start, stop) on behalf of any bot. Any other token gets 403.
+```
+
+**Report the outcome** (bot-token auth — a token may only complete its own bot's command, except `fleet` which may complete any):
+```jsonc
+// POST /api/v1/bots/commands/:id/result
+{ "status": "done | error", "result": { "...": "..." } }  // result optional
+// 200 -> { "ok": true, "id": 42, "status": "done" }
+// 403 if the caller isn't the command's bot (or "fleet")
+// 404 if the command id doesn't exist
+```
+
+### 6. `POST /api/v1/claim` — redeem a one-time pairing code for a bot token
+
+**Added to this doc 2026-07-13.** Provisions a new bot's token without an env var change or redeploy (pairs with the `bot_tokens` table + `token_claims`, migrations 016/018). Unauthenticated by design (the caller has no token yet) — gated instead by the one-time code itself (single-use, short expiry) and IP rate-limited (10/min) against guessing.
+```jsonc
+// POST /api/v1/claim
+{ "code": "string, max 64 chars" }
+// 200 -> { "ok": true, "token": "...", "bot": "...", "skill": "<markdown skill doc for the bot to save>" }
+// 404 -> { "ok": false, "error": "invalid or expired code" }
+// 429 -> { "ok": false, "error": "rate limited", "retryAfterSeconds": N }
+```
+Codes are generated server-side (not documented here — this is the redemption half only); ask whoever manages `bot_tokens` for a fresh code if you're onboarding a new bot.
+
 ## Per-bot scope (who calls what)
 
 | Bot | Handle | create | patch | heartbeat | status board |
@@ -137,8 +185,11 @@ heartbeat as itself).
 | ZAO Devz | `@zaodevz_bot` | — | — | ✅ | — |
 | ZAOstock | `@ZAOstockTeamBot` | — | — | ✅ | — |
 
-(Scope is advisory in v1 — any valid token can call any endpoint; tighten to a
-per-bot allowlist later if needed.)
+(Scope is advisory for items/heartbeat in v1 — any valid token can call any
+endpoint there; tighten to a per-bot allowlist later if needed. **The command
+queue (section 5) is the exception** — that's already real per-token
+enforcement: a bot can only pull/complete its own commands, and only the
+token resolving to `"fleet"` can touch host-lifecycle `start`/`stop` ops.)
 
 ## Already exists — don't duplicate
 
