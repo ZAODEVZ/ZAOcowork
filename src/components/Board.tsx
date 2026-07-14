@@ -1848,12 +1848,33 @@ function Column({
     (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
     0,
   );
-  // Phase A (research roadmap): surface a soft WIP limit on the in-progress
-  // column. Flow research says high WIP is the lever that inflates cycle time;
-  // 5 active items per person is the team's stated target (see HelpModal).
-  // Only WIP gets a limit — TODO is a backlog, DONE is an archive.
-  const WIP_LIMIT = status === "WIP" ? 5 : null;
-  const overWip = WIP_LIMIT !== null && items.length > WIP_LIMIT;
+  // Lean workflow: per-person WIP limit (soft enforcement, 3 items max per person).
+  // Only WIP column gets this limit; TODO is backlog, DONE is archive.
+  const WIP_LIMIT_PER_PERSON = 3;
+
+  // Group items by owner to calculate per-person WIP counts
+  const wipByOwner = useMemo(() => {
+    if (status !== "WIP") return new Map<string, number>();
+    const map = new Map<string, number>();
+    items.forEach((it) => {
+      const owner = String(it.owner ?? "Open").trim();
+      map.set(owner, (map.get(owner) ?? 0) + 1);
+    });
+    return map;
+  }, [items, status]);
+
+  // Check if any person is over their WIP limit
+  const anyOverWip = useMemo(() => {
+    if (status !== "WIP") return false;
+    for (const count of wipByOwner.values()) {
+      if (count > WIP_LIMIT_PER_PERSON) return true;
+    }
+    return false;
+  }, [wipByOwner, status]);
+
+  // For backward compat, also track total WIP
+  const WIP_LIMIT = status === "WIP" ? null : null;
+  const overWip = false;
   return (
     <div className="flex flex-col gap-2 min-w-0">
       <div className={`flex items-baseline justify-between border-b pb-1 ${STATUS_HEAD[status]}`}>
@@ -1864,22 +1885,35 @@ function Column({
           {STATUS_LABEL[status]}
           <span className="ml-1 text-[9px] opacity-50">ⓘ</span>
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           {pendingCount > 0 && (
             <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 rounded-full">
               {pendingCount} review
             </span>
           )}
-          {WIP_LIMIT !== null ? (
-            <span
-              className={`text-xs font-medium ${overWip ? "text-red-300" : "text-white/40"}`}
-              title={overWip
-                ? `Over WIP limit — ${items.length} active vs target ${WIP_LIMIT}. High WIP slows cycle time.`
-                : `WIP ${items.length} of target ${WIP_LIMIT}`}
-            >
-              {items.length}/{WIP_LIMIT}
-              {overWip && <span className="ml-1" aria-hidden>⚠</span>}
-            </span>
+          {status === "WIP" ? (
+            <div className="flex items-center gap-1 flex-wrap justify-end">
+              {wipByOwner.size > 0 ? (
+                Array.from(wipByOwner.entries()).map(([owner, count]) => {
+                  const isOver = count > WIP_LIMIT_PER_PERSON;
+                  return (
+                    <span
+                      key={owner}
+                      className={`text-[10px] px-1.5 rounded-full border font-medium ${
+                        isOver
+                          ? "bg-red-500/20 text-red-300 border-red-500/40"
+                          : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                      }`}
+                      title={`${owner}: ${count}/${WIP_LIMIT_PER_PERSON} items${isOver ? " - Over limit" : ""}`}
+                    >
+                      {owner[0]}: {count}/{WIP_LIMIT_PER_PERSON}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-xs text-white/40">0 items</span>
+              )}
+            </div>
           ) : defaultCollapsed ? (
             <button
               type="button"
@@ -1975,6 +2009,16 @@ function Card({
   const commentCount = (item.comments || []).length;
   const pendingReviews = (item.updates || []).filter((u) => u.reviewStatus === "pending").length;
 
+  // Lean workflow: BLOCKED for 3+ days without update = stuck
+  const blockedSinceDays =
+    item.status === "BLOCKED"
+      ? Math.round(
+          (Date.now() - new Date(item.updatedAt || item.createdAt).getTime()) /
+            (24 * 60 * 60 * 1000)
+        )
+      : 0;
+  const isStuck = item.status === "BLOCKED" && blockedSinceDays >= 3;
+
   function setField(field: string, value: string) {
     const fd = new FormData();
     fd.set("id", item.id);
@@ -2018,7 +2062,7 @@ function Card({
           : "border-white/10 hover:border-white/20"
       } ${pending ? "opacity-60" : ""} ${item.status === "DONE" ? "opacity-60" : ""}`}
     >
-      {(stale || serviceClass === "Expedite" || item.prUrl || item.videoUrl) && (
+      {(stale || isStuck || serviceClass === "Expedite" || item.prUrl || item.videoUrl) && (
         <div className="absolute -top-1.5 -right-1.5 flex gap-1">
           {serviceClass === "Expedite" && (
             <span
@@ -2028,7 +2072,15 @@ function Card({
               EXPEDITE
             </span>
           )}
-          {stale && serviceClass !== "Expedite" && (
+          {isStuck && serviceClass !== "Expedite" && (
+            <span
+              className="rounded-full bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md shadow-red-600/50"
+              title={`Stuck blocked for ${blockedSinceDays} days — needs attention`}
+            >
+              STUCK {blockedSinceDays}d
+            </span>
+          )}
+          {stale && serviceClass !== "Expedite" && !isStuck && (
             <span
               className="rounded-full bg-red-500/80 text-white text-[9px] font-bold px-1.5 py-0.5 shadow-md shadow-red-500/30"
               title="No activity 5+ days — investigate the blocker"

@@ -23,6 +23,14 @@ interface GoalProgress {
   tracked: boolean;
 }
 
+interface CycleTimeMetrics {
+  avgLeadTimeDays: number | null;
+  avgCycleTimeDays: number | null;
+  throughputPerWeek: number | null;
+  completedLast30Days: number;
+  note: string;
+}
+
 interface TaskStatusData {
   totalOpen: number;
   byStatus: {
@@ -33,10 +41,11 @@ interface TaskStatusData {
   doneThisWeek: number;
   doneThisMonth: number;
   topOwners: Array<{ owner: string; count: number }>;
-  blockedItems: Array<{ id: string; title: string; owner: string }>;
+  blockedItems: Array<{ id: string; title: string; owner: string; blockedSinceDays?: number }>;
   dueSoon: Array<{ id: string; title: string; due: string; owner: string }>;
   recentlyAdded: Array<{ id: string; title: string; createdAt: string; owner: string }>;
   goalProgress: GoalProgress[];
+  cycleTime: CycleTimeMetrics;
 }
 
 function computeGoalProgress(items: any[]): GoalProgress[] {
@@ -63,6 +72,47 @@ function computeGoalProgress(items: any[]): GoalProgress[] {
   }
 
   return goals;
+}
+
+function computeCycleTimeMetrics(items: any[]): CycleTimeMetrics {
+  // Completed items in the last 30 days (using completedAt)
+  const now = Date.now();
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+  const completedRecently = items.filter((x) => {
+    if (x.status !== "DONE" || !x.completedAt) return false;
+    const completedTime = new Date(x.completedAt).getTime();
+    return completedTime >= thirtyDaysAgo && completedTime <= now;
+  });
+
+  // Lead time: created_at -> completed_at
+  const leadTimes = completedRecently
+    .map((x) => {
+      const createdTime = new Date(x.createdAt).getTime();
+      const completedTime = new Date(x.completedAt).getTime();
+      const daysDiff = (completedTime - createdTime) / (24 * 60 * 60 * 1000);
+      return daysDiff;
+    })
+    .filter((d) => Number.isFinite(d) && d >= 0);
+
+  const avgLeadTimeDays = leadTimes.length > 0 ? Math.round(leadTimes.reduce((a, b) => a + b) / leadTimes.length * 10) / 10 : null;
+
+  // Cycle time is ideally from first in-progress to done, but we don't track
+  // in_progress_at yet. For now, use lead time as proxy and note the limitation.
+  // Future: migrate to tracking in_progress_at in schema + activity_log.
+  const avgCycleTimeDays = avgLeadTimeDays; // Same as lead time until in_progress_at exists
+
+  // Throughput: completed items per week (over 30d window)
+  const weeksInPeriod = 30 / 7;
+  const throughputPerWeek = completedRecently.length > 0 ? Math.round((completedRecently.length / weeksInPeriod) * 10) / 10 : null;
+
+  return {
+    avgLeadTimeDays,
+    avgCycleTimeDays,
+    throughputPerWeek,
+    completedLast30Days: completedRecently.length,
+    note: "Lead/cycle time uses created_at to completed_at (in_progress_at tracking pending)",
+  };
 }
 
 export async function GET() {
@@ -116,16 +166,21 @@ export async function GET() {
       .slice(0, 5)
       .map(([owner, count]) => ({ owner, count }));
 
-    // Blocked items (with limit)
+    // Blocked items (with limit) - include days blocked (no update for >3d = stuck)
     const blockedItems = open
       .filter((x) => x.status === "BLOCKED")
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 10)
-      .map((x) => ({
-        id: x.dbId || x.id,
-        title: x.title,
-        owner: String(x.owner ?? "Open").trim(),
-      }));
+      .map((x) => {
+        const updatedTime = new Date(x.updatedAt || x.createdAt).getTime();
+        const blockedSinceDays = Math.round((now - updatedTime) / (24 * 60 * 60 * 1000));
+        return {
+          id: x.dbId || x.id,
+          title: x.title,
+          owner: String(x.owner ?? "Open").trim(),
+          blockedSinceDays,
+        };
+      });
 
     // Due soon (next 7 days)
     const in7Days = now + 7 * 24 * 60 * 60 * 1000;
@@ -160,6 +215,9 @@ export async function GET() {
     // Compute real goal progress from tasks (all items, not just open ones)
     const goalProgress = computeGoalProgress(items);
 
+    // Compute cycle-time metrics
+    const cycleTime = computeCycleTimeMetrics(items);
+
     const data: TaskStatusData = {
       totalOpen: open.length,
       byStatus: statusCounts,
@@ -170,6 +228,7 @@ export async function GET() {
       dueSoon,
       recentlyAdded,
       goalProgress,
+      cycleTime,
     };
 
     return NextResponse.json({ ok: true, data });

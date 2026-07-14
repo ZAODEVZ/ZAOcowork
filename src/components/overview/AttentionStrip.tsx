@@ -12,7 +12,7 @@ interface AttentionItem {
 }
 
 interface TaskStatusData {
-  blockedItems: Array<{ id: string; title: string; owner: string }>;
+  blockedItems: Array<{ id: string; title: string; owner: string; blockedSinceDays?: number }>;
 }
 
 const STATIC_DEADLINES = [
@@ -65,14 +65,30 @@ export function AttentionStrip() {
   useEffect(() => {
     const attentionItems: AttentionItem[] = [];
 
-    // Add blocked items
-    if (data?.blockedItems && data.blockedItems.length > 0) {
-      attentionItems.push({
-        type: "blocked",
-        title: `${data.blockedItems.length} blocked task${data.blockedItems.length !== 1 ? "s" : ""}`,
-        owner: data.blockedItems[0].owner,
-        urgency: "critical",
-      });
+    // Add stuck (blocked 3+ days) items
+    if (data?.blockedItems) {
+      const stuckItems = data.blockedItems.filter((b) => (b.blockedSinceDays ?? 0) >= 3);
+      if (stuckItems.length > 0) {
+        attentionItems.push({
+          type: "blocked",
+          title: `${stuckItems.length} stuck (blocked 3+ days)`,
+          owner: stuckItems[0].owner,
+          urgency: "critical",
+        });
+      }
+    }
+
+    // Add all other blocked items
+    if (data?.blockedItems) {
+      const otherBlocked = data.blockedItems.filter((b) => (b.blockedSinceDays ?? 0) < 3);
+      if (otherBlocked.length > 0) {
+        attentionItems.push({
+          type: "blocked",
+          title: `${otherBlocked.length} blocked task${otherBlocked.length !== 1 ? "s" : ""}`,
+          owner: otherBlocked[0].owner,
+          urgency: "high",
+        });
+      }
     }
 
     // Add nearest 2 deadlines
