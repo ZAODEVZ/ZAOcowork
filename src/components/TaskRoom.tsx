@@ -24,7 +24,7 @@ import {
   SERVICE_CLASS_LABELS,
   relativeTime,
 } from "@/lib/types";
-import { patchField, addComment, editComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction } from "@/app/actions";
+import { patchField, addComment, editComment, submitUpdate, reviewUpdate, deleteItem, addTaskDependency, removeTaskDependency, setTaskPublicOverride, setAssignees as setAssigneesAction, createSubtask, linkSubtask, unlinkSubtask } from "@/app/actions";
 import { useDraft } from "@/lib/use-draft";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
@@ -448,6 +448,214 @@ function DependenciesBlock({
   );
 }
 
+function SubtasksBlock({
+  item,
+  allItems,
+  onOpenTask,
+}: {
+  item: ActionItem;
+  allItems?: ActionItem[];
+  onOpenTask?: (appId: string) => void;
+}) {
+  const taskId = item.dbId;
+  const [subtasks, setSubtasks] = useState<ActionItem[]>(item.subtasks || []);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  if (!taskId) return null;
+
+  const id = taskId; // Type-narrowed after guard
+
+  const completedCount = subtasks.filter((s) => s.status === "DONE").length;
+  const totalCount = subtasks.length;
+
+  async function handleCreateSubtask() {
+    if (!newTitle.trim()) return;
+    setError(null);
+    start(async () => {
+      const fd = new FormData();
+      fd.set("parentTaskId", id);
+      fd.set("title", newTitle);
+      const result = await createSubtask(fd);
+      if (result.ok) {
+        setNewTitle("");
+        setShowCreateForm(false);
+      } else {
+        setError(result.error || "Failed to create subtask");
+      }
+    });
+  }
+
+  async function handleLinkSubtask(subtaskId: string) {
+    setError(null);
+    start(async () => {
+      const fd = new FormData();
+      fd.set("parentTaskId", id);
+      fd.set("subtaskId", subtaskId);
+      const result = await linkSubtask(fd);
+      if (result.ok) {
+        setShowPicker(false);
+      } else {
+        setError(result.error || "Failed to link subtask");
+      }
+    });
+  }
+
+  async function handleUnlinkSubtask(subtaskId: string) {
+    setError(null);
+    start(async () => {
+      const fd = new FormData();
+      fd.set("subtaskId", subtaskId);
+      const result = await unlinkSubtask(fd);
+      if (!result.ok) {
+        setError(result.error || "Failed to unlink subtask");
+      }
+    });
+  }
+
+  const availableTasks = allItems?.filter(
+    (t) => t.id !== id && !t.parentTaskId && !subtasks.some((s) => s.id === t.id),
+  ) || [];
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2 flex items-center justify-between">
+        <span>Subtasks</span>
+        {totalCount > 0 && (
+          <span className="text-[9px] text-white/35">
+            {completedCount}/{totalCount} done
+          </span>
+        )}
+      </div>
+
+      {subtasks.length > 0 && (
+        <div className="mb-3 space-y-1">
+          {subtasks.map((subtask) => (
+            <div
+              key={subtask.id}
+              className="flex items-center justify-between gap-2 text-xs text-white/70 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1.5"
+            >
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${
+                    subtask.status === "DONE"
+                      ? "bg-emerald-400"
+                      : subtask.status === "WIP"
+                      ? "bg-amber-400"
+                      : subtask.status === "BLOCKED"
+                      ? "bg-red-400"
+                      : "bg-slate-400"
+                  }`}
+                />
+                {onOpenTask ? (
+                  <button
+                    onClick={() => onOpenTask(subtask.id)}
+                    className="text-left truncate text-blue-300 hover:text-blue-200 hover:underline transition flex-1 min-w-0"
+                    title={`Open: ${subtask.title}`}
+                  >
+                    {subtask.title}
+                  </button>
+                ) : (
+                  <span className="truncate flex-1 min-w-0">{subtask.title}</span>
+                )}
+              </div>
+              <button
+                onClick={() => handleUnlinkSubtask(subtask.id)}
+                disabled={pending}
+                className="text-blue-400/60 hover:text-blue-300 disabled:opacity-50 flex-shrink-0"
+                aria-label="Remove subtask"
+                title="Remove from this task"
+              >
+                x
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="space-y-2">
+        {error && <div className="text-xs text-red-300">{error}</div>}
+
+        {showCreateForm ? (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="New subtask title..."
+              disabled={pending}
+              className="w-full rounded-lg bg-[#0b1220] border border-white/10 px-2 py-1.5 text-xs text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 disabled:opacity-50"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateSubtask();
+                if (e.key === "Escape") setShowCreateForm(false);
+              }}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={handleCreateSubtask}
+                disabled={pending || !newTitle.trim()}
+                className="flex-1 text-xs px-2 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white font-medium transition disabled:opacity-50"
+              >
+                {pending ? "Creating..." : "Create"}
+              </button>
+              <button
+                onClick={() => setShowCreateForm(false)}
+                className="flex-1 text-xs px-2 py-1 rounded text-white/50 hover:text-white/70 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="w-full text-xs text-blue-300 hover:text-blue-200 transition underline"
+          >
+            + add subtask
+          </button>
+        )}
+
+        {showPicker && availableTasks.length > 0 ? (
+          <div className="space-y-2">
+            <div className="text-[9px] text-white/40 mb-1">Import existing task</div>
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {availableTasks.slice(0, 10).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => handleLinkSubtask(t.id)}
+                  disabled={pending}
+                  className="w-full text-left text-xs px-2 py-1 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 hover:bg-emerald-500/25 disabled:opacity-50 truncate"
+                >
+                  {t.title}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowPicker(false)}
+              className="w-full text-xs text-white/50 hover:text-white/70 py-1"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          availableTasks.length > 0 && (
+            <button
+              onClick={() => setShowPicker(true)}
+              className="w-full text-xs text-emerald-300 hover:text-emerald-200 transition underline"
+            >
+              + import existing todo
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 // RelatedBlock: auto-suggested tasks that share a brand, owner, or category
 // with the current one — relationships you never had to wire up by hand.
 // Computed from the board's loaded items (so everything shown is openable),
@@ -749,6 +957,7 @@ function DetailsPanel({
     <div className="p-5 space-y-5 flex-1">
       <OriginBlock item={item} />
       <DependenciesBlock item={item} onOpenTask={onOpenTask} />
+      <SubtasksBlock item={item} allItems={allItems} onOpenTask={onOpenTask} />
       {onOpenTask && allItems && allItems.length > 0 && (
         <RelatedBlock item={item} allItems={allItems} onOpenTask={onOpenTask} />
       )}
@@ -1097,12 +1306,10 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
 
   type TimelineEntry =
     | { type: "activity"; data: ActivityEvent }
-    | { type: "comment"; data: Comment }
     | { type: "update"; data: TaskUpdate };
 
   const timeline: TimelineEntry[] = [
     ...activity.map((a) => ({ type: "activity" as const, data: a })),
-    ...comments.map((c) => ({ type: "comment" as const, data: c })),
     ...updates.map((u) => ({ type: "update" as const, data: u })),
   ].sort(
     (a, b) => new Date(a.data.createdAt).getTime() - new Date(b.data.createdAt).getTime(),
@@ -1140,22 +1347,6 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
                   text={formatActivity(a)}
                   time={a.createdAt}
                 />
-              );
-            }
-            if (entry.type === "comment") {
-              const c = entry.data;
-              return (
-                <div key={c.id} className="flex gap-3 pl-1">
-                  {userAvatar(c.userId, c.displayName)}
-                  <div className="flex-1 min-w-0 bg-black/25 rounded-xl border border-white/10 px-3 py-2.5">
-                    <div className="text-[11px] text-white/45 mb-1">
-                      <span className="text-white/80 font-medium">{c.displayName}</span>
-                      {" · "}
-                      {relativeTime(c.createdAt)}
-                    </div>
-                    <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{c.content}</p>
-                  </div>
-                </div>
               );
             }
             if (entry.type === "update") {

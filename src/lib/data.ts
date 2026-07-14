@@ -81,7 +81,7 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
 const TASK_COLUMNS =
   "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
   "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-  "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override";
+  "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override, parent_task_id";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -127,6 +127,7 @@ interface TaskRow {
   project_id: string | null;
   source: string | null;
   public_override: boolean | null;
+  parent_task_id: string | null;
 }
 
 interface TeamMaps {
@@ -209,6 +210,9 @@ export function normalizeItem(
   if (raw.source !== undefined) base.source = raw.source as TaskSource;
   // Doc 009 public layer
   if (raw.publicOverride !== undefined) base.publicOverride = raw.publicOverride;
+  // Subtasks
+  if (raw.parentTaskId !== undefined) base.parentTaskId = raw.parentTaskId;
+  if (Array.isArray(raw.subtasks)) base.subtasks = raw.subtasks;
   return base;
 }
 
@@ -271,6 +275,8 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (meta.next_owner === "me" || meta.next_owner === "agent" || meta.next_owner === "review" || meta.next_owner === "blocked") {
     item.nextOwner = meta.next_owner;
   }
+  // Subtasks: parent_task_id for hierarchical organization
+  if (row.parent_task_id) item.parentTaskId = row.parent_task_id;
   return item;
 }
 
@@ -331,6 +337,8 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     // Doc 765 Phase I
     project_id: item.projectId ?? null,
     source: item.source ?? "human-web",
+    // Subtasks: parent_task_id for hierarchical organization
+    parent_task_id: item.parentTaskId ?? null,
   };
 }
 
@@ -410,7 +418,25 @@ export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
     .maybeSingle();
   if (error) throw new Error(`task read failed (${idOrDbId}): ${error.message}`);
   if (!data) return null;
-  return normalizeItem(rowToItem(data as unknown as TaskRow, team));
+
+  const item = normalizeItem(rowToItem(data as unknown as TaskRow, team));
+
+  // Fetch subtasks if this is a parent task
+  if (item.dbId) {
+    const { data: subtaskRows, error: subtaskError } = await db()
+      .from("tasks")
+      .select(TASK_COLUMNS)
+      .eq("parent_task_id", item.dbId)
+      .order("created_at", { ascending: true });
+
+    if (!subtaskError && subtaskRows && subtaskRows.length > 0) {
+      item.subtasks = subtaskRows.map((row) =>
+        normalizeItem(rowToItem(row as unknown as TaskRow, team)),
+      );
+    }
+  }
+
+  return item;
 }
 
 /**

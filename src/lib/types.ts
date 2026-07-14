@@ -225,6 +225,11 @@ export type ActionItem = {
   legacySource?: string;
   // Doc 009 public layer: null=inherit from project, true=show, false=hide
   publicOverride?: boolean | null;
+  // Subtasks: parent_task_id enables hierarchical task organization
+  // Used for daily tasks rolling up work items and import-to-daily flow
+  parentTaskId?: string | null;
+  // Child tasks for this parent (populated on read)
+  subtasks?: ActionItem[];
 };
 
 // Provenance taxonomy (doc 765 decision 2). Every task carries exactly
