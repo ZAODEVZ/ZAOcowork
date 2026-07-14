@@ -1484,3 +1484,120 @@ export async function setTaskPublicOverride(form: FormData): Promise<{ ok: boole
   revalidatePath("/");
   return { ok: true };
 }
+
+// Create a new subtask under a parent task
+export async function createSubtask(form: FormData): Promise<{ ok: boolean; id?: string; error?: string }> {
+  const user = await requireSession();
+  const parentTaskId = String(form.get("parentTaskId") ?? "").trim();
+  const title = String(form.get("title") ?? "").trim();
+
+  if (!parentTaskId || !title) {
+    return { ok: false, error: "Parent task and title are required" };
+  }
+
+  // Verify parent task exists
+  const parent = await getItem(parentTaskId);
+  if (!parent) {
+    return { ok: false, error: "Parent task not found" };
+  }
+
+  try {
+    const doc = await getActions();
+    const id = newId(doc.items);
+    const now = new Date().toISOString();
+    const subtask: ActionItem = {
+      id,
+      title,
+      status: "TODO",
+      priority: "P3",
+      category: parent.category,
+      phase: "Define",
+      createdBy: userLabel(user),
+      owner: "Open",
+      assignees: [],
+      important: false,
+      urgent: false,
+      completedAt: "",
+      completedBy: "",
+      due: "",
+      notes: "",
+      createdAt: now,
+      updatedAt: now,
+      brands: [],
+      parentTaskId,
+      activity: [makeActivity(user, "created", undefined, now)],
+    };
+
+    doc.items.push(subtask);
+    await saveActions(doc, user, `created subtask #${id} under ${parentTaskId}`);
+    revalidateAll();
+    return { ok: true, id };
+  } catch (e) {
+    console.error("createSubtask failed:", e);
+    return { ok: false, error: "Failed to create subtask" };
+  }
+}
+
+// Link an existing task as a subtask of a parent
+export async function linkSubtask(form: FormData): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireSession();
+  const parentTaskId = String(form.get("parentTaskId") ?? "").trim();
+  const subtaskId = String(form.get("subtaskId") ?? "").trim();
+
+  if (!parentTaskId || !subtaskId) {
+    return { ok: false, error: "Both task IDs are required" };
+  }
+
+  const parent = await getItem(parentTaskId);
+  if (!parent) {
+    return { ok: false, error: "Parent task not found" };
+  }
+
+  const subtask = await getItem(subtaskId);
+  if (!subtask) {
+    return { ok: false, error: "Subtask not found" };
+  }
+
+  // Prevent circular references
+  if (subtask.id === parentTaskId) {
+    return { ok: false, error: "Cannot make a task a subtask of itself" };
+  }
+
+  subtask.parentTaskId = parentTaskId;
+
+  try {
+    await saveItem(subtask, user, `linked ${subtaskId} as subtask of ${parentTaskId}`);
+    revalidatePath("/");
+    return { ok: true };
+  } catch (e) {
+    console.error("linkSubtask failed:", e);
+    return { ok: false, error: "Failed to link subtask" };
+  }
+}
+
+// Unlink a subtask (remove from parent)
+export async function unlinkSubtask(form: FormData): Promise<{ ok: boolean; error?: string }> {
+  const user = await requireSession();
+  const subtaskId = String(form.get("subtaskId") ?? "").trim();
+
+  if (!subtaskId) {
+    return { ok: false, error: "Subtask ID is required" };
+  }
+
+  const subtask = await getItem(subtaskId);
+  if (!subtask) {
+    return { ok: false, error: "Subtask not found" };
+  }
+
+  const parentId = subtask.parentTaskId;
+  subtask.parentTaskId = null;
+
+  try {
+    await saveItem(subtask, user, `unlinked ${subtaskId} from parent ${parentId}`);
+    revalidatePath("/");
+    return { ok: true };
+  } catch (e) {
+    console.error("unlinkSubtask failed:", e);
+    return { ok: false, error: "Failed to unlink subtask" };
+  }
+}
