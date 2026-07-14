@@ -1,6 +1,17 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card, SectionHeader, Badge, ProgressBar } from "./ui";
 
 type GoalStatus = "on-track" | "at-risk" | "not-started";
+
+interface GoalProgress {
+  key: string;
+  matched: number;
+  done: number;
+  pct: number | null;
+  tracked: boolean;
+}
 
 const ZAO_GOALS = {
   northStar: "Return profit, data, and IP to creators. An impact network, not a company. Contribution over capital.",
@@ -11,13 +22,13 @@ const ZAO_GOALS = {
     { name: "Tools & Agents", project: "ZAO OS, ZOE, ZOL" },
   ],
   nearTermGoals: [
-    { title: "GEO - own the AI answer for what is The ZAO (top priority)", completion: 60 },
-    { title: "ZAOstock - Oct 3", completion: 55 },
-    { title: "ZABAL Games - August finals", completion: 70 },
-    { title: "Artizen - Season 7 proof into Season 8", completion: 50 },
-    { title: "Devcon 8 Mumbai (Nov 2-6) - the festivals proof-leg", completion: 10 },
-    { title: "Protect the weekly Fractal (100+ unbroken weeks)", completion: 95 },
-    { title: "A second revenue line (WaveWarZ works - find one more)", completion: 35 },
+    { title: "GEO - own the AI answer for what is The ZAO (top priority)", key: "geo" },
+    { title: "ZAOstock - Oct 3", key: "zaostock" },
+    { title: "ZABAL Games - August finals", key: "zabal_games" },
+    { title: "Artizen - Season 7 proof into Season 8", key: "artizen" },
+    { title: "Devcon 8 Mumbai (Nov 2-6) - the festivals proof-leg", key: "devcon" },
+    { title: "Protect the weekly Fractal (100+ unbroken weeks)", key: "fractal" },
+    { title: "A second revenue line (WaveWarZ works - find one more)", key: "revenue" },
   ],
 };
 
@@ -44,6 +55,29 @@ function getProgressColor(status: GoalStatus): "green" | "amber" | "blue" {
 }
 
 export function GoalsWidget() {
+  const [goalProgress, setGoalProgress] = useState<Record<string, GoalProgress> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchGoalProgress() {
+      try {
+        const response = await fetch("/api/overview");
+        const result = await response.json();
+        if (result.ok && result.data?.goalProgress) {
+          const progressMap = Object.fromEntries(
+            result.data.goalProgress.map((gp: GoalProgress) => [gp.key, gp])
+          );
+          setGoalProgress(progressMap);
+        }
+      } catch (error) {
+        console.error("Failed to fetch goal progress:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchGoalProgress();
+  }, []);
   return (
     <Card className="p-6">
       {/* North Star */}
@@ -78,6 +112,7 @@ export function GoalsWidget() {
         <div className="space-y-3">
           {ZAO_GOALS.nearTermGoals.map((goal) => {
             const status = GOAL_STATUS_MAP[goal.title];
+            const progress = goalProgress?.[goal.key];
             const colorMap = {
               "on-track": "green" as const,
               "at-risk": "amber" as const,
@@ -90,18 +125,27 @@ export function GoalsWidget() {
                   <span className="text-sm text-white/85 flex-1">{goal.title}</span>
                   <Badge status={status} />
                 </div>
-                <ProgressBar
-                  label={`${goal.completion}%`}
-                  value={goal.completion}
-                  max={100}
-                  color={colorMap[status]}
-                />
+                {loading ? (
+                  <div className="h-6 bg-slate-700/30 rounded animate-pulse" />
+                ) : progress?.tracked ? (
+                  <ProgressBar
+                    label={`${progress.done}/${progress.matched}`}
+                    value={progress.done}
+                    max={progress.matched}
+                    color={colorMap[status]}
+                  />
+                ) : (
+                  <div className="text-xs text-white/40 italic">
+                    No tasks tracked yet
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
-        <div className="mt-4 text-xs text-white/40">
-          Status manually set - reflects current progress toward each goal
+        <div className="mt-4 space-y-1 text-xs text-white/40">
+          <div>Bar shows tracked-task completion (done/total)</div>
+          <div>Chip reflects manual status - update separately as priorities shift</div>
         </div>
       </div>
     </Card>

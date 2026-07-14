@@ -4,6 +4,25 @@ import { requireSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
+// Goal keyword matchers - case-insensitive
+const GOAL_MATCHERS: Record<string, string[]> = {
+  geo: ["geo", "llms.txt", "ai answer", "json-ld", "citable"],
+  zaostock: ["zaostock", "zao stock"],
+  zabal_games: ["zabal", "zabal games"],
+  artizen: ["artizen"],
+  fractal: ["fractal", "ordao", "respect"],
+  devcon: ["devcon", "zaotravelz", "mumbai", "festival"],
+  revenue: ["revenue", "wavewarz", "monetiz", "sponsor", "paid"],
+};
+
+interface GoalProgress {
+  key: string;
+  matched: number;
+  done: number;
+  pct: number | null;
+  tracked: boolean;
+}
+
 interface TaskStatusData {
   totalOpen: number;
   byStatus: {
@@ -17,6 +36,33 @@ interface TaskStatusData {
   blockedItems: Array<{ id: string; title: string; owner: string }>;
   dueSoon: Array<{ id: string; title: string; due: string; owner: string }>;
   recentlyAdded: Array<{ id: string; title: string; createdAt: string; owner: string }>;
+  goalProgress: GoalProgress[];
+}
+
+function computeGoalProgress(items: any[]): GoalProgress[] {
+  const goals: GoalProgress[] = [];
+
+  for (const [goalKey, keywords] of Object.entries(GOAL_MATCHERS)) {
+    // Find all tasks that match any keyword in this goal (case-insensitive search in title + notes)
+    const matchedTasks = items.filter((item) => {
+      const searchText = `${item.title} ${item.notes || ""}`.toLowerCase();
+      return keywords.some((keyword) => searchText.includes(keyword.toLowerCase()));
+    });
+
+    const totalMatched = matchedTasks.length;
+    const doneCount = matchedTasks.filter((t) => t.status === "DONE").length;
+    const pct = totalMatched > 0 ? Math.round((doneCount / totalMatched) * 100) : null;
+
+    goals.push({
+      key: goalKey,
+      matched: totalMatched,
+      done: doneCount,
+      pct,
+      tracked: totalMatched > 0,
+    });
+  }
+
+  return goals;
 }
 
 export async function GET() {
@@ -111,6 +157,9 @@ export async function GET() {
         owner: String(x.owner ?? "Open").trim(),
       }));
 
+    // Compute real goal progress from tasks (all items, not just open ones)
+    const goalProgress = computeGoalProgress(items);
+
     const data: TaskStatusData = {
       totalOpen: open.length,
       byStatus: statusCounts,
@@ -120,6 +169,7 @@ export async function GET() {
       blockedItems,
       dueSoon,
       recentlyAdded,
+      goalProgress,
     };
 
     return NextResponse.json({ ok: true, data });
