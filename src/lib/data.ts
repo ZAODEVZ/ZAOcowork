@@ -253,6 +253,8 @@ export function normalizeItem(
   // Subtasks
   if (raw.parentTaskId !== undefined) base.parentTaskId = raw.parentTaskId;
   if (Array.isArray(raw.subtasks)) base.subtasks = raw.subtasks;
+  // Explicit related tasks
+  if (Array.isArray(raw.relatedIds)) base.relatedIds = raw.relatedIds;
   return base;
 }
 
@@ -317,6 +319,8 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   }
   // Subtasks: parent_task_id for hierarchical organization
   if (row.parent_task_id) item.parentTaskId = row.parent_task_id;
+  // Explicit related tasks: bidirectional informational links
+  if (Array.isArray(meta.relatedIds)) item.relatedIds = (meta.relatedIds as string[]).filter((id) => typeof id === "string");
   return item;
 }
 
@@ -338,6 +342,7 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   if (item.prNumber !== undefined && item.prNumber !== null) meta.prNumber = item.prNumber;
   if (item.prState !== undefined && item.prState !== null) meta.prState = item.prState;
   if (item.videoUrl !== undefined && item.videoUrl !== null) meta.videoUrl = item.videoUrl;
+  if (Array.isArray(item.relatedIds) && item.relatedIds.length > 0) meta.relatedIds = item.relatedIds;
   return meta;
 }
 
