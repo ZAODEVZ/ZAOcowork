@@ -11,6 +11,8 @@ interface TaskStatusData {
     in_progress: number;
     blocked: number;
   };
+  doneThisWeek: number;
+  doneThisMonth: number;
   topOwners: Array<{ owner: string; count: number }>;
   blockedItems: Array<{ id: string; title: string; owner: string }>;
   dueSoon: Array<{ id: string; title: string; due: string; owner: string }>;
@@ -39,6 +41,24 @@ export async function GET() {
       blocked: open.filter((x) => x.status === "BLOCKED").length,
     };
 
+    // Count done items this week and this month
+    const now = Date.now();
+    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+    const doneItems = items.filter((x) => x.status === "DONE");
+    const doneThisWeek = doneItems.filter((x) => {
+      if (!x.completedAt) return false;
+      const completedTime = new Date(x.completedAt).getTime();
+      return completedTime >= weekAgo && completedTime <= now;
+    }).length;
+
+    const doneThisMonth = doneItems.filter((x) => {
+      if (!x.completedAt) return false;
+      const completedTime = new Date(x.completedAt).getTime();
+      return completedTime >= monthAgo && completedTime <= now;
+    }).length;
+
     // Top owners (by count of open tasks)
     const ownerCounts = new Map<string, number>();
     open.forEach((x) => {
@@ -62,7 +82,6 @@ export async function GET() {
       }));
 
     // Due soon (next 7 days)
-    const now = Date.now();
     const in7Days = now + 7 * 24 * 60 * 60 * 1000;
     const dueSoon = open
       .filter((x) => {
@@ -95,6 +114,8 @@ export async function GET() {
     const data: TaskStatusData = {
       totalOpen: open.length,
       byStatus: statusCounts,
+      doneThisWeek,
+      doneThisMonth,
       topOwners,
       blockedItems,
       dueSoon,

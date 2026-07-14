@@ -9,6 +9,8 @@ interface TaskStatusData {
     in_progress: number;
     blocked: number;
   };
+  doneThisWeek: number;
+  doneThisMonth: number;
   topOwners: Array<{ owner: string; count: number }>;
   blockedItems: Array<{ id: string; title: string; owner: string }>;
   dueSoon: Array<{ id: string; title: string; due: string; owner: string }>;
@@ -60,7 +62,7 @@ export function TaskStatusWidget() {
       </h2>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-3 gap-2 mb-6 md:grid-cols-6">
         <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3">
           <div className="text-xs text-blue-200/70">Total Open</div>
           <div className="text-2xl font-bold text-blue-300">{data.totalOpen}</div>
@@ -76,6 +78,14 @@ export function TaskStatusWidget() {
         <div className="rounded-lg bg-orange-500/10 border border-orange-500/20 p-3">
           <div className="text-xs text-orange-200/70">Blocked</div>
           <div className="text-2xl font-bold text-orange-300">{data.byStatus.blocked}</div>
+        </div>
+        <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3">
+          <div className="text-xs text-green-200/70">Done (7d)</div>
+          <div className="text-2xl font-bold text-green-300">{data.doneThisWeek}</div>
+        </div>
+        <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
+          <div className="text-xs text-emerald-200/70">Done (30d)</div>
+          <div className="text-2xl font-bold text-emerald-300">{data.doneThisMonth}</div>
         </div>
       </div>
 
