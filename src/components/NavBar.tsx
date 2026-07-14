@@ -57,6 +57,7 @@ export function NavBar({
   const onBoard = pathname === "/board";
   const onHome = pathname === "/";
   const onOverview = pathname === "/overview";
+  const onPaths = pathname === "/paths";
   const onRepos = pathname === "/repos";
   const onChat = pathname === "/chat";
   const onTaskChat = pathname === "/task-chat";
@@ -89,9 +90,10 @@ export function NavBar({
     <>
     <nav className="flex flex-col rounded-xl bg-black/25 border border-white/10 p-1.5">
       <div className="flex items-center gap-1.5">
-        {/* Top-level tabs: Mission Control | Board | Repos */}
+        {/* Top-level tabs: Mission Control | Paths | Board | Repos */}
         <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
           <BrandTab href="/overview" label="Mission Control" active={onOverview} color={null} />
+          <BrandTab href="/paths" label="Paths" active={onPaths} color={null} />
           <BrandTab href="/board" label="Board" active={onBoard && !activeBrand} color={null} />
           <BrandTab href="/repos" label="Repos" active={onRepos} color={null} />
           {/* Separator */}
