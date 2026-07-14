@@ -1,5 +1,4 @@
-// ZAO Goals - North star and 2026 near-term goals
-// Edit these constants to update display without code changes
+import { Card, SectionHeader, Badge, ProgressBar } from "./ui";
 
 type GoalStatus = "on-track" | "at-risk" | "not-started";
 
@@ -12,13 +11,13 @@ const ZAO_GOALS = {
     { name: "Tools & Agents", project: "ZAO OS, ZOE, ZOL" },
   ],
   nearTermGoals: [
-    "GEO - own the AI answer for what is The ZAO (top priority)",
-    "ZAOstock - Oct 3",
-    "ZABAL Games - August finals",
-    "Artizen - Season 7 proof into Season 8",
-    "Devcon 8 Mumbai (Nov 2-6) - the festivals proof-leg",
-    "Protect the weekly Fractal (100+ unbroken weeks)",
-    "A second revenue line (WaveWarZ works - find one more)",
+    { title: "GEO - own the AI answer for what is The ZAO (top priority)", completion: 60 },
+    { title: "ZAOstock - Oct 3", completion: 55 },
+    { title: "ZABAL Games - August finals", completion: 70 },
+    { title: "Artizen - Season 7 proof into Season 8", completion: 50 },
+    { title: "Devcon 8 Mumbai (Nov 2-6) - the festivals proof-leg", completion: 10 },
+    { title: "Protect the weekly Fractal (100+ unbroken weeks)", completion: 95 },
+    { title: "A second revenue line (WaveWarZ works - find one more)", completion: 35 },
   ],
 };
 
@@ -33,38 +32,36 @@ const GOAL_STATUS_MAP: Record<string, GoalStatus> = {
   "A second revenue line (WaveWarZ works - find one more)": "at-risk",
 };
 
-function getStatusColor(status: GoalStatus): string {
+function getProgressColor(status: GoalStatus): "green" | "amber" | "blue" {
   switch (status) {
     case "on-track":
-      return "bg-green-500/20 text-green-200 border-green-500/30";
+      return "green";
     case "at-risk":
-      return "bg-amber-500/20 text-amber-200 border-amber-500/30";
+      return "amber";
     case "not-started":
-      return "bg-slate-500/20 text-slate-300 border-slate-500/30";
+      return "blue";
   }
 }
 
 export function GoalsWidget() {
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/30 p-6">
-      <div className="mb-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-200 mb-2">
-          North Star
-        </h2>
-        <p className="text-base text-white/90 leading-relaxed font-medium">
+    <Card className="p-6">
+      {/* North Star */}
+      <div className="mb-8">
+        <SectionHeader label="North Star" accent="amber" />
+        <p className="text-sm text-white/85 leading-relaxed font-medium">
           {ZAO_GOALS.northStar}
         </p>
       </div>
 
-      <div className="mb-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-200 mb-3">
-          4 Lanes
-        </h3>
+      {/* 4 Lanes */}
+      <div className="mb-8">
+        <SectionHeader label="4 Lanes" accent="amber" />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {ZAO_GOALS.lanes.map((lane) => (
             <div
               key={lane.name}
-              className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3"
+              className="rounded-lg bg-amber-500/10 border border-amber-500/20 hover:border-amber-500/40 transition-colors p-3"
             >
               <div className="text-xs uppercase tracking-wider text-amber-200/70">
                 {lane.name}
@@ -75,35 +72,38 @@ export function GoalsWidget() {
         </div>
       </div>
 
+      {/* Near-Term Goals with Progress Bars */}
       <div>
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-200 mb-3">
-          2026 Near-Term Goals
-        </h3>
-        <ul className="space-y-2">
-          {ZAO_GOALS.nearTermGoals.map((goal, idx) => {
-            const status = GOAL_STATUS_MAP[goal];
-            const statusLabel = status.replace("-", " ").toUpperCase();
+        <SectionHeader label="2026 Near-Term Goals" accent="amber" />
+        <div className="space-y-3">
+          {ZAO_GOALS.nearTermGoals.map((goal) => {
+            const status = GOAL_STATUS_MAP[goal.title];
+            const colorMap = {
+              "on-track": "green" as const,
+              "at-risk": "amber" as const,
+              "not-started": "blue" as const,
+            };
+
             return (
-              <li key={idx} className="flex gap-3 items-start text-sm text-white/80">
-                <span className="text-amber-400 font-semibold flex-shrink-0">{idx + 1}.</span>
-                <span className="flex-1">{goal}</span>
-                <span
-                  className={`flex-shrink-0 rounded px-2 py-0.5 text-xs font-semibold border whitespace-nowrap ${getStatusColor(status)}`}
-                >
-                  {statusLabel}
-                </span>
-              </li>
+              <div key={goal.title} className="space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-sm text-white/85 flex-1">{goal.title}</span>
+                  <Badge status={status} />
+                </div>
+                <ProgressBar
+                  label={`${goal.completion}%`}
+                  value={goal.completion}
+                  max={100}
+                  color={colorMap[status]}
+                />
+              </div>
             );
           })}
-        </ul>
-        <div className="mt-3 text-xs text-white/40">
+        </div>
+        <div className="mt-4 text-xs text-white/40">
           Status manually set - reflects current progress toward each goal
         </div>
       </div>
-
-      <div className="mt-4 text-xs text-white/40">
-        Edit ZAO_GOALS constant or file issue to make DB-editable
-      </div>
-    </div>
+    </Card>
   );
 }
