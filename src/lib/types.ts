@@ -230,6 +230,9 @@ export type ActionItem = {
   parentTaskId?: string | null;
   // Child tasks for this parent (populated on read)
   subtasks?: ActionItem[];
+  // Explicit related tasks: bidirectional informational links. Array of task IDs
+  // (app-facing legacy_id or UUID). Stored in metadata.relatedIds for persistence.
+  relatedIds?: string[];
 };
 
 // Provenance taxonomy (doc 765 decision 2). Every task carries exactly

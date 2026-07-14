@@ -448,6 +448,221 @@ function DependenciesBlock({
   );
 }
 
+function RelatedTasksBlock({
+  item,
+  onOpenTask,
+}: {
+  item: ActionItem;
+  onOpenTask?: (appId: string) => void;
+}) {
+  const taskId = item.dbId;
+  const [relatedIds, setRelatedIds] = useState<string[]>(item.relatedIds || []);
+  const [relatedTasks, setRelatedTasks] = useState<Array<{ id: string; title: string }> | null>(null);
+  const [inputValue, setInputValue] = useState("");
+  const [showPicker, setShowPicker] = useState(false);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  // Guard: unsaved task can't have relations
+  if (!taskId) return null;
+
+  const id = taskId;
+
+  useEffect(() => {
+    let cancelled = false;
+    setRelatedIds(item.relatedIds || []);
+    async function fetchRelated() {
+      try {
+        const res = await fetch(`/api/related-tasks?taskId=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (!cancelled && data.ok) {
+          setRelatedIds(data.relatedIds || []);
+        }
+      } catch {
+        // Silently ignore fetch errors
+      }
+    }
+    fetchRelated();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, item.relatedIds]);
+
+  async function handleAddRelated() {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+
+    setError(null);
+    start(async () => {
+      try {
+        const res = await fetch("/api/related-tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId: id, relatedId: trimmed }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          setInputValue("");
+          setShowPicker(false);
+          const refreshRes = await fetch(`/api/related-tasks?taskId=${encodeURIComponent(id)}`);
+          const refreshData = await refreshRes.json();
+          if (refreshData.ok) {
+            setRelatedIds(refreshData.relatedIds || []);
+          }
+        } else {
+          setError(data.error || "Failed to add related task");
+        }
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to add related task");
+      }
+    });
+  }
+
+  async function handleRemove(relatedId: string) {
+    setError(null);
+    start(async () => {
+      try {
+        const res = await fetch(
+          `/api/related-tasks?taskId=${encodeURIComponent(id)}&relatedId=${encodeURIComponent(relatedId)}`,
+          { method: "DELETE" }
+        );
+        const data = await res.json();
+        if (data.ok) {
+          const refreshRes = await fetch(`/api/related-tasks?taskId=${encodeURIComponent(id)}`);
+          const refreshData = await refreshRes.json();
+          if (refreshData.ok) {
+            setRelatedIds(refreshData.relatedIds || []);
+          }
+        }
+      } catch {
+        // Silently ignore errors
+      }
+    });
+  }
+
+  async function handleShowPicker() {
+    if (!relatedTasks) {
+      try {
+        const res = await fetch("/api/tasks-min");
+        const data = await res.json();
+        if (data.ok) setRelatedTasks(data.tasks || []);
+      } catch {
+        setError("Failed to load task list");
+      }
+    }
+    setShowPicker(true);
+  }
+
+  const linkedIdSet = new Set(relatedIds);
+
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Related Tasks</div>
+
+      {relatedIds.length > 0 && (
+        <div className="mb-3 space-y-1">
+          {relatedIds.map((relatedId) => (
+            <div
+              key={relatedId}
+              className="flex items-center justify-between gap-2 text-xs text-white/70 bg-blue-500/10 border border-blue-500/20 rounded px-2 py-1"
+            >
+              {onOpenTask ? (
+                <button
+                  onClick={() => onOpenTask(relatedId)}
+                  className="flex-1 min-w-0 truncate text-left hover:text-white hover:underline decoration-white/30"
+                  title={`Open: ${relatedId}`}
+                >
+                  #{relatedId} <span className="text-white/35">↗</span>
+                </button>
+              ) : (
+                <span className="flex-1 min-w-0 truncate">#{relatedId}</span>
+              )}
+              <button
+                onClick={() => handleRemove(relatedId)}
+                disabled={pending}
+                className="text-blue-400/60 hover:text-blue-300 disabled:opacity-50 flex-shrink-0"
+                aria-label="Remove relation"
+              >
+                x
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div>
+        {showPicker ? (
+          <div className="space-y-2">
+            {error && <div className="text-xs text-red-300">{error}</div>}
+            <div className="text-[9px] text-white/40 mb-1">Add by task number</div>
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddRelated();
+              }}
+              placeholder="Enter task number (e.g., 123)"
+              disabled={pending}
+              className="w-full text-xs px-2 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-white placeholder-white/30 focus:outline-none focus:border-blue-400/60 disabled:opacity-50"
+              autoFocus
+            />
+            {relatedTasks && relatedTasks.length > 0 && inputValue && (
+              <div className="max-h-32 overflow-y-auto space-y-1 border border-white/10 rounded p-1 bg-white/5">
+                {relatedTasks
+                  .filter((t) => {
+                    const matches =
+                      t.id.includes(inputValue) || t.title.toLowerCase().includes(inputValue.toLowerCase());
+                    return matches && t.id !== taskId && !linkedIdSet.has(t.id);
+                  })
+                  .slice(0, 5)
+                  .map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setInputValue(t.id);
+                        handleAddRelated();
+                      }}
+                      className="w-full text-left text-xs px-2 py-0.5 rounded hover:bg-white/[0.06] text-white/70 hover:text-white transition truncate"
+                    >
+                      #{t.id} {t.title}
+                    </button>
+                  ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddRelated}
+                disabled={pending || !inputValue.trim()}
+                className="flex-1 text-xs text-white/70 hover:text-white py-1 px-2 rounded border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 disabled:opacity-50 transition"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => {
+                  setShowPicker(false);
+                  setInputValue("");
+                  setError(null);
+                }}
+                className="flex-1 text-xs text-white/50 hover:text-white/70 py-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={handleShowPicker}
+            className="text-xs text-blue-300 hover:text-blue-200 transition underline"
+          >
+            + add by number
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SubtasksBlock({
   item,
   allItems,
@@ -963,6 +1178,7 @@ function DetailsPanel({
     <div className="p-5 space-y-5 flex-1">
       <OriginBlock item={item} />
       <DependenciesBlock item={item} onOpenTask={onOpenTask} />
+      <RelatedTasksBlock item={item} onOpenTask={onOpenTask} />
       <SubtasksBlock item={item} allItems={allItems} onOpenTask={onOpenTask} />
       {onOpenTask && allItems && allItems.length > 0 && (
         <RelatedBlock item={item} allItems={allItems} onOpenTask={onOpenTask} />
