@@ -4,8 +4,9 @@
 const STATIC_DEADLINES = [
   { date: "2026-07-15", label: "Token2049 vs ADE decision", project: "zaotravelz" },
   { date: "2026-07-16", label: "ZAOartizen Season 7 artifacts", project: "Daybreak Drive #7" },
-  { date: "2026-10-03", label: "ZAOstock Festival", project: "ZAOstock" },
   { date: "2026-08-31", label: "ZABAL Games finals", project: "ZABAL Games" },
+  { date: "2026-10-03", label: "ZAOstock Festival", project: "ZAOstock" },
+  { date: "2026-11-02", label: "Devcon 8 Mumbai opens (Nov 2-6)", project: "festivals proof-leg" },
 ];
 
 function formatDate(iso: string): string {

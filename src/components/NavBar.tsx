@@ -267,6 +267,7 @@ function NavMenu({
 
   const zaoSurfaces = [
     { href: "/", label: "Board", external: false },
+    { href: "/overview", label: "Mission Control", external: false },
     { href: "/repos", label: "ZAO Repos", external: false },
     { href: "https://thezao.xyz/fractals", label: "Fractals", external: true },
     { href: "https://thezao.xyz", label: "The ZAO", external: true },
