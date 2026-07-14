@@ -78,10 +78,8 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
   done: "DONE",
 };
 
-const TASK_COLUMNS =
-  "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
-  "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-  "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override, parent_task_id";
+// TASK_COLUMNS is now built dynamically based on whether parent_task_id column exists.
+// See buildTaskColumns() below.
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -99,6 +97,48 @@ function db(): SupabaseClient {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return cachedClient;
+}
+
+// Cache whether parent_task_id column exists. Detected once on first query,
+// then reused to avoid repeated schema checks. Allows the app to work both
+// before and after migration 020_parent_task_id is applied.
+let hasParentTaskIdColumn: boolean | null = null;
+
+async function detectParentTaskIdColumn(): Promise<boolean> {
+  if (hasParentTaskIdColumn !== null) return hasParentTaskIdColumn;
+  try {
+    // Query information_schema to check if the column exists.
+    const { data, error } = await db()
+      .from("information_schema.columns")
+      .select("column_name")
+      .eq("table_name", "tasks")
+      .eq("column_name", "parent_task_id")
+      .limit(1)
+      .maybeSingle();
+
+    hasParentTaskIdColumn = Boolean(data);
+    return hasParentTaskIdColumn;
+  } catch {
+    // On any error (e.g., permission denied, table not found), assume the
+    // column does not exist. This is safe: if it doesn't exist, we'll operate
+    // in degraded mode (no subtasks). If it does exist but the query failed,
+    // the next request will retry.
+    hasParentTaskIdColumn = false;
+    return false;
+  }
+}
+
+// Build TASK_COLUMNS dynamically based on whether parent_task_id exists.
+// This allows the app to work both before and after the migration.
+function buildTaskColumns(hasParentTaskId: boolean): string {
+  let cols =
+    "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
+    "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
+    "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override";
+  if (hasParentTaskId) {
+    cols += ", parent_task_id";
+  }
+  return cols;
 }
 
 interface TaskRow {
@@ -301,12 +341,12 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   return meta;
 }
 
-function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
+function itemToRow(item: ActionItem, team: TeamMaps, hasParentTaskIdColumn: boolean): Record<string, unknown> {
   const ownerStr = String(item.owner ?? "");
   const ownerKey =
     ownerStr && ownerStr !== "Both" && ownerStr !== "Open" ? ownerStr.toLowerCase() : null;
   const dueIsDate = /^\d{4}-\d{2}-\d{2}$/.test(item.due);
-  return {
+  const row: Record<string, unknown> = {
     legacy_source: LEGACY_SOURCE,
     legacy_id: item.id,
     kind: "task",
@@ -337,9 +377,12 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     // Doc 765 Phase I
     project_id: item.projectId ?? null,
     source: item.source ?? "human-web",
-    // Subtasks: parent_task_id for hierarchical organization
-    parent_task_id: item.parentTaskId ?? null,
   };
+  // Only include parent_task_id if the column exists (migration 020 applied)
+  if (hasParentTaskIdColumn) {
+    row.parent_task_id = item.parentTaskId ?? null;
+  }
+  return row;
 }
 
 // The expensive part of getActions — the full paginated table read + archive
@@ -350,6 +393,11 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
 // deep copy so one caller's in-memory mutations can't leak through the cache.
 const loadBoard = cache(async (): Promise<ActionItem[]> => {
   const team = await teamMaps();
+  // Detect once whether parent_task_id column exists. This allows graceful
+  // degradation if the migration hasn't been applied yet.
+  const hasParentTaskId = await detectParentTaskIdColumn();
+  const taskColumns = buildTaskColumns(hasParentTaskId);
+
   // Read EVERY task regardless of legacy_source. Pre-unification the read was
   // scoped to legacy_source='cowork-actions.json' which hid meeting-captured
   // and bug-fix tasks from the board. Now they all show; writes target the
@@ -365,7 +413,7 @@ const loadBoard = cache(async (): Promise<ActionItem[]> => {
   for (let offset = 0; ; offset += PAGE) {
     const { data, error } = await db()
       .from("tasks")
-      .select(TASK_COLUMNS)
+      .select(taskColumns)
       // The board is private to the cowork team roster (team_members login), so
       // Zaal's personal (project=zaal-personal) items are folded into the shared
       // board + my-work rather than a separate /agentic-todos surface. They open
@@ -410,9 +458,13 @@ export function looksLikeUuid(s: string): boolean {
  */
 export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
   const team = await teamMaps();
+  // Detect once whether parent_task_id column exists for both read and subtask queries.
+  const hasParentTaskId = await detectParentTaskIdColumn();
+  const taskColumns = buildTaskColumns(hasParentTaskId);
+
   const { data, error } = await db()
     .from("tasks")
-    .select(TASK_COLUMNS)
+    .select(taskColumns)
     .eq(looksLikeUuid(idOrDbId) ? "id" : "legacy_id", idOrDbId)
     .limit(1)
     .maybeSingle();
@@ -421,11 +473,12 @@ export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
 
   const item = normalizeItem(rowToItem(data as unknown as TaskRow, team));
 
-  // Fetch subtasks if this is a parent task
-  if (item.dbId) {
+  // Fetch subtasks if this is a parent task AND the parent_task_id column exists.
+  // If the column doesn't exist yet (migration not applied), skip subtask loading.
+  if (item.dbId && hasParentTaskId) {
     const { data: subtaskRows, error: subtaskError } = await db()
       .from("tasks")
-      .select(TASK_COLUMNS)
+      .select(taskColumns)
       .eq("parent_task_id", item.dbId)
       .order("created_at", { ascending: true });
 
@@ -452,7 +505,8 @@ export async function saveItem(
 ): Promise<void> {
   if (!item.dbId) throw new Error(`saveItem: item ${item.id} has no dbId`);
   const team = await teamMaps();
-  const row = itemToRow(item, team);
+  const hasParentTaskId = await detectParentTaskIdColumn();
+  const row = itemToRow(item, team, hasParentTaskId);
   delete row.legacy_source;
   delete row.legacy_id;
   delete row.kind;
@@ -483,6 +537,7 @@ async function applyDiff(
   before: ActionItem[],
   after: ActionItem[],
   team: TeamMaps,
+  hasParentTaskIdColumn: boolean,
 ): Promise<void> {
   // Key the diff by the real DB primary key (dbId / UUID), NOT by legacy_id.
   // getActions() reads every source, and legacy_id collides across sources
@@ -534,7 +589,7 @@ async function applyDiff(
   // each item. Per-row (not batch) keeps each returned row unambiguously
   // correlated to its source item without relying on RETURNING order.
   for (const item of inserts) {
-    const row = itemToRow(item, team);
+    const row = itemToRow(item, team, hasParentTaskIdColumn);
     row.legacy_id = null;
     const { data, error } = await db()
       .from("tasks")
@@ -550,7 +605,7 @@ async function applyDiff(
       // we cannot target the row safely — skip instead of mass-updating.
       continue;
     }
-    const row = itemToRow(item, team);
+    const row = itemToRow(item, team, hasParentTaskIdColumn);
     // Never rewrite identity / source-scoping columns on update. We target the
     // row by its UUID, so legacy_source/legacy_id/kind/project/created_at are
     // immutable here. Rewriting legacy_source to the cowork value re-homes the
@@ -582,13 +637,14 @@ export async function saveActions(
   _summary: string,
 ): Promise<void> {
   const team = await teamMaps();
+  const hasParentTaskId = await detectParentTaskIdColumn();
   // Diff against the snapshot captured when the caller read (doc.before), NOT a
   // fresh read. Re-reading here pulled in rows other requests inserted between
   // the caller's read and this write, then applyDiff treated those rows as
   // deletes (absent from the caller's `doc.items`) and erased them. Falling back
   // to a fresh read keeps old call sites that build a doc by hand working.
   const before = doc.before ?? (await getActions()).items;
-  await applyDiff(before, doc.items, team);
+  await applyDiff(before, doc.items, team, hasParentTaskId);
 }
 
 export function newId(existing: ActionItem[]): string {
