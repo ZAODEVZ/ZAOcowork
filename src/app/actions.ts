@@ -41,6 +41,15 @@ function asPriority(v: unknown): Priority {
 function asPhase(v: unknown): Phase {
   return PHASES.includes(v as Phase) ? (v as Phase) : "Define";
 }
+
+// Smart DMAIC default based on context
+function smartDefaultPhase(priority: Priority, due: string, status: ActionStatus): Phase {
+  if (status === "DONE") return "Control"; // Done = control
+  if (due && new Date(due).getTime() < Date.now()) return "Improve"; // Overdue = improve/fix
+  if (due && new Date(due).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000) return "Measure"; // Due soon = measure progress
+  if (priority === "P1") return "Improve"; // High priority = improve
+  return "Define"; // Default = define
+}
 function asCategory(v: unknown): string {
   const s = String(v ?? "Other").trim();
   return CATEGORIES.includes(s as (typeof CATEGORIES)[number]) ? s : "Other";
@@ -99,6 +108,19 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
   // tolerated here; canonicalization happens in normalizeItem/data.ts.
   const brandEntries = form.getAll("brands").map((v) => String(v).trim()).filter(Boolean);
   const brands = brandEntries.length > 0 ? brandEntries : prev?.brands ?? [];
+
+  // Prepare values for smart defaulting
+  const status = asStatus(form.get("status") ?? prev?.status);
+  const priority = asPriority(form.get("priority") ?? prev?.priority);
+  const due = String(form.get("due") ?? prev?.due ?? "").trim();
+
+  // Smart DMAIC default: if phase not explicitly provided, infer from context
+  const phaseExplicit = form.get("phase");
+  const phase = phaseExplicit
+    ? asPhase(phaseExplicit)
+    : prev?.phase ? prev.phase
+    : smartDefaultPhase(priority, due, status);
+
   const next = normalizeItem({
     id,
     // Carry the Supabase UUID through so applyDiff() targets the existing row
@@ -109,13 +131,13 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     title: String(form.get("title") ?? prev?.title ?? "").trim(),
     createdBy: prev?.createdBy || actor,
     owner: ownerVal,
-    status: asStatus(form.get("status") ?? prev?.status),
+    status,
     category: asCategory(form.get("category") ?? prev?.category),
-    priority: asPriority(form.get("priority") ?? prev?.priority),
+    priority,
     important: asBool(form.get("important") ?? prev?.important),
     urgent: asBool(form.get("urgent") ?? prev?.urgent),
-    phase: asPhase(form.get("phase") ?? prev?.phase),
-    due: String(form.get("due") ?? prev?.due ?? "").trim(),
+    phase,
+    due,
     notes: String(form.get("notes") ?? prev?.notes ?? "").trim(),
     brands,
     createdAt: prev?.createdAt || now,
