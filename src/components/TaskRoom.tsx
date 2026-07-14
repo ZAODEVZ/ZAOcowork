@@ -719,9 +719,9 @@ function RelatedBlock({
 
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 p-3">
-      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Related tasks</div>
+      <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Related (by brand/owner/category)</div>
       <div className="space-y-1">
-        {related.map(({ t, reason }) => (
+        {related.slice(0, 3).map(({ t, reason }) => (
           <button
             key={t.id}
             onClick={() => onOpenTask(t.id)}
@@ -733,9 +733,11 @@ function RelatedBlock({
             {reason && (
               <span className="flex-shrink-0 text-[9px] text-white/35 truncate max-w-[40%]">{reason}</span>
             )}
-            <span className="flex-shrink-0 text-white/30">↗</span>
           </button>
         ))}
+        {related.length > 3 && (
+          <p className="text-[9px] text-white/25 px-2 py-1 italic">+{related.length - 3} more</p>
+        )}
       </div>
     </div>
   );
@@ -841,6 +843,7 @@ function DetailsPanel({
   // the server value once `item` refreshes (or on a blocked/failed change).
   const [statusValue, setStatusValue] = useState<ActionStatus>(item.status);
   useEffect(() => setStatusValue(item.status), [item.status]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Multi-assignee: live roster for the people checkboxes (active team_members),
   // with the hardcoded OWNERS as a fallback before the fetch lands. Optimistic
@@ -862,16 +865,19 @@ function DetailsPanel({
   }, []);
   const [assigneeList, setAssigneeList] = useState<string[]>(effectiveAssignees(item));
   useEffect(() => setAssigneeList(effectiveAssignees(item)), [item]);
+  // Assignee modal state
+  const [showAssigneeModal, setShowAssigneeModal] = useState(false);
+  const [assigneeSearch, setAssigneeSearch] = useState("");
   function toggleAssignee(slug: string) {
     const next = assigneeList.includes(slug)
       ? assigneeList.filter((s) => s !== slug)
       : [...assigneeList, slug];
-    setAssigneeList(next);
     const fd = new FormData();
     fd.set("id", item.id);
     for (const s of next) fd.append("assignees", s);
     start(async () => {
       await setAssigneesAction(fd);
+      // Only update optimistic state AFTER server confirms (item refresh syncs it)
       setFlash("saved");
       setTimeout(() => setFlash(null), 2000);
     });
@@ -961,32 +967,77 @@ function DetailsPanel({
       {onOpenTask && allItems && allItems.length > 0 && (
         <RelatedBlock item={item} allItems={allItems} onOpenTask={onOpenTask} />
       )}
-      {item.dbId && (
-        <div className="rounded-lg bg-white/[0.04] border border-white/10 p-3">
-          <div className="text-[10px] uppercase tracking-wider text-white/45 mb-2">Public visibility</div>
-          <div className="flex gap-2">
-            {(["inherit", "show", "hide"] as const).map((opt) => (
-              <button
-                key={opt}
-                type="button"
+
+      {/* Advanced section (collapsed by default) */}
+      <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full flex items-center gap-2 px-4 py-3 text-left text-[11px] uppercase tracking-wider text-white/45 hover:text-white/65 transition"
+        >
+          <span className={`inline-block transition ${showAdvanced ? "rotate-90" : ""}`}>▶</span>
+          Advanced
+        </button>
+        {showAdvanced && (
+          <div className="border-t border-white/10 p-4 space-y-3">
+            <FormField label="Service class">
+              <select
+                defaultValue={item.serviceClass ?? "Standard"}
+                onChange={(e) => quickPatch("serviceClass", e.target.value)}
                 disabled={pending}
-                onClick={() => handlePublicOverride(opt)}
-                className={`text-xs px-3 py-1.5 rounded border transition disabled:opacity-50 ${
-                  item.publicOverride === null && opt === "inherit"
-                    ? "bg-blue-500/20 text-blue-200 border-blue-500/40"
-                    : item.publicOverride === true && opt === "show"
-                      ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/40"
-                      : item.publicOverride === false && opt === "hide"
-                        ? "bg-red-500/20 text-red-200 border-red-500/40"
-                        : "text-white/50 border-white/10 hover:text-white/75"
-                }`}
+                className={selectCls}
               >
-                {opt === "inherit" ? "Inherit" : opt === "show" ? "Show" : "Hide"}
-              </button>
-            ))}
+                {SERVICE_CLASSES.map((sc) => (
+                  <option key={sc} value={sc}>
+                    {SERVICE_CLASS_LABELS[sc]}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            <FormField label="Task Type">
+              <select
+                defaultValue={item.taskType || "task"}
+                onChange={(e) => quickPatch("taskType", e.target.value)}
+                disabled={pending}
+                className={selectCls}
+              >
+                {TASK_TYPES.map((t) => (
+                  <option key={t} value={t}>
+                    {TASK_TYPE_LABELS[t]}
+                  </option>
+                ))}
+              </select>
+            </FormField>
+
+            {item.dbId && (
+              <FormField label="Public visibility">
+                <div className="flex gap-2">
+                  {(["inherit", "show", "hide"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      disabled={pending}
+                      onClick={() => handlePublicOverride(opt)}
+                      className={`text-xs px-3 py-1.5 rounded border transition disabled:opacity-50 ${
+                        item.publicOverride === null && opt === "inherit"
+                          ? "bg-blue-500/20 text-blue-200 border-blue-500/40"
+                          : item.publicOverride === true && opt === "show"
+                            ? "bg-emerald-500/20 text-emerald-200 border-emerald-500/40"
+                            : item.publicOverride === false && opt === "hide"
+                              ? "bg-red-500/20 text-red-200 border-red-500/40"
+                              : "text-white/50 border-white/10 hover:text-white/75"
+                      }`}
+                    >
+                      {opt === "inherit" ? "Inherit" : opt === "show" ? "Show" : "Hide"}
+                    </button>
+                  ))}
+                </div>
+              </FormField>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
       <div className="space-y-4">
         <div>
           <label className="block text-[11px] text-white/45 mb-1 uppercase tracking-wider">Title</label>
@@ -1032,21 +1083,6 @@ function DetailsPanel({
             </select>
           </FormField>
 
-          <FormField label="Service class">
-            <select
-              defaultValue={item.serviceClass ?? "Standard"}
-              onChange={(e) => quickPatch("serviceClass", e.target.value)}
-              disabled={pending}
-              className={selectCls}
-            >
-              {SERVICE_CLASSES.map((sc) => (
-                <option key={sc} value={sc}>
-                  {SERVICE_CLASS_LABELS[sc]}
-                </option>
-              ))}
-            </select>
-          </FormField>
-
           {projects && projects.length > 0 && (
             <FormField label="Project">
               <select
@@ -1066,33 +1102,98 @@ function DetailsPanel({
           )}
 
           <FormField label="Assignees">
-            <div className="flex flex-wrap gap-1.5">
-              {people.map((m) => {
-                const checked = assigneeList.includes(m.slug);
-                return (
-                  <button
-                    key={m.slug}
-                    type="button"
-                    disabled={pending}
-                    aria-pressed={checked}
-                    onClick={() => toggleAssignee(m.slug)}
-                    className={`px-2.5 py-1 rounded-lg text-xs border transition disabled:opacity-50 ${
-                      checked
-                        ? "bg-blue-500/20 border-blue-500/50 text-blue-100"
-                        : "bg-[#0b1220] border-white/10 text-white/60 hover:text-white/85 hover:border-white/20"
-                    }`}
-                  >
-                    <span className="mr-1" aria-hidden="true">{checked ? "☑" : "☐"}</span>
-                    {m.name}
-                  </button>
-                );
-              })}
+            <div className="space-y-2">
+              {/* Assigned pills */}
+              <div className="flex flex-wrap gap-1.5 min-h-[32px]">
+                {assigneeList.length === 0 ? (
+                  <span className="text-[11px] text-white/35 py-1">Unassigned</span>
+                ) : (
+                  assigneeList.map((slug) => {
+                    const person = people.find((p) => p.slug === slug);
+                    return (
+                      <button
+                        key={slug}
+                        type="button"
+                        disabled={pending}
+                        onClick={() => toggleAssignee(slug)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/20 border border-blue-500/50 text-blue-100 text-xs hover:bg-blue-500/30 transition disabled:opacity-50"
+                        title={`Click to remove ${person?.name ?? slug}`}
+                      >
+                        <span className="w-5 h-5 rounded-full bg-blue-600/40 flex items-center justify-center text-[9px] font-bold flex-shrink-0">
+                          {(person?.name ?? slug).charAt(0).toUpperCase()}
+                        </span>
+                        <span>{person?.name ?? slug}</span>
+                        <span className="ml-0.5 text-white/50">x</span>
+                      </button>
+                    );
+                  })
+                )}
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => setShowAssigneeModal(true)}
+                  className="px-2.5 py-1 rounded-full text-xs border border-white/20 text-white/60 hover:text-white/85 hover:border-white/40 transition disabled:opacity-50"
+                >
+                  + Add
+                </button>
+              </div>
+
+              {/* Assignee modal */}
+              {showAssigneeModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div className="bg-[#07111e] border border-white/10 rounded-xl w-80 max-h-80 flex flex-col">
+                    <div className="p-4 border-b border-white/10">
+                      <input
+                        type="text"
+                        value={assigneeSearch}
+                        onChange={(e) => setAssigneeSearch(e.target.value.toLowerCase())}
+                        placeholder="Search people..."
+                        autoFocus
+                        className="w-full bg-[#0b1220] border border-white/10 rounded-lg px-3 py-2 text-xs text-white placeholder-white/30 focus:outline-none focus:border-white/25"
+                      />
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-1 p-2">
+                      {people
+                        .filter((p) => p.name.toLowerCase().includes(assigneeSearch) || p.slug.includes(assigneeSearch))
+                        .map((p) => {
+                          const checked = assigneeList.includes(p.slug);
+                          return (
+                            <button
+                              key={p.slug}
+                              type="button"
+                              disabled={pending}
+                              onClick={() => toggleAssignee(p.slug)}
+                              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs transition disabled:opacity-50 ${
+                                checked
+                                  ? "bg-blue-500/20 border border-blue-500/50 text-blue-100"
+                                  : "text-white/70 hover:bg-white/5"
+                              }`}
+                            >
+                              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${checked ? "bg-blue-600/40" : "bg-white/10"}`}>
+                                {p.name.charAt(0).toUpperCase()}
+                              </span>
+                              <span className="flex-1">{p.name}</span>
+                              {checked && <span className="text-blue-300">✓</span>}
+                            </button>
+                          );
+                        })}
+                    </div>
+                    <div className="p-3 border-t border-white/10 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAssigneeModal(false);
+                          setAssigneeSearch("");
+                        }}
+                        className="flex-1 px-3 py-1.5 rounded-lg text-xs border border-white/20 text-white/60 hover:text-white/85 transition"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="mt-1.5 text-[11px] text-white/35">
-              {assigneeList.length === 0
-                ? "Unassigned — shows as open to claim."
-                : `Assigned to ${assigneeList.map((s) => people.find((p) => p.slug === s)?.name ?? s).join(", ")}`}
-            </p>
           </FormField>
 
           <FormField label="DMAIC Phase">
@@ -1120,21 +1221,6 @@ function DetailsPanel({
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
-                </option>
-              ))}
-            </select>
-          </FormField>
-
-          <FormField label="Task Type">
-            <select
-              defaultValue={item.taskType || "task"}
-              onChange={(e) => quickPatch("taskType", e.target.value)}
-              disabled={pending}
-              className={selectCls}
-            >
-              {TASK_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {TASK_TYPE_LABELS[t]}
                 </option>
               ))}
             </select>
@@ -1317,8 +1403,8 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
 
   return (
     <div className="p-5 space-y-7">
-      {/* Submit Progress Update */}
-      <SubmitUpdateBox item={item} currentUser={currentUser} />
+      {/* Unified Comment & Update Box */}
+      <UnifiedUpdateBox item={item} currentUser={currentUser} />
 
       {/* Review Queue */}
       {pendingUpdates.length > 0 && (
@@ -1363,73 +1449,158 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
           )}
         </div>
       </section>
-
-      {/* Comments */}
-      <CommentsBox item={item} currentUser={currentUser} />
     </div>
   );
 }
 
-function SubmitUpdateBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
+function UnifiedUpdateBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
   const [pending, start] = useTransition();
   const { value: content, update: setContent, clear: clearContent } = useDraft(
-    `zao-draft:update:${item.id}`,
+    `zao-draft:comment:${item.id}`,
   );
   const [toStatus, setToStatus] = useState<ActionStatus | "">("");
+  const [isUpdate, setIsUpdate] = useState(false); // false=comment, true=update+status
+  const [isMac, setIsMac] = useState(false);
+  const [silent, setSilent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const comments = item.comments || [];
+
+  useEffect(() => {
+    setIsMac(/Mac/i.test(navigator.platform || navigator.userAgent || ""));
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.localStorage.getItem("zao-comment-silent-default") === "1") {
+      setSilent(true);
+    }
+  }, []);
 
   function handleSubmit() {
     if (!content.trim()) return;
-    const fd = new FormData();
-    fd.set("id", item.id);
-    fd.set("content", content);
-    if (toStatus) fd.set("toStatus", toStatus);
-    start(async () => {
-      await submitUpdate(fd);
-      clearContent();
-      setToStatus("");
-    });
+    setError(null);
+    if (isUpdate) {
+      const fd = new FormData();
+      fd.set("id", item.id);
+      fd.set("content", content);
+      if (toStatus) fd.set("toStatus", toStatus);
+      start(async () => {
+        await submitUpdate(fd);
+        clearContent();
+        setToStatus("");
+        setIsUpdate(false);
+      });
+    } else {
+      const fd = new FormData();
+      fd.set("id", item.id);
+      fd.set("content", content);
+      fd.set("silent", silent ? "1" : "0");
+      start(async () => {
+        const res = await addComment(fd);
+        if (res?.error) {
+          setError(res.error);
+          return;
+        }
+        clearContent();
+      });
+    }
   }
 
   return (
     <section>
       <h3 className="text-[10px] uppercase tracking-widest text-white/35 mb-3 font-semibold">
-        Submit Progress Update
+        Activity
       </h3>
+
+      {/* Comments list */}
+      {comments.length > 0 && (
+        <div className="space-y-3 mb-4">
+          {comments.map((c) => (
+            <CommentCard key={c.id} comment={c} taskId={item.id} currentUser={currentUser} />
+          ))}
+        </div>
+      )}
+
+      {/* Unified input */}
       <div className="rounded-xl border border-white/10 bg-black/25 overflow-hidden">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="What progress have you made? What was done? What's blocking you? What's next?"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          placeholder={isUpdate ? "What progress have you made? What's next?" : `Leave a comment... tag with @name (${isMac ? "⌘" : "Ctrl"}+Enter to send)`}
           rows={3}
           className="w-full bg-transparent px-4 pt-4 pb-2 text-sm text-white/80 placeholder-white/25 resize-none focus:outline-none"
         />
+        {error && (
+          <p className="px-4 pb-1 text-[11px] text-red-300 break-words">{error}</p>
+        )}
         <div className="flex items-center gap-2 px-4 pb-3">
-          <select
-            value={toStatus}
-            onChange={(e) => setToStatus(e.target.value as ActionStatus | "")}
-            className="flex-1 rounded-lg bg-[#0b1220] border border-white/10 px-2.5 py-1.5 text-xs text-white/80 focus:outline-none"
-          >
-            <option value="">Move to status (optional)</option>
-            {BOARD_STATUSES.filter((s) => s !== item.status).map((s) => (
-              <option key={s} value={s}>
-                → {STATUS_LABEL[s]}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={pending || !content.trim()}
-            className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-1.5 text-xs font-semibold transition disabled:opacity-40 whitespace-nowrap"
-          >
-            {pending
-              ? "Submitting..."
-              : item.requiresApproval
-              ? "Submit for Review"
-              : "Submit Update"}
-          </button>
+          {!isUpdate && (
+            <label className="flex items-center gap-1.5 text-[11px] text-white/45 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={silent}
+                onChange={(e) => setSilent(e.target.checked)}
+                className="h-3.5 w-3.5 rounded"
+              />
+              Silent
+            </label>
+          )}
+          {isUpdate && (
+            <select
+              value={toStatus}
+              onChange={(e) => setToStatus(e.target.value as ActionStatus | "")}
+              className="flex-1 rounded-lg bg-[#0b1220] border border-white/10 px-2.5 py-1.5 text-xs text-white/80 focus:outline-none"
+            >
+              <option value="">Move to (optional)</option>
+              {BOARD_STATUSES.filter((s) => s !== item.status).map((s) => (
+                <option key={s} value={s}>
+                  → {STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+          )}
+          <div className="flex gap-1.5 ml-auto">
+            {!isUpdate && (
+              <button
+                type="button"
+                onClick={() => setIsUpdate(true)}
+                disabled={!content.trim()}
+                className="px-2.5 py-1.5 rounded-lg text-xs border border-white/10 text-white/60 hover:text-white/85 transition disabled:opacity-50"
+                title="Switch to update mode"
+              >
+                Update
+              </button>
+            )}
+            {isUpdate && (
+              <button
+                type="button"
+                onClick={() => setIsUpdate(false)}
+                disabled={!content.trim()}
+                className="px-2.5 py-1.5 rounded-lg text-xs border border-white/10 text-white/60 hover:text-white/85 transition disabled:opacity-50"
+                title="Switch to comment mode"
+              >
+                Comment
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={pending || !content.trim()}
+              className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-1.5 text-xs font-semibold transition disabled:opacity-40 whitespace-nowrap"
+            >
+              {pending
+                ? isUpdate ? "Submitting..." : "Sending…"
+                : isUpdate
+                ? item.requiresApproval ? "Submit for Review" : "Submit Update"
+                : "Send"}
+            </button>
+          </div>
         </div>
-        {item.requiresApproval && (
+        {item.requiresApproval && isUpdate && (
           <p className="px-4 pb-3 text-[10px] text-amber-300/60">
             This task requires lead approval — status changes take effect once approved.
           </p>
@@ -1651,106 +1822,6 @@ function CommentCard({
         )}
       </div>
     </div>
-  );
-}
-
-function CommentsBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
-  const [pending, start] = useTransition();
-  const { value: content, update: setContent, clear: clearContent } = useDraft(
-    `zao-draft:comment:${item.id}`,
-  );
-  // Detect the Mac modifier key client-side only. Reading `navigator` during
-  // render crashes SSR (it isn't a reliable global in the Node server
-  // runtime) — and TaskRoom is server-rendered whenever the page loads with
-  // a ?task=<id> deep link, which previously 500'd the whole page.
-  const [isMac, setIsMac] = useState(false);
-  useEffect(() => {
-    setIsMac(/Mac/i.test(navigator.platform || navigator.userAgent || ""));
-  }, []);
-  const comments = item.comments || [];
-  const [error, setError] = useState<string | null>(null);
-  // Default: notify the people tagged in the comment. Ticking this posts the
-  // comment but skips pinging the @mentioned people (owner + leads still get
-  // notified server-side).
-  const [silent, setSilent] = useState(false);
-  // Honor the per-device default from Settings ("Notify tagged people by
-  // default" off => silent on).
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage.getItem("zao-comment-silent-default") === "1") {
-      setSilent(true);
-    }
-  }, []);
-
-  function handleSend() {
-    if (!content.trim()) return;
-    const fd = new FormData();
-    fd.set("id", item.id);
-    fd.set("content", content);
-    fd.set("silent", silent ? "1" : "0");
-    setError(null);
-    start(async () => {
-      const res = await addComment(fd);
-      if (res?.error) {
-        setError(res.error);
-        return;
-      }
-      clearContent();
-    });
-  }
-
-  return (
-    <section>
-      <h3 className="text-[10px] uppercase tracking-widest text-white/35 mb-3 font-semibold">
-        Comments
-      </h3>
-      <div className="space-y-3 mb-4">
-        {comments.length === 0 && (
-          <p className="text-xs text-white/25 italic">No comments yet.</p>
-        )}
-        {comments.map((c) => (
-          <CommentCard key={c.id} comment={c} taskId={item.id} currentUser={currentUser} />
-        ))}
-      </div>
-
-      {/* Comment input */}
-      <div className="rounded-xl border border-white/10 bg-black/25 overflow-hidden">
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleSend();
-            }
-          }}
-          placeholder={`Write a comment… tag with @name (${isMac ? "⌘" : "Ctrl"}+Enter to send)`}
-          rows={3}
-          className="w-full bg-transparent px-4 pt-3 pb-1 text-sm text-white/80 placeholder-white/25 resize-none focus:outline-none"
-        />
-        {error && (
-          <p className="px-4 pb-1 text-[11px] text-red-300 break-words">{error}</p>
-        )}
-        <div className="flex items-center justify-between gap-2 p-2.5 pt-1">
-          <label className="flex items-center gap-1.5 text-[11px] text-white/45 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={silent}
-              onChange={(e) => setSilent(e.target.checked)}
-              className="h-3.5 w-3.5 rounded"
-            />
-            Don&apos;t notify tagged people
-          </label>
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={pending || !content.trim()}
-            className="rounded-lg bg-blue-600 hover:bg-blue-500 px-4 py-1.5 text-xs font-semibold transition disabled:opacity-40 flex-shrink-0"
-          >
-            {pending ? "Sending…" : "Send"}
-          </button>
-        </div>
-      </div>
-    </section>
   );
 }
 
