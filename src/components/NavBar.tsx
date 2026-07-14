@@ -251,7 +251,7 @@ function NavMenu({
   const anyActive =
     active.mine || active.calendar || active.meetings || active.crm || active.photos || active.activity || active.chat || active.taskChat || active.admin || active.settings;
 
-  const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean }> = [
+  const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean; external?: boolean }> = [
     { href: "/summary", label: "Summary", icon: "", active: active.summary },
     { href: "/my-work", label: "My Work", icon: "🙋", active: active.mine },
     { href: "/calendar", label: "Calendar", icon: "📅", active: active.calendar },
@@ -263,6 +263,18 @@ function NavMenu({
     { href: "/photos", label: "Photos", icon: "", active: active.photos },
     ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
     { href: "/settings", label: "Settings", icon: "⚙", active: active.settings },
+  ];
+
+  const zaoSurfaces = [
+    { href: "/", label: "Board", external: false },
+    { href: "/repos", label: "ZAO Repos", external: false },
+    { href: "https://thezao.xyz/fractals", label: "Fractals", external: true },
+    { href: "https://thezao.xyz", label: "The ZAO", external: true },
+    { href: "https://thezao.xyz/papers", label: "Papers", external: true },
+    { href: "https://thezao.xyz/list", label: "Directory", external: true },
+    { href: "https://thezao.xyz/bots", label: "Bots Board", external: true },
+    { href: "https://zao.frapps.xyz", label: "Governance", external: true },
+    { href: "https://zabalnewsletterbuilder.vercel.app", label: "Newsletter", external: true },
   ];
 
   return (
@@ -305,6 +317,37 @@ function NavMenu({
                 {it.label}
               </Link>
             ))}
+            <div className="my-1.5 border-t border-white/10" />
+            <div className="px-3 py-1.5">
+              <div className="text-[10px] uppercase tracking-wider text-white/40 font-semibold mb-2">
+                ZAO Surfaces
+              </div>
+              <div className="space-y-0.5">
+                {zaoSurfaces.map((surface) =>
+                  surface.external ? (
+                    <a
+                      key={surface.href}
+                      href={surface.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs text-white/65 hover:text-white hover:bg-white/[0.06] transition"
+                    >
+                      {surface.label}
+                      <span className="text-[10px] text-white/30">↗</span>
+                    </a>
+                  ) : (
+                    <Link
+                      key={surface.href}
+                      href={surface.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs text-white/65 hover:text-white hover:bg-white/[0.06] transition"
+                    >
+                      {surface.label}
+                    </Link>
+                  )
+                )}
+              </div>
+            </div>
           </div>,
           document.body,
         )}
