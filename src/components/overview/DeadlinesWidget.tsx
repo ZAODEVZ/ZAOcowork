@@ -1,5 +1,4 @@
-// Static seed deadlines (edit as needed)
-// TODO: Make DB-editable
+import { Card, SectionHeader, Badge } from "./ui";
 
 const STATIC_DEADLINES = [
   { date: "2026-07-15", label: "Token2049 vs ADE decision", project: "zaotravelz" },
@@ -32,57 +31,57 @@ function isUrgent(iso: string): boolean {
 }
 
 export function DeadlinesWidget() {
-  const sorted = [...STATIC_DEADLINES].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const sorted = [...STATIC_DEADLINES].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-red-900/20 to-amber-900/20 border border-red-500/30 p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-red-200 mb-4">
-        Deadlines
-      </h2>
+    <Card className="p-6 flex flex-col">
+      <SectionHeader label="Deadlines" accent="red" />
 
-      <div className="space-y-3">
+      <div className="space-y-2 flex-1 mb-4">
         {sorted.slice(0, 5).map((deadline) => {
           const days = daysUntil(deadline.date);
           const overdue = isOverdue(deadline.date);
           const urgent = isUrgent(deadline.date);
 
+          let badgeStatus: "blocked" | "at-risk" | "done" = "done";
+          if (overdue) badgeStatus = "blocked";
+          else if (urgent) badgeStatus = "at-risk";
+
           return (
             <div
               key={deadline.date}
-              className={`rounded-lg border p-2 text-xs ${
+              className={`rounded-lg border p-3 ${
                 overdue
                   ? "bg-red-500/10 border-red-500/30"
                   : urgent
                     ? "bg-amber-500/10 border-amber-500/30"
-                    : "bg-red-500/5 border-red-500/20"
+                    : "bg-slate-700/20 border-slate-600/30"
               }`}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-1">
                 <div className="flex-1">
-                  <div className="font-semibold text-white/90">{deadline.label}</div>
-                  <div className="text-white/60 mt-0.5">{deadline.project}</div>
+                  <div className="font-semibold text-sm text-white/90">{deadline.label}</div>
+                  <div className="text-xs text-white/50 mt-0.5">{deadline.project}</div>
                 </div>
-                <div
-                  className={`ml-2 flex-shrink-0 rounded px-2 py-1 font-semibold whitespace-nowrap ${
-                    overdue
-                      ? "bg-red-500/20 text-red-200"
-                      : urgent
-                        ? "bg-amber-500/20 text-amber-200"
-                        : "bg-red-500/10 text-red-200/80"
-                  }`}
-                >
-                  {overdue ? "OVERDUE" : `${days}d`}
+                <div className="ml-2 flex-shrink-0 text-xs font-semibold whitespace-nowrap">
+                  {overdue ? (
+                    <Badge status="blocked" label="OVERDUE" />
+                  ) : urgent ? (
+                    <Badge status="at-risk" label={`${days}d`} />
+                  ) : (
+                    <span className="text-white/60">{days}d</span>
+                  )}
                 </div>
               </div>
-              <div className="text-white/40 mt-1">{formatDate(deadline.date)}</div>
+              <div className="text-xs text-white/40">{formatDate(deadline.date)}</div>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-4 text-xs text-white/40">
-        Edit STATIC_DEADLINES constant to update
-      </div>
-    </div>
+      <div className="text-xs text-white/40">Edit constant to update</div>
+    </Card>
   );
 }

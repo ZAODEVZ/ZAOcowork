@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Card, SectionHeader, Badge, CardSkeleton } from "./ui";
 
 interface Commit {
   message: string;
@@ -143,40 +144,25 @@ export function TerminalsWidget() {
     }
   };
 
-  const getStatusColor = (status: "active" | "recent" | "stale") => {
-    switch (status) {
-      case "active":
-        return "bg-green-500/20 border-green-500/40 text-green-300";
-      case "recent":
-        return "bg-yellow-500/20 border-yellow-500/40 text-yellow-300";
-      case "stale":
-        return "bg-red-500/20 border-red-500/40 text-red-300";
-    }
-  };
-
   if (loading) {
-    return (
-      <div className="rounded-2xl bg-slate-800/50 border border-slate-700 p-6">
-        <div className="text-sm text-slate-400">Loading terminals...</div>
-      </div>
-    );
+    return <CardSkeleton />;
   }
 
   if (error || !data?.ok) {
     return (
-      <div className="rounded-2xl bg-red-900/20 border border-red-500/30 p-6">
+      <Card className="p-6 border-red-500/40 bg-red-900/20">
         <div className="text-sm text-red-200">{error || "Failed to load terminals"}</div>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/30 p-6">
-      <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-200 mb-6">
-        Terminals
-      </h2>
+    <Card className="p-6">
+      <SectionHeader label="Terminals" accent="amber">
+        {data.cached && <span className="text-white/40">Cached (10-min TTL)</span>}
+      </SectionHeader>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {data.terminals.map((terminal) => {
           const repoKey = `${terminal.org}/${terminal.name}`;
           const isExpanded = expandState[repoKey];
@@ -190,21 +176,21 @@ export function TerminalsWidget() {
           return (
             <div
               key={repoKey}
-              className="rounded-lg bg-slate-900/30 border border-slate-700/50 p-4"
+              className="rounded-lg border border-slate-700/50 bg-slate-900/30 p-4 hover:border-slate-600 transition-colors"
             >
-              {/* Status Line */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 flex-1">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <a
                     href={terminal.html_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-semibold text-white hover:text-amber-300 transition-colors"
+                    className="font-semibold text-white hover:text-amber-300 transition-colors truncate"
                   >
                     {terminal.label}
                   </a>
                   <span
-                    className={`inline-block w-2 h-2 rounded-full ${
+                    className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${
                       terminal.status === "active"
                         ? "bg-green-500"
                         : terminal.status === "recent"
@@ -212,26 +198,27 @@ export function TerminalsWidget() {
                           : "bg-red-500"
                     }`}
                   />
-                  <span className="text-xs text-white/60">
+                </div>
+              </div>
+
+              {/* Meta line */}
+              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-white/60">
                     {terminal.daysSincePush !== null
-                      ? `last push ${terminal.daysSincePush}d ago`
+                      ? `push ${terminal.daysSincePush}d ago`
                       : "no pushes"}
                   </span>
-                </div>
-
-                <div className="flex items-center gap-3">
                   {terminal.open_issues_count > 0 && (
-                    <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded">
-                      {terminal.open_issues_count} issue{terminal.open_issues_count !== 1 ? "s" : ""}
-                    </span>
+                    <Badge status="at-risk" label={`${terminal.open_issues_count} issue${terminal.open_issues_count !== 1 ? "s" : ""}`} />
                   )}
-                  <button
-                    onClick={() => handleToggleHistory(repoKey)}
-                    className="text-xs text-amber-400 hover:text-amber-300 transition-colors px-2 py-1 rounded hover:bg-amber-500/10"
-                  >
-                    {isExpanded ? "Hide" : "Show"} history
-                  </button>
                 </div>
+                <button
+                  onClick={() => handleToggleHistory(repoKey)}
+                  className="text-xs text-amber-400 hover:text-amber-300 transition-colors px-2 py-1 rounded hover:bg-amber-500/10"
+                >
+                  {isExpanded ? "Hide" : "Show"} history
+                </button>
               </div>
 
               {/* Description */}
@@ -258,9 +245,7 @@ export function TerminalsWidget() {
                         >
                           {commit.message}
                         </a>
-                        <span className="text-white/40 ml-2">
-                          {commit.relativeTime}
-                        </span>
+                        <span className="text-white/40 ml-2">{commit.relativeTime}</span>
                       </li>
                     ))}
                   </ul>
@@ -280,7 +265,7 @@ export function TerminalsWidget() {
                         handleAsk(repoKey, terminal);
                       }
                     }}
-                    className="flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-amber-500/50"
+                    className="flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
                   />
                   <button
                     onClick={() => handleAsk(repoKey, terminal)}
@@ -307,10 +292,6 @@ export function TerminalsWidget() {
           );
         })}
       </div>
-
-      <div className="mt-6 text-xs text-white/40">
-        {data.cached ? "Cached (10-min TTL) " : ""}Live terminal status
-      </div>
-    </div>
+    </Card>
   );
 }

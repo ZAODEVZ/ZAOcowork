@@ -1,6 +1,7 @@
-import { getSession, isAdmin } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
+import { AttentionStrip } from "@/components/overview/AttentionStrip";
 import { GoalsWidget } from "@/components/overview/GoalsWidget";
 import { TaskStatusWidget } from "@/components/overview/TaskStatusWidget";
 import { DeadlinesWidget } from "@/components/overview/DeadlinesWidget";
@@ -15,46 +16,53 @@ export default async function OverviewPage() {
   if (!user) redirect("/");
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <NavBar />
 
       <main className="container mx-auto max-w-7xl px-4 py-8">
-        <div className="mb-12">
+        {/* Page Header */}
+        <div className="mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Mission Control</h1>
-          <p className="text-slate-400">ZAO ecosystem overview, goals, status, and key surfaces</p>
+          <p className="text-slate-400 text-sm">
+            ZAO ecosystem overview, goals, status, and key surfaces
+          </p>
         </div>
 
-        {/* 6-widget grid: responsive (1 col mobile, 2-3 desktop) */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Widget 1: Goals (spans full width on desktop) */}
+        {/* Attention Strip - What needs you now */}
+        <AttentionStrip />
+
+        {/* Responsive grid layout */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-max">
+          {/* Row 1: Goals (full width) */}
           <div className="lg:col-span-3">
             <GoalsWidget />
           </div>
 
-          {/* Widget 2: Task Status (spans 2 cols on desktop) */}
+          {/* Row 2: Task Status (2 cols) + Deadlines (1 col) */}
           <div className="md:col-span-2">
             <TaskStatusWidget />
           </div>
-
-          {/* Widget 3: Deadlines */}
           <div>
             <DeadlinesWidget />
           </div>
 
-          {/* Widget 4: Repos */}
+          {/* Row 3: Repos (1 col) + Surfaces (2 cols) */}
           <div>
             <ReposWidget />
           </div>
-
-          {/* Widget 5: Surfaces (spans 2 cols) */}
           <div className="md:col-span-2">
             <SurfacesWidget />
           </div>
 
-          {/* Widget 6: Terminals (spans full width on desktop) */}
+          {/* Row 4: Terminals (full width) */}
           <div className="lg:col-span-3">
             <TerminalsWidget />
           </div>
+        </div>
+
+        {/* Footer note */}
+        <div className="mt-12 text-center text-xs text-white/40">
+          Data refreshes every few minutes. Last sync time available on each widget.
         </div>
       </main>
     </div>
