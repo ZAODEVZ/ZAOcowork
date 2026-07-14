@@ -1623,3 +1623,41 @@ export async function unlinkSubtask(form: FormData): Promise<{ ok: boolean; erro
     return { ok: false, error: "Failed to unlink subtask" };
   }
 }
+
+// Auto-archive completed tasks older than daysOld (default 14 days, archive-only, never delete)
+export async function autoArchiveOldDone(daysOld: number = 14): Promise<{ ok: boolean; archived: number; error?: string }> {
+  const user = await requireSession();
+
+  try {
+    const doc = await getActions();
+    const items = doc.items;
+    const now = Date.now();
+    const cutoffTime = now - daysOld * 24 * 60 * 60 * 1000;
+
+    let archived = 0;
+    for (const item of items) {
+      // Archive only: DONE items, not already archived, older than cutoff
+      if (
+        item.status === "DONE" &&
+        !item.archivedAt &&
+        item.completedAt &&
+        new Date(item.completedAt).getTime() < cutoffTime
+      ) {
+        item.archivedAt = new Date(now).toISOString();
+        item.updatedAt = new Date(now).toISOString();
+        await saveItem(
+          item,
+          user,
+          `auto-archived completed task (${daysOld}+ days old)`
+        );
+        archived++;
+      }
+    }
+
+    revalidateAll();
+    return { ok: true, archived };
+  } catch (e) {
+    console.error("autoArchiveOldDone failed:", e);
+    return { ok: false, archived: 0, error: "Failed to auto-archive tasks" };
+  }
+}

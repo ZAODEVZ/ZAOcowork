@@ -4,6 +4,7 @@ import { NavBar } from "@/components/NavBar";
 import { AttentionStrip } from "@/components/overview/AttentionStrip";
 import { GoalsWidget } from "@/components/overview/GoalsWidget";
 import { TaskStatusWidget } from "@/components/overview/TaskStatusWidget";
+import { CycleTimeWidget } from "@/components/overview/CycleTimeWidget";
 import { DeadlinesWidget } from "@/components/overview/DeadlinesWidget";
 import { ReposWidget } from "@/components/overview/ReposWidget";
 import { SurfacesWidget } from "@/components/overview/SurfacesWidget";
@@ -46,11 +47,14 @@ export default async function OverviewPage() {
             <DeadlinesWidget />
           </div>
 
-          {/* Row 3: Repos (1 col) + Surfaces (2 cols) */}
+          {/* Row 3: Cycle Time (1 col) + Repos (1 col) + Surfaces (1 col) */}
+          <div>
+            <CycleTimeWidget />
+          </div>
           <div>
             <ReposWidget />
           </div>
-          <div className="md:col-span-2">
+          <div>
             <SurfacesWidget />
           </div>
 
