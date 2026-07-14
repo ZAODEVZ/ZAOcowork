@@ -36,6 +36,7 @@ interface AskState {
     loading: boolean;
     answer: string | null;
     error: string | null;
+    needsKey?: boolean;
   };
 }
 
@@ -119,6 +120,7 @@ export function TerminalsWidget() {
             loading: false,
             error: result.note || result.error || "Failed to get answer",
             answer: null,
+            needsKey: result.needsKey || false,
           },
         }));
       } else {
@@ -254,29 +256,35 @@ export function TerminalsWidget() {
 
               {/* Ask Box */}
               <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ask about this repo..."
-                    value={state.question}
-                    onChange={(e) => handleAskChange(repoKey, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !state.loading) {
-                        handleAsk(repoKey, terminal);
-                      }
-                    }}
-                    className="flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
-                  />
-                  <button
-                    onClick={() => handleAsk(repoKey, terminal)}
-                    disabled={state.loading || !state.question.trim()}
-                    className="px-3 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-semibold text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {state.loading ? "..." : "Ask"}
-                  </button>
-                </div>
+                {state.needsKey ? (
+                  <div className="text-xs text-white/50 bg-slate-700/20 rounded px-2 py-2 border border-slate-600/30 italic">
+                    Ask (set ANTHROPIC_API_KEY to enable)
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ask about this repo..."
+                      value={state.question}
+                      onChange={(e) => handleAskChange(repoKey, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !state.loading) {
+                          handleAsk(repoKey, terminal);
+                        }
+                      }}
+                      className="flex-1 rounded bg-slate-800 border border-slate-600 px-2 py-1.5 text-xs text-white placeholder-white/40 focus:outline-none focus:border-amber-500/50 transition-colors"
+                    />
+                    <button
+                      onClick={() => handleAsk(repoKey, terminal)}
+                      disabled={state.loading || !state.question.trim()}
+                      className="px-3 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-xs font-semibold text-amber-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {state.loading ? "..." : "Ask"}
+                    </button>
+                  </div>
+                )}
 
-                {state.error && (
+                {state.error && !state.needsKey && (
                   <div className="text-xs text-red-300 bg-red-500/10 rounded px-2 py-1.5 border border-red-500/20">
                     {state.error}
                   </div>

@@ -56,6 +56,8 @@ export function NavBar({
 
   const onBoard = pathname === "/board";
   const onHome = pathname === "/";
+  const onOverview = pathname === "/overview";
+  const onRepos = pathname === "/repos";
   const onChat = pathname === "/chat";
   const onTaskChat = pathname === "/task-chat";
   const onActivity = pathname === "/activity";
@@ -87,9 +89,14 @@ export function NavBar({
     <>
     <nav className="flex flex-col rounded-xl bg-black/25 border border-white/10 p-1.5">
       <div className="flex items-center gap-1.5">
+        {/* Top-level tabs: Mission Control | Board | Repos */}
         <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
-          <BrandTab href="/" label="Home" active={onHome} color={null} />
+          <BrandTab href="/overview" label="Mission Control" active={onOverview} color={null} />
           <BrandTab href="/board" label="Board" active={onBoard && !activeBrand} color={null} />
+          <BrandTab href="/repos" label="Repos" active={onRepos} color={null} />
+          {/* Separator */}
+          <div className="h-4 w-px bg-white/10 flex-shrink-0" />
+          {/* Brand tabs */}
           {primary.map((b) => (
             <BrandTab
               key={b.name}
@@ -266,9 +273,6 @@ function NavMenu({
   ];
 
   const zaoSurfaces = [
-    { href: "/", label: "Board", external: false },
-    { href: "/overview", label: "Mission Control", external: false },
-    { href: "/repos", label: "ZAO Repos", external: false },
     { href: "https://thezao.xyz/fractals", label: "Fractals", external: true },
     { href: "https://thezao.xyz", label: "The ZAO", external: true },
     { href: "https://thezao.xyz/papers", label: "Papers", external: true },
