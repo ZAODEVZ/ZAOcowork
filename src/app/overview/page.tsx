@@ -6,6 +6,7 @@ import { TaskStatusWidget } from "@/components/overview/TaskStatusWidget";
 import { DeadlinesWidget } from "@/components/overview/DeadlinesWidget";
 import { ReposWidget } from "@/components/overview/ReposWidget";
 import { SurfacesWidget } from "@/components/overview/SurfacesWidget";
+import { TerminalsWidget } from "@/components/overview/TerminalsWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ export default async function OverviewPage() {
           <p className="text-slate-400">ZAO ecosystem overview, goals, status, and key surfaces</p>
         </div>
 
-        {/* 5-widget grid: responsive (1 col mobile, 2-3 desktop) */}
+        {/* 6-widget grid: responsive (1 col mobile, 2-3 desktop) */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {/* Widget 1: Goals (spans full width on desktop) */}
           <div className="lg:col-span-3">
@@ -48,6 +49,11 @@ export default async function OverviewPage() {
           {/* Widget 5: Surfaces (spans 2 cols) */}
           <div className="md:col-span-2">
             <SurfacesWidget />
+          </div>
+
+          {/* Widget 6: Terminals (spans full width on desktop) */}
+          <div className="lg:col-span-3">
+            <TerminalsWidget />
           </div>
         </div>
       </main>
