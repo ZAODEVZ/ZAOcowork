@@ -30,6 +30,7 @@ import {
 } from "@/lib/types";
 import { BRANDS, brandColor } from "@/lib/brands";
 import { resolveSource } from "@/lib/source-resolver";
+import { computeWaitingState, formatWaitingState, getWaitingStateBadgeClass } from "@/lib/waiting-state";
 import { patchField, claimTask } from "@/app/actions";
 import { TaskRoom } from "./TaskRoom";
 import { TodoPanel, TodoTrigger } from "./TodoPanel";
@@ -2185,6 +2186,20 @@ function Card({
             IMPORTANT
           </span>
         )}
+        {(() => {
+          const waitingState = computeWaitingState(item);
+          const label = formatWaitingState(waitingState);
+          if (!label) return null;
+          const cls = getWaitingStateBadgeClass(waitingState);
+          return (
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border font-medium ${cls}`}
+              title={waitingState.kind === "waiting-on" ? `Waiting on response from ${waitingState.person}` : undefined}
+            >
+              {label}
+            </span>
+          );
+        })()}
         <span
           className={`px-1.5 py-0.5 rounded text-[10px] border ${CATEGORY_COLOR[String(item.category)] || CATEGORY_COLOR.Other}`}
         >
