@@ -148,6 +148,7 @@ export default async function AdminPage({
               return (Date.now() - latest) / (1000 * 60 * 60 * 24) > 5;
             }).length}
           />
+          <FactsCallout />
         </div>
 
         {userIsAdmin ? (
@@ -202,6 +203,23 @@ export default async function AdminPage({
       </div>
       <SlaGridChip />
     </main>
+  );
+}
+
+function FactsCallout() {
+  return (
+    <a
+      href="/admin/facts"
+      className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-white/85">Shared facts</div>
+          <div className="text-xs text-white/45">Contract addresses, holder counts - the paper-wide values</div>
+        </div>
+        <span className="text-xs text-white/40">/admin/facts -&gt;</span>
+      </div>
+    </a>
   );
 }
 

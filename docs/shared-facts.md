@@ -27,12 +27,21 @@ automatically.
 
 ## Editing a shared fact
 
+**From the dashboard (/admin/facts):** open it, click Edit on the fact, save.
+This commits the updated `data/facts.json` straight to `main` via the
+GitHub API (see `src/lib/facts-repo.ts`), which triggers the normal Vercel
+build - `facts:apply` runs as part of `npm run build`, so every templated
+page picks up the change within the usual deploy window. Requires
+`GITHUB_FACTS_TOKEN` to be set (see `.env.example`); without it the page
+shows a banner and falls back to the manual steps below.
+
+**By hand:**
 1. Edit the `value` in `data/facts.json` (and update `lastVerified`).
 2. Run `npm run facts:apply`.
 3. Commit both `data/facts.json` and the regenerated files under `public/`.
 
-Every page using that token updates in the same commit - no more per-file
-hunting.
+Either way, every page using that token updates in the same commit - no
+more per-file hunting.
 
 ## Editing a page that has shared facts
 
