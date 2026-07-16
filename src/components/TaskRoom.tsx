@@ -28,6 +28,7 @@ import { patchField, addComment, editComment, submitUpdate, reviewUpdate, delete
 import { useDraft } from "@/lib/use-draft";
 import { resolveSource } from "@/lib/source-resolver";
 import type { DepRef } from "@/lib/dependencies";
+import { computeWaitingState, formatWaitingState, getWaitingStateBadgeClass } from "@/lib/waiting-state";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TRIAGE: "TRIAGE",
@@ -175,6 +176,20 @@ export function TaskRoom({
                   {pendingUpdates.length} awaiting review
                 </span>
               )}
+              {(() => {
+                const waitingState = computeWaitingState(item);
+                const label = formatWaitingState(waitingState);
+                if (!label) return null;
+                const cls = getWaitingStateBadgeClass(waitingState);
+                return (
+                  <span
+                    className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full border font-medium ${cls}`}
+                    title={waitingState.kind === "waiting-on" ? `Waiting on response from ${waitingState.person}` : undefined}
+                  >
+                    {label}
+                  </span>
+                );
+              })()}
             </div>
             <h2 className="text-sm font-semibold leading-snug">{item.title}</h2>
             <p className="mt-0.5 text-[11px] text-white/35">
