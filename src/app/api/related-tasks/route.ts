@@ -105,12 +105,21 @@ export async function POST(req: NextRequest) {
     taskRelatedIds.add(relatedId);
     relatedTaskRelatedIds.add(taskId);
 
+    const originalTaskRelatedIds = task.relatedIds || [];
     task.relatedIds = Array.from(taskRelatedIds);
     relatedTask.relatedIds = Array.from(relatedTaskRelatedIds);
 
-    // Save both tasks
+    // Save both tasks. If the second save fails, roll back the first so the
+    // link never ends up one-directional (task A points at B, B doesn't
+    // point back at A).
     await saveItem(task, "system", "Added related task link");
-    await saveItem(relatedTask, "system", "Added related task link");
+    try {
+      await saveItem(relatedTask, "system", "Added related task link");
+    } catch (err) {
+      task.relatedIds = originalTaskRelatedIds;
+      await saveItem(task, "system", "Rollback: related task link failed").catch(() => {});
+      throw err;
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
@@ -163,12 +172,20 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Remove bidirectional links
-    task.relatedIds = (task.relatedIds || []).filter((id) => id !== relatedId);
+    const originalTaskRelatedIds = task.relatedIds || [];
+    task.relatedIds = originalTaskRelatedIds.filter((id) => id !== relatedId);
     relatedTask.relatedIds = (relatedTask.relatedIds || []).filter((id) => id !== taskId);
 
-    // Save both tasks
+    // Save both tasks. If the second save fails, roll back the first so the
+    // removal never ends up one-directional.
     await saveItem(task, "system", "Removed related task link");
-    await saveItem(relatedTask, "system", "Removed related task link");
+    try {
+      await saveItem(relatedTask, "system", "Removed related task link");
+    } catch (err) {
+      task.relatedIds = originalTaskRelatedIds;
+      await saveItem(task, "system", "Rollback: related task unlink failed").catch(() => {});
+      throw err;
+    }
 
     return NextResponse.json({ ok: true });
   } catch (error: unknown) {
