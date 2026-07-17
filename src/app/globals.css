@@ -2,8 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --zao-navy: #0a1628;
+  --zao-gold: #f5a623;
+}
+
 html, body {
-  background: #0a1628;
+  background: var(--zao-navy);
   color: #f8fafc;
   -webkit-font-smoothing: antialiased;
 }
