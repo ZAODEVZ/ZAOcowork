@@ -101,8 +101,11 @@ export function effectiveAssignees(it: { owner?: Owner | string; assignees?: str
     return it.assignees.map((a) => String(a).trim().toLowerCase()).filter(Boolean);
   }
   const o = String(it.owner ?? "").trim().toLowerCase();
-  if (o === "both") return ["zaal", "iman"];
-  if (!o || o === "open") return [];
+  // A derived "Both" with no explicit assignees is lossy legacy data (the second
+  // person was destroyed on write); never invent a hardcoded pair. This was
+  // auto-assigning Iman to ~316 tasks. Both/Open/blank = nobody. Explicit
+  // assignees (checked above) always win.
+  if (!o || o === "open" || o === "both") return [];
   return [o];
 }
 

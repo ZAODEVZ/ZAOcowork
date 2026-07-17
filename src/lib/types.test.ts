@@ -8,12 +8,17 @@ describe("effectiveAssignees / isAssignedTo (the 'is this mine?' rule)", () => {
       "tyler",
     ]);
   });
-  it("maps legacy 'Both' to Zaal + Iman ONLY (not everyone)", () => {
-    expect(effectiveAssignees({ owner: "Both" })).toEqual(["zaal", "iman"]);
+  it("treats legacy 'Both' with no explicit assignees as nobody (prevents auto-assign)", () => {
+    expect(effectiveAssignees({ owner: "Both" })).toEqual([]);
+  });
+  it("never invents iman from a derived Both", () => {
+    expect(effectiveAssignees({ owner: "Both", assignees: ["zaal", "thyrev"] })).toEqual(["zaal", "thyrev"]);
+    expect(effectiveAssignees({ owner: "Both" })).not.toContain("iman");
+    expect(effectiveAssignees({ owner: "Both" })).toEqual([]);
   });
   it("a brand-new person does NOT inherit Both tasks (the 82-todo bug)", () => {
     expect(isAssignedTo({ owner: "Both" }, "dcoop")).toBe(false);
-    expect(isAssignedTo({ owner: "Both" }, "zaal")).toBe(true);
+    expect(isAssignedTo({ owner: "Both" }, "zaal")).toBe(false);
   });
   it("treats Open / blank as nobody", () => {
     expect(effectiveAssignees({ owner: "Open" })).toEqual([]);
