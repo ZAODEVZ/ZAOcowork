@@ -61,6 +61,7 @@ export function NavBar({
   const onRepos = pathname === "/repos";
   const onChat = pathname === "/chat";
   const onTaskChat = pathname === "/task-chat";
+  const onBots = pathname === "/bots";
   const onActivity = pathname === "/activity";
   const onMine = pathname === "/my-work";
   const onCalendar = pathname === "/calendar";
@@ -136,6 +137,7 @@ export function NavBar({
               activity: onActivity,
               chat: onChat,
               taskChat: onTaskChat,
+              bots: onBots,
               admin: onAdmin,
               settings: onSettings,
               summary: onSummary,
@@ -215,7 +217,7 @@ function NavMenu({
   active,
 }: {
   showAdmin: boolean;
-  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; photos: boolean; activity: boolean; chat: boolean; taskChat: boolean; admin: boolean; settings: boolean; summary: boolean };
+  active: { mine: boolean; calendar: boolean; meetings: boolean; crm: boolean; photos: boolean; activity: boolean; chat: boolean; taskChat: boolean; bots: boolean; admin: boolean; settings: boolean; summary: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -258,7 +260,7 @@ function NavMenu({
   }, [open]);
 
   const anyActive =
-    active.mine || active.calendar || active.meetings || active.crm || active.photos || active.activity || active.chat || active.taskChat || active.admin || active.settings;
+    active.mine || active.calendar || active.meetings || active.crm || active.photos || active.activity || active.chat || active.taskChat || active.bots || active.admin || active.settings;
 
   const items: Array<{ href: string; label: string; icon: string; active: boolean; badge?: boolean; external?: boolean }> = [
     { href: "/summary", label: "Summary", icon: "", active: active.summary },
@@ -268,6 +270,7 @@ function NavMenu({
     { href: "/activity", label: "Activity / Notifications", icon: "📰", active: active.activity, badge: true },
     { href: "/chat", label: "Assistant", icon: "🤖", active: active.chat },
     { href: "/task-chat", label: "Task Chat", icon: "💬", active: active.taskChat },
+    { href: "/bots", label: "ZOE / Bots", icon: "⚡", active: active.bots },
     { href: "/crm", label: "CRM", icon: "👥", active: active.crm },
     { href: "/photos", label: "Photos", icon: "", active: active.photos },
     ...(showAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️", active: active.admin }] : []),
@@ -279,7 +282,6 @@ function NavMenu({
     { href: "https://thezao.xyz", label: "The ZAO", external: true },
     { href: "https://thezao.xyz/papers", label: "Papers", external: true },
     { href: "https://thezao.xyz/list", label: "Directory", external: true },
-    { href: "https://thezao.xyz/bots", label: "Bots Board", external: true },
     { href: "https://zao.frapps.xyz", label: "Governance", external: true },
     { href: "https://zabalnewsletterbuilder.vercel.app", label: "Newsletter", external: true },
   ];
