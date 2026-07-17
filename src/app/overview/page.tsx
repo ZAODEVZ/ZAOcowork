@@ -45,7 +45,9 @@ export default async function OverviewPage() {
           </div>
 
           {/* Row 1b: Directory (full width, all links) */}
-          <DirectoryWidget />
+          <div className="lg:col-span-3">
+            <DirectoryWidget />
+          </div>
 
           {/* Row 2: Task Status (2 cols) + Deadlines (1 col) */}
           <div className="md:col-span-2">

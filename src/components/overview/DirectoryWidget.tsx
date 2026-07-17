@@ -36,7 +36,7 @@ const BOTS = [
 
 export function DirectoryWidget() {
   return (
-    <Card className="p-6 lg:col-span-3">
+    <Card className="p-6">
       <SectionHeader label="Dashboards & Links" accent="slate" />
 
       <div className="space-y-8">
