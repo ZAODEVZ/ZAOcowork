@@ -4,13 +4,15 @@
  * BotsBoard - fleet liveness + control plane panel for the coworking board.
  *
  * Observe (any session): each bot's current task, last error, and activity feed.
- * Control/Task/Converse (admins only): start/stop/restart/pause buttons, an
- * "assign task" form, and an "ask" box. These enqueue commands via
- * POST /api/v1/bots/commands; bots / the fleet-agent pull + execute + post back.
+ * Ask ZOE (any session): "Ask ZOE" box sends an "ask" command and shows the
+ *   reply inline once ZOE processes it (~15-60s).
+ * Control/Task (admins only): start/stop/restart/pause buttons and an
+ *   "assign task" form. These enqueue commands via POST /api/v1/bots/commands;
+ *   bots / the fleet-agent pull + execute + post back.
  *
- * The control affordances render only when `isAdmin` is true (the page passes it
- * from the server session). The server still enforces isAdmin on the enqueue
- * route - the prop only governs what is shown.
+ * The admin affordances render only when `isAdmin` is true (the page passes it
+ * from the server session). The server enforces RBAC on each command:
+ * "ask" = any session, lifecycle/run_task = admins only.
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -91,10 +93,108 @@ function statusTokens(online: boolean, status: 'up' | 'degraded' | 'down') {
   return { label: 'offline', pill: 'bg-red-500/15 text-red-400 ring-red-500/30', dot: 'bg-red-500' };
 }
 
+// AskPanel — visible to any team session. Sends an "ask" command and shows
+// the reply inline once ZOE processes it (polls every 5s for that command ID).
+function AskPanel({ bot }: { bot: string }) {
+  const [prompt, setPrompt] = useState('');
+  const [sending, setSending] = useState(false);
+  const [pendingId, setPendingId] = useState<number | null>(null);
+  const [reply, setReply] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Poll for the pending command's result.
+  useEffect(() => {
+    if (pendingId === null) return;
+    let alive = true;
+    const check = async (): Promise<void> => {
+      try {
+        const res = await fetch(`/api/v1/bots/${encodeURIComponent(bot)}/commands`, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = (await res.json()) as { commands: BotCommand[] };
+        const cmd = (data.commands ?? []).find((c) => c.id === pendingId);
+        if (!cmd) return;
+        if (cmd.status === 'done' || cmd.status === 'error') {
+          if (alive) {
+            const text = resultText(cmd.result);
+            setReply(text ?? (cmd.status === 'error' ? 'ZOE returned an error.' : '(no reply)'));
+            setPendingId(null);
+          }
+        }
+      } catch {
+        /* best-effort */
+      }
+    };
+    void check();
+    const timer = setInterval(() => void check(), 5_000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [bot, pendingId]);
+
+  const send = useCallback(async (): Promise<void> => {
+    const text = prompt.trim();
+    if (!text || sending) return;
+    setSending(true);
+    setReply(null);
+    setError(null);
+    try {
+      const res = await fetch('/api/v1/bots/commands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bot, command: 'ask', args: { prompt: text } }),
+      });
+      const data = (await res.json()) as { ok?: boolean; id?: number; error?: string };
+      if (res.ok && data.id) {
+        setPrompt('');
+        setPendingId(data.id);
+      } else {
+        setError(`failed: ${data.error ?? res.status}`);
+      }
+    } catch (e: unknown) {
+      setError(`failed: ${e instanceof Error ? e.message : 'error'}`);
+    } finally {
+      setSending(false);
+    }
+  }, [bot, prompt, sending]);
+
+  return (
+    <div className="mt-2 rounded-md border border-slate-700 bg-slate-900/60 p-3">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+        Ask ZOE
+      </p>
+      <div className="flex items-center gap-1.5">
+        <input
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
+          placeholder="ask a question..."
+          disabled={sending || pendingId !== null}
+          className="flex-1 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 placeholder:text-slate-600 disabled:opacity-60"
+        />
+        <button
+          type="button"
+          disabled={sending || pendingId !== null || !prompt.trim()}
+          onClick={() => void send()}
+          className="rounded border border-slate-600 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+        >
+          Send
+        </button>
+      </div>
+      {pendingId !== null ? (
+        <p className="mt-1.5 text-[11px] text-amber-400">ZOE is thinking... (checking every 5s)</p>
+      ) : null}
+      {reply ? (
+        <div className="mt-2 rounded border border-slate-700 bg-slate-950/50 px-2.5 py-2 text-xs text-slate-300">
+          {reply}
+        </div>
+      ) : null}
+      {error ? <p className="mt-1 text-[11px] text-red-400">{error}</p> : null}
+    </div>
+  );
+}
+
+// ControlPanel — admin-only lifecycle + task controls (no "ask" — that's in AskPanel above).
 function ControlPanel({ bot, onChange }: { bot: string; onChange: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState('');
   const [todoId, setTodoId] = useState('');
   const [instructions, setInstructions] = useState('');
 
@@ -186,31 +286,6 @@ function ControlPanel({ bot, onChange }: { bot: string; onChange: () => void }) 
             className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-50"
           >
             Assign
-          </button>
-        </div>
-      </div>
-
-      <div>
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-          Ask
-        </p>
-        <div className="flex items-center gap-1.5">
-          <input
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="ask this bot a question"
-            className="flex-1 rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-200"
-          />
-          <button
-            type="button"
-            disabled={busy !== null || !prompt.trim()}
-            onClick={() => {
-              void enqueue('ask', { prompt: prompt.trim() });
-              setPrompt('');
-            }}
-            className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-50"
-          >
-            Send
           </button>
         </div>
       </div>
@@ -308,8 +383,9 @@ function BotDetail({ bot, isAdmin }: { bot: string; isAdmin: boolean }) {
 
   return (
     <>
+      <AskPanel bot={bot} />
       {isAdmin ? <ControlPanel bot={bot} onChange={bumpRefresh} /> : null}
-      {isAdmin ? <CommandHistory bot={bot} refreshKey={refreshKey} /> : null}
+      <CommandHistory bot={bot} refreshKey={refreshKey} />
       <div className="mt-2 rounded-md border border-slate-800 bg-slate-950/60 p-3">
         <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
           Recent activity
