@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { brandColor as constBrandColor, BRANDS as CONST_BRANDS } from "@/lib/brands";
 import ActivityStrip from "./ActivityStrip";
@@ -71,6 +71,37 @@ export function NavBar({
   const onSummary = pathname === "/summary";
   const onAdmin = pathname.startsWith("/admin");
   const showAdminTab = isAdmin || isLead;
+  const router = useRouter();
+
+  // Number-key page navigation (1-8). Guard: not inside an input/textarea.
+  useEffect(() => {
+    const pages = [
+      "/",
+      "/my-work",
+      "/calendar",
+      "/meetings",
+      "/activity",
+      "/chat",
+      "/crm",
+      ...(showAdminTab ? ["/admin"] : ["/settings"]),
+    ];
+    function onKey(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const digit = parseInt(e.key, 10);
+      if (isNaN(digit) || digit < 1 || digit > 8) return;
+      const target = e.target as HTMLElement | null;
+      const typing =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (typing) return;
+      const dest = pages[digit - 1];
+      if (dest) { e.preventDefault(); router.push(dest); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [router, showAdminTab]);
 
   const resolved = useMemo<NavBrand[]>(() => {
     const list = brands && brands.length > 0 ? brands : fallbackBrands();

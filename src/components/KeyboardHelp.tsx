@@ -13,6 +13,14 @@ interface Shortcut {
 }
 
 const SHORTCUTS: Shortcut[] = [
+  { keys: ["1"], label: "Board" },
+  { keys: ["2"], label: "My Work" },
+  { keys: ["3"], label: "Calendar" },
+  { keys: ["4"], label: "Meetings" },
+  { keys: ["5"], label: "Activity" },
+  { keys: ["6"], label: "Chat" },
+  { keys: ["7"], label: "CRM" },
+  { keys: ["8"], label: "Admin / Settings" },
   { keys: ["⌘", "K"], label: "Quick add / find a task" },
   { keys: ["/"], label: "Search tasks" },
   { keys: ["↑", "↓"], label: "Move through results" },
