@@ -95,7 +95,7 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
       <div className="w-full sm:max-w-2xl max-h-screen sm:max-h-screen overflow-y-auto bg-zao-navy rounded-t-lg sm:rounded-lg border border-white/10 p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-[#f5a623]">{contact.name}</h2>
+          <h2 className="text-xl font-semibold text-zao-gold">{contact.name}</h2>
           <button
             onClick={onClose}
             className="text-white/60 hover:text-white text-2xl font-light"
@@ -760,7 +760,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
               onClick={() => setSelectedContact(c)}
             >
               <div>
-                <h3 className="text-base font-semibold text-[#f5a623]">{c.name}</h3>
+                <h3 className="text-base font-semibold text-zao-gold">{c.name}</h3>
                 {c.superheroName && <p className="text-xs text-white/60">{c.superheroName}</p>}
                 {c.company && <p className="text-xs text-white/60">{c.company}</p>}
               </div>
@@ -831,7 +831,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-zao-navy rounded-lg border border-white/10 p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-[#f5a623]">Add Contact</h2>
+              <h2 className="text-lg font-semibold text-zao-gold">Add Contact</h2>
               <button
                 onClick={() => setShowAddForm(false)}
                 className="text-white/60 hover:text-white text-2xl font-light"

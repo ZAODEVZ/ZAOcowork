@@ -7,6 +7,7 @@ export default {
       colors: {
         zao: {
           navy: "#0a1628",
+          gold: "#f5a623",
           ink: "#0f1d33",
           accent: "#3b82f6",
         },

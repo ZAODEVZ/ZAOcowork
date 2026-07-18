@@ -15,7 +15,7 @@ export default async function BotsPage() {
   const [navBrands, admin] = await Promise.all([listActiveBrands(), isAdmin(user)]);
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a1628" }}>
+    <div className="min-h-screen flex flex-col bg-zao-navy">
       <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto space-y-6">
           <header>

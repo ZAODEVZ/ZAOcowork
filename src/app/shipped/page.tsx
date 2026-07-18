@@ -11,7 +11,7 @@ export default async function ShippedPage() {
   const groups = await getPublicShipped();
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#0a1628" }}>
+    <div className="min-h-screen flex flex-col bg-zao-navy">
       <main className="flex-1 px-4 py-8 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
