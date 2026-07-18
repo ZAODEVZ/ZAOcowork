@@ -14,13 +14,15 @@ The ZAO is not a record label and not merely a "music community." It is an impac
 
 - Respect is the on-chain contribution currency: a soulbound OG ERC-20 plus a ZOR ERC-1155, on Optimism. Because it is soulbound, it is earned, never bought or transferred.
 - A weekly Respect Game ranks contributions; OREC (optimistic execution with commitment-and-reveal) settles outcomes; a Fibonacci curve shapes the rewards.
-- Verified on-chain (2026-07-10): 122 Respect holders. Cumulative OG holder-balance Gini roughly 0.73 (top 5 holders hold ~34% of supply, top 10 hold ~53%) - distinct from the per-round Fibonacci reward-curve Gini (~0.23), which measures how evenly one week's pool splits by rank, not cumulative holdings. Both are true simultaneously; see the Technical Whitepaper for the full explanation.
+- Verified on-chain (2026-07-17): 157 unique Respect holders (OG+ZOR union on Optimism). Cumulative OG holder-balance Gini roughly 0.73 (top 5 holders hold ~34% of supply, top 10 hold ~53%) - distinct from the per-round Fibonacci reward-curve Gini (~0.23), which measures how evenly one week's pool splits by rank, not cumulative holdings. Both are true simultaneously; see the Technical Whitepaper for the full explanation.
+- 100+ Fractal weekly governance sessions held to date; 63 on-chain.
 
 ## Production lanes
 
-- WaveWarZ - live-traded music battles (music prediction market; artists paid instantly, value stays in the ecosystem)
-- ZABAL Games - a three-month build-a-thon that runs builders through workshops and shipping sprints
-- The ZAO festivals - ZAOstock, ZAOville, ZAO-PALOOZA, ZAO-CHELLA (real-world gatherings)
+- WaveWarZ - live-traded music battles (music prediction market; 1,245+ battles since May 2025; 524 SOL (~$39k) total volume; artists paid instantly via 1% instant payout on each trade; value stays in the ecosystem)
+- ZABAL Games - a three-month build-a-thon (28 workshops run in June 2026; 9 builder projects intake-ready for August 2026 final month)
+- COC Concertz - monthly virtual concert series; 7 shows since March 2025; WaveWarZ battle voting integrated; Arweave archive model for permanent on-chain storage
+- The ZAO festivals - ZAOstock (Oct 3 2026, Ellsworth ME), ZAOville, ZAO-PALOOZA, ZAO-CHELLA (real-world gatherings)
 - ZAO OS - the lab and monorepo where new ZAO things are prototyped before they graduate to their own homes
 
 ## Membership
