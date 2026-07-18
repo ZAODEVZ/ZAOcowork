@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-07-12",
+  "lastUpdated": "2026-07-17",
   "papers": [
     {
       "id": "what-is-the-zao",
@@ -139,6 +139,45 @@
         {
           "id": "sources",
           "title": "Sources"
+        }
+      ]
+    },
+    {
+      "id": "zaalcaster",
+      "title": "Zaalcaster",
+      "url": "https://thezao.xyz/papers/drafts/zaalcaster",
+      "summary": "Zaal's personal Farcaster client: preview-first posting, keyboard-driven cockpit inbox, gamified daily loop, and deep integrations with Empire Builder, POIDH, and Zora.",
+      "description": "A personal Farcaster client for @zaal (FID 19640). Deployed as a web cockpit and Farcaster Mini App at z.thezao.xyz. Every cast requires explicit confirmation. Covers the full Farcaster lifecycle plus ZAO ecosystem integrations: Empire Builder empires (ZABAL, ZABAL GAMEZ), POIDH bounties, Zora Creator Coin, and Juke Audio spaces.",
+      "version": "0.1",
+      "status": "in-progress",
+      "sections": [
+        {
+          "id": "what-it-is",
+          "title": "What it is"
+        },
+        {
+          "id": "architecture",
+          "title": "Architecture"
+        },
+        {
+          "id": "feature-set",
+          "title": "Feature set"
+        },
+        {
+          "id": "design-principles",
+          "title": "Design principles"
+        },
+        {
+          "id": "traction",
+          "title": "Traction and status"
+        },
+        {
+          "id": "ecosystem",
+          "title": "Ecosystem integration"
+        },
+        {
+          "id": "roadmap",
+          "title": "Roadmap"
         }
       ]
     }

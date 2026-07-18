@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Zaalcaster @ The ZAO Whitepaper (DRAFT)">
+<meta property="og:description" content="Zaal's personal Farcaster client. Preview-first posting, keyboard-driven inbox, gamified daily loop, and deep integrations with Empire Builder, POIDH, and Zora.">
+<meta property="og:image" content="https://thezao.xyz/api/og/zaalcaster">
+<meta property="og:url" content="https://thezao.xyz/papers/drafts/zaalcaster">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Zaalcaster @ The ZAO Whitepaper">
+<meta name="twitter:description" content="Zaal's personal Farcaster client - preview-first, keyboard-driven, ecosystem-integrated.">
+<meta name="twitter:image" content="https://thezao.xyz/api/og/zaalcaster">
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://thezao.xyz/api/og/zaalcaster","button":{"title":"Read the Papers","action":{"type":"launch_miniapp","name":"The ZAO Papers","url":"https://thezao.xyz/papers/drafts/zaalcaster","splashImageUrl":"https://thezao.xyz/api/og/zaalcaster","splashBackgroundColor":"#141e27"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://thezao.xyz/api/og/zaalcaster","button":{"title":"Read the Papers","action":{"type":"launch_frame","name":"The ZAO Papers","url":"https://thezao.xyz/papers/drafts/zaalcaster","splashImageUrl":"https://thezao.xyz/api/og/zaalcaster","splashBackgroundColor":"#141e27"}}}'>
+<title>The ZAO - Zaalcaster Whitepaper (DRAFT)</title>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Zaalcaster @ The ZAO","description":"Zaal's personal Farcaster client. Preview-first posting, keyboard-driven inbox, gamified daily loop, and deep integrations with Empire Builder, POIDH, and Zora.","image":"https://thezao.xyz/api/og/zaalcaster","url":"https://thezao.xyz/papers/drafts/zaalcaster","author":{"@type":"Organization","name":"The ZAO"},"publisher":{"@type":"Organization","name":"The ZAO","logo":{"@type":"ImageObject","url":"https://thezao.xyz/api/og/zaalcaster"}},"datePublished":"2026-07-17","dateModified":"2026-07-17","inLanguage":"en-US"}</script>
+<style>
+  :root {
+    --ground: #141e27;
+    --surface: #1b2732;
+    --ink: #e8e4c4;
+    --ink-soft: rgba(232, 228, 196, 0.70);
+    --ink-faint: rgba(232, 228, 196, 0.45);
+    --accent: #f5a623;
+    --line: rgba(232, 228, 196, 0.14);
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --measure: 40rem;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --ground: #f3efe2;
+      --surface: #faf7ec;
+      --ink: #1a2530;
+      --ink-soft: rgba(26, 37, 48, 0.72);
+      --ink-faint: rgba(26, 37, 48, 0.45);
+      --accent: #b06f13;
+      --line: rgba(26, 37, 48, 0.13);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #141e27; --surface: #1b2732; --ink: #e8e4c4;
+    --ink-soft: rgba(232,228,196,0.70); --ink-faint: rgba(232,228,196,0.45);
+    --accent: #f5a623; --line: rgba(232,228,196,0.14);
+  }
+  :root[data-theme="light"] {
+    --ground: #f3efe2; --surface: #faf7ec; --ink: #1a2530;
+    --ink-soft: rgba(26,37,48,0.72); --ink-faint: rgba(26,37,48,0.45);
+    --accent: #b06f13; --line: rgba(26,37,48,0.13);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.125rem;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--measure); margin: 0 auto; padding: 0 1.5rem; }
+
+  .hero {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(3.5rem, 12vh, 7rem) 0 clamp(2.5rem, 8vh, 4rem);
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.4rem;
+    font-weight: 600;
+  }
+  .hero h1 {
+    font-family: var(--sans);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    font-size: clamp(3.5rem, 14vw, 6.5rem);
+    line-height: 0.92;
+    margin: 0 0 1.5rem;
+    text-wrap: balance;
+  }
+  .thesis {
+    font-size: clamp(1.4rem, 3.6vw, 2rem);
+    line-height: 1.32;
+    font-weight: 400;
+    margin: 0 0 2rem;
+    max-width: 34rem;
+    text-wrap: balance;
+  }
+  .thesis b { color: var(--accent); font-weight: 600; }
+  .meta {
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.02em;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .meta .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--ink-faint); display: inline-block; }
+
+  section { padding: clamp(2.5rem, 7vh, 4rem) 0; border-bottom: 1px solid var(--line); }
+  .num {
+    font-family: var(--sans);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.9rem;
+  }
+  h2 {
+    font-family: var(--sans);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem);
+    line-height: 1.1;
+    margin: 0 0 1.4rem;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+    margin: 1.8rem 0 0.4rem;
+  }
+  p { margin: 0 0 1.15rem; max-width: 36rem; }
+  strong { color: var(--ink); font-weight: 700; }
+  em { color: var(--ink-soft); }
+  .lead { font-size: 1.22rem; line-height: 1.6; }
+
+  .gates { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .gates li { background: var(--surface); padding: 1.1rem 1.3rem; }
+  .gates b { color: var(--accent); font-family: var(--sans); font-size: 0.95rem; letter-spacing: 0.01em; }
+  .gates span { display: block; margin-top: 0.25rem; font-size: 1.02rem; color: var(--ink-soft); }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.3rem 1.5rem;
+    margin: 1.6rem 0;
+    font-size: 1.05rem;
+  }
+  .stat .src { display: block; margin-top: 0.6rem; font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  .fivec { list-style: none; padding: 0; margin: 1.4rem 0; counter-reset: c; }
+  .fivec li { padding: 0.7rem 0 0.7rem 3rem; position: relative; border-top: 1px solid var(--line); }
+  .fivec li:last-child { border-bottom: 1px solid var(--line); }
+  .fivec li::before {
+    counter-increment: c; content: counter(c);
+    position: absolute; left: 0; top: 0.7rem;
+    font-family: var(--sans); font-weight: 700; font-size: 0.9rem;
+    color: var(--accent); width: 2rem; text-align: left;
+  }
+  .fivec b { font-family: var(--sans); font-size: 1rem; }
+
+  .note { font-size: 1rem; color: var(--ink-soft); font-style: italic; border-left: 2px solid var(--line); padding-left: 1.2rem; margin: 1.4rem 0; }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    margin: 1.4rem 0;
+    overflow-x: auto;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  code {
+    color: var(--accent);
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9rem;
+  }
+  pre code { color: var(--ink-soft); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.6rem 0;
+    font-size: 0.95rem;
+  }
+  table th {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+    text-align: left;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  table td {
+    border: 1px solid var(--line);
+    padding: 0.8rem;
+  }
+  table tr:nth-child(even) { background: rgba(0, 0, 0, 0.1); }
+  @media (prefers-color-scheme: light) {
+    table tr:nth-child(even) { background: rgba(0, 0, 0, 0.03); }
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.6rem 0;
+  }
+
+  footer { padding: 2.5rem 0 4rem; font-family: var(--sans); font-size: 0.85rem; color: var(--ink-faint); }
+  footer p { max-width: none; }
+  footer b { color: var(--ink-soft); }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .draft-flag { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+
+  body { font-size: clamp(1rem, 2vw, 1.125rem); }
+  .wrap { padding: 0 clamp(1rem, 4vw, 1.5rem); }
+
+  .read-progress { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent) 0%, rgba(245,166,35,0.5) 100%); transform: scaleX(var(--progress, 0)); transform-origin: left; transition: opacity 0.2s ease-out; z-index: 9998; pointer-events: none; opacity: 0; }
+
+  .nav-bar { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: 1rem clamp(1rem, 4vw, 1.5rem); border-bottom: 1px solid var(--line); font-family: var(--sans); font-size: 0.85rem; }
+  .nav-bar a { color: var(--accent); text-decoration: none; padding: 0.5rem 1rem; border-radius: 6px; transition: background 0.2s; }
+  .nav-bar a:hover { background: var(--surface); }
+  .nav-bar .home { flex-shrink: 0; }
+  .nav-bar .arrows { display: flex; gap: 0.5rem; }
+  .nav-bar a.disabled { color: var(--ink-faint); pointer-events: none; opacity: 0.5; }
+
+  @media (max-width: 640px) {
+    h2 { font-size: clamp(1.3rem, 5vw, 2.4rem); }
+    h3 { font-size: 0.95rem; }
+    .num { font-size: 0.65rem; }
+    .nav-bar { flex-wrap: wrap; gap: 0.5rem; }
+  }
+
+  sup.cite { font-size: 0.7em; line-height: 0; }
+  sup.cite a { color: var(--accent); text-decoration: none; padding: 0 0.1em; }
+  sup.cite a:hover { text-decoration: underline; }
+  .references { list-style: none; counter-reset: ref; padding: 0; margin: 1rem 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .references li { counter-increment: ref; padding: 0.5rem 0 0.5rem 2.2rem; position: relative; border-top: 1px solid var(--line); }
+  .references li:first-child { border-top: none; }
+  .references li::before { content: "[" counter(ref) "]"; position: absolute; left: 0; top: 0.5rem; font-family: var(--sans); color: var(--accent); font-weight: 700; font-size: 0.85rem; }
+  .references a { word-break: break-all; }
+</style>
+</head>
+<body>
+<div class="read-progress" id="readProgress"></div>
+<div class="nav-bar"><a href="/papers/drafts" class="home">Back to Drafts</a><span class="arrows"><a href="/papers" title="Papers home">Papers</a></span></div>
+<main>
+  <div class="wrap">
+    <p style="background:rgba(245,166,35,0.12);border:1px solid var(--accent);color:var(--accent);padding:0.6rem 1rem;border-radius:8px;font-family:var(--sans);font-size:0.9rem;font-weight:700;">DRAFT - not published. Working whitepaper, open to iteration.</p>
+    <p style="font-family:var(--sans);font-size:0.85rem;margin-top:0.6rem;"><a href="https://github.com/ZAODEVZ/ZAOcowork/edit/main/public/papers/drafts/zaalcaster.html" target="_blank" rel="noopener">Propose an edit (GitHub)</a></p>
+
+    <p class="eyebrow">Zaalcaster @ The ZAO - Whitepaper (draft v0.1)</p>
+    <h1>Zaalcaster</h1>
+    <p class="thesis"><b>Zaal's personal Farcaster client</b>. Preview-first posting, a keyboard-driven engage inbox, a gamified daily loop, and deep integrations with Empire Builder, POIDH, and Zora - all in a single deployable Node.js app with a web cockpit and a Farcaster Mini App.</p>
+    <div class="meta">
+      <span>v0.1 draft</span>
+      <span class="dot"></span>
+      <span>2026-07-17</span>
+      <span class="dot"></span>
+      <span>Deployed: <a href="https://z.thezao.xyz" target="_blank" rel="noopener">z.thezao.xyz</a></span>
+      <span class="dot"></span>
+      <span><a href="https://github.com/bettercallzaal/zaalcaster" target="_blank" rel="noopener">bettercallzaal/zaalcaster</a></span>
+    </div>
+
+    <section>
+      <span class="num">01</span>
+      <h2>What it is</h2>
+      <p>Zaalcaster is a personal Farcaster client built specifically for Zaal (@zaal, FID 19640). It is not a social network or a general-purpose product - it is Zaal's owned interface to Farcaster, running as both a local CLI tool and a Vercel-hosted web cockpit at <a href="https://z.thezao.xyz" target="_blank" rel="noopener">z.thezao.xyz</a>. As of July 2026 it also runs as a Farcaster Mini App, discoverable and launchable in-feed from any cast that embeds it<sup class="cite"><a href="#ref1">[1]</a></sup>.</p>
+      <p class="lead">Everything in zaalcaster follows a single principle: <strong>Zaal approves every cast</strong>. No content is ever published without an explicit confirmation - either the <code>--yes</code> flag in the CLI or a confirm button in the web UI. The client surfaces information and drafts; Zaal is the send button.</p>
+      <p>Other Farcaster clients (herocast, Supercast, the official Warpcast app) are built for general audiences and optimized for discovery and engagement. Zaalcaster is different: it is built around Zaal's specific daily workflow - reading inbound replies, engaging with the community, tracking WaveWarZ and ZABAL Gamez activity, posting to the /zao and /wavewarz channels, and managing the ecosystem integrations (Empire Builder boosters, POIDH bounties, Zora Creator Coin) from a single interface.</p>
+    </section>
+
+    <section>
+      <span class="num">02</span>
+      <h2>Architecture</h2>
+      <h3>Three layers in one repo</h3>
+      <p>Zaalcaster is a single Node.js ESM repository<sup class="cite"><a href="#ref2">[2]</a></sup> that serves three surfaces:</p>
+      <ul class="gates">
+        <li>
+          <b>CLI tools</b>
+          <span>bin/*.js - one command per task: timeline, notifs, post, reply, search, channels, thread, user lookup, morning digest, cockpit inbox, empire lookups, POIDH queries. Run locally on Zaal's machine. Preview is always the default; nothing posts without an explicit flag.</span>
+        </li>
+        <li>
+          <b>Web cockpit + Mini App</b>
+          <span>public/index.html + api/*.js - a Vercel-hosted serverless frontend. Single-page vanilla JS app with no framework dependency. Doubles as a Farcaster Mini App (fc:miniapp + fc:frame metadata, @farcaster/miniapp-sdk), so any cast that embeds z.thezao.xyz opens the full cockpit inside Warpcast.</span>
+        </li>
+        <li>
+          <b>Shared library</b>
+          <span>lib.js - Neynar v2 API wrapper, env loading (Vercel env vars first, then ~/.zao/private/farcaster-zaal.env for local CLI), session/auth helpers, voice drafting relay. Both the CLI and the web serverless functions share lib.js - no divergence between surfaces.</span>
+        </li>
+      </ul>
+
+      <h3>External services</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>Service</th><th>Role</th><th>Auth</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Neynar v2</strong><sup class="cite"><a href="#ref3">[3]</a></sup></td><td>All Farcaster reads and writes - timeline, notifs, search, post, reply, follow, managed signer</td><td>NEYNAR_API_KEY + ZAAL_SIGNER_UUID (write)</td></tr>
+            <tr><td><strong>OpenRouter</strong></td><td>Draft generation in Zaal's voice (voice.js) - batched, never auto-posts</td><td>OPENROUTER_API_KEY</td></tr>
+            <tr><td><strong>Vercel KV</strong><sup class="cite"><a href="#ref4">[4]</a></sup></td><td>Gamification state (XP, streak, quests, badges), action ledger (every cast/like logged), system health cron freshness, spam list</td><td>KV_REST_API_URL + KV_REST_API_TOKEN</td></tr>
+            <tr><td><strong>Empire Builder</strong><sup class="cite"><a href="#ref5">[5]</a></sup></td><td>ZABAL and ZABAL GAMEZ empire reads - leaderboard, boosters, rank, staking</td><td>EMPIRE_BUILDER_API_KEY (partner)</td></tr>
+            <tr><td><strong>POIDH</strong><sup class="cite"><a href="#ref6">[6]</a></sup></td><td>Bounty reads via poidh.xyz tRPC - BCZ rounds R1-R4 + manual lookup</td><td>Public (no auth)</td></tr>
+            <tr><td><strong>Zora</strong><sup class="cite"><a href="#ref7">[7]</a></sup></td><td>Creator Coin card - market cap, price, holders via Zora public REST</td><td>Public (no auth)</td></tr>
+            <tr><td><strong>Juke Audio</strong></td><td>Live Farcaster audio spaces - create, info, embed</td><td>JUKE_API_KEY (pending approval)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Auth model</h3>
+      <p>Sign In With Farcaster (SIWF via Neynar SIWN<sup class="cite"><a href="#ref8">[8]</a></sup>) gates the web cockpit. Any Farcaster user can sign in; the server independently verifies their signer via Neynar before issuing a session cookie (HMAC-SHA256 signed, 30-day expiry). Role 'zaal' (FID 19640) gets full read + write access. Role 'guest' (any other FID) gets read-only public surfaces: Feed, Channels, Search, Empire reads. Inbox, Post, Daily, and Grow are Zaal-only. The server-side guard is the real boundary; the frontend hides restricted tabs as a UX convenience only.</p>
+    </section>
+
+    <section>
+      <span class="num">03</span>
+      <h2>Feature set (as of July 2026)</h2>
+
+      <h3>Daily loop</h3>
+      <p>The core daily workflow is the <strong>Cockpit</strong><sup class="cite"><a href="#ref9">[9]</a></sup>: a keyboard-driven single-screen inbox walk of all unanswered inbound mentions and replies. Keys: [a] send AI draft, [e] edit + confirm + send, [s] skip, [n] later, [q] quit. Every send shows the exact cast text before anything leaves the machine. The <strong>morning digest</strong> (<code>npm run morning</code>) chains engage + channels + timeline into a single morning read.</p>
+
+      <h3>Gamification</h3>
+      <p>The Daily tab<sup class="cite"><a href="#ref10">[10]</a></sup> runs a gamified quest loop: 8 daily quests (GM post, reply, share, check channels, etc.) award +10 XP each. Quests auto-tick when Zaal's activity already matches. A consecutive-day streak tracks best-ever. 8 unlockable badges with toast notifications. Level, XP bar, and streak display at the top of the tab. The game state is stored in Vercel KV (<code>zc:state.game</code>) and syncs across CLI and web.</p>
+
+      <h3>Ecosystem tabs</h3>
+      <p>Three tabs cover the ZAO ecosystem integrations:</p>
+      <ul class="gates">
+        <li>
+          <b>Empire tab</b> (key 8, Zaal-only)
+          <span>Full Empire Builder surface: ZABAL and ZABAL GAMEZ empire card with rank and booster counts, top-25 leaderboard overlay, reward/burn/airdrop history, distribution lookup by tx hash, create-tokenless-empire flow (wallet-sign-to-POST, custom mode only), staking tools (activate staking + add staking booster with timestamp-replay protection), and a capabilities catalog showing every Empire Builder endpoint marked built vs. documented.</span>
+        </li>
+        <li>
+          <b>POIDH tab</b> (key 9, guest-visible)
+          <span>Read-only bounty explorer via poidh.xyz tRPC. Quick chips for BCZ rounds R1-R4 + manual bounty-id lookup. Displays bounty details, claims, and claim counts. Read-only - on-chain claiming is a separate wallet action outside zaalcaster scope.</span>
+        </li>
+        <li>
+          <b>Zora Creator Coin card</b> (Grow tab)
+          <span>Zaal's Zora Creator Coin (0x2275c5e507f1d01a0c043a4f888ec58f8215c285 on Base) - market cap, price, and holder count via Zora public REST. Inert until <code>config.zoraCoinAddress</code> is set; currently live with Zaal's real coin.</span>
+        </li>
+      </ul>
+
+      <h3>Booster engagement queue</h3>
+      <p>The booster engagement queue<sup class="cite"><a href="#ref11">[11]</a></sup> surfaces who liked Zaal's recent casts or posted the configured booster phrases ("zabal gamez" / "zabal games"). Each candidate is ranked (phrase-casters first) and shown as a full cast card with one-tap like or reply-with-confirm. Scanning is always a manual button - never automatic - because each scan costs ~15-20 Neynar API calls and the decision to engage is Zaal's.</p>
+
+      <h3>Clanker launch prep</h3>
+      <p>A dedicated chip in the Empire tab walks Zaal through the Clanker v4 token launch checklist: fee-recipient setup, the wallet-count-is-fixed / addresses-are-changeable rule, v5 audit status, and a pre-filled cast composer with live preview. The composer prefills the Post tab's own confirm flow - the Post tab's confirm button is the only send path. No token has been launched; this is build-only, Zaal's trigger.</p>
+
+      <h3>Spaces (Juke Audio)</h3>
+      <p>juke.js + bin/spaces.js provide create, info, and embed commands for Juke Audio live Farcaster rooms<sup class="cite"><a href="#ref12">[12]</a></sup>. Creation is preview-first like post (requires <code>--yes</code>). A JUKE_API_KEY is required but pending Juke admin approval; local CLI and Vercel env both support it via the standard creds pattern.</p>
+
+      <h3>Reliability infrastructure</h3>
+      <p>Three reliability additions<sup class="cite"><a href="#ref13">[13]</a></sup> make zaalcaster production-stable: (1) Rate-limit guard - fetchNeynar retries 429s with Retry-After/backoff (3 tries) so a busy day degrades gracefully. (2) Action ledger - logAction() appends every write (cast/reply/like/recast/delete) to KV list <code>zc:actions</code>; readable with <code>node bin/actions.js [N]</code>. (3) Self-monitor - cron/post-due writes <code>zc:cron:last</code> each run; getSystemHealth() checks signer health + cron freshness; <code>node bin/health.js</code> exits non-zero if unhealthy, catching the two historical silent failures (deploy-rate-limit killing cron, signer/key mismatch).</p>
+    </section>
+
+    <section>
+      <span class="num">04</span>
+      <h2>Design principles</h2>
+
+      <h3>Preview-first, always</h3>
+      <p>Every post, reply, like, and create defaults to a no-op preview. The CLI requires <code>--yes</code> to actually execute a write. The web cockpit shows the full cast text in a confirm step. This is non-negotiable: zaalcaster has direct access to Zaal's managed signer, which can post to Farcaster on Zaal's behalf. Automatic posting would be a trust violation. The rule exists because every cast under @zaal reflects on Zaal personally - there is no undo on the Farcaster protocol.</p>
+
+      <h3>No secrets in code</h3>
+      <p>Credentials live at <code>~/.zao/private/farcaster-zaal.env</code> locally (never committed) and in Vercel env vars for production. lib.js loads Vercel env first, then the local file - the same code runs in both contexts. The NEYNAR_API_KEY, ZAAL_SIGNER_UUID, and all other keys are never printed or logged. The session cookie stores an HMAC-signed FID, never the signer UUID itself (which is write-capable).</p>
+
+      <h3>No emojis, no em dashes</h3>
+      <p>Zaal's cast voice is short, plain, direct. "ppl", "u", "imho" are fine. No hype adjectives. No emojis. Plain hyphens, not em dashes. This voice constraint extends to code (commit messages, comments), generated drafts (voice.js), and the cockpit's suggest-reply flow. The goal is that a generated draft sounds like Zaal, not like a chatbot.</p>
+
+      <h3>Single codebase, no framework lock-in</h3>
+      <p>The web frontend is dependency-free vanilla JS. The backend is pure Node.js serverless functions. The only npm dependencies are what Neynar, KV, and the mini-app SDK require. This keeps the repo auditable, fast to clone, and deployable anywhere that runs Node.js - not just Vercel. The 12-function Vercel Hobby plan limit shaped the API file structure: writes are consolidated under react.js and stats.js rather than one file per action type.</p>
+    </section>
+
+    <section>
+      <span class="num">05</span>
+      <h2>Traction and status</h2>
+
+      <div class="stat">
+        <b>Mini App - live on Vercel</b>
+        <span>Deployed at z.thezao.xyz via the bettercallzaal/zaalcaster repository. Farcaster Mini App metadata present (fc:miniapp + fc:frame). The farcaster.json manifest is served via a vercel.json rewrite. Account association (the final discoverability step) requires Zaal to sign z.thezao.xyz with his Farcaster custody key via the dev.farcaster manifest tool and paste the result into public/farcaster.json - one manual step remaining for full in-feed discoverability.</span>
+        <span class="src">bettercallzaal/zaalcaster, public/farcaster.json, vercel.json</span>
+      </div>
+
+      <div class="stat">
+        <b>Empire Builder integration - two empires live</b>
+        <span>ZABAL (tokenized) and ZABAL GAMEZ (tokenless) empires already exist and are readable via the Empire tab. empire.js live-verified against Zaal's real empires at build time. Known API drift: Empire Builder's real responses differ from May 2026 docs on field names (burned_rewards vs burned, user_address vs address) - lib catches both with fallback chains.</span>
+        <span class="src">bettercallzaal/zaalcaster, empire.js, CLAUDE.md (Empire Builder section, 2026-07-15)</span>
+      </div>
+
+      <div class="stat">
+        <b>POIDH read integration - BCZ rounds R1-R4</b>
+        <span>poidh.js reads poidh.xyz tRPC endpoints using the same pattern as bettercallzaal/zpoidh's refresh-poidh-leaderboard.py (pattern proven in production). PoidhV2 contract addresses recorded for mainnet, Arbitrum, Base, and Degen for future on-chain claim tooling.</span>
+        <span class="src">bettercallzaal/zaalcaster, poidh.js</span>
+      </div>
+
+      <div class="stat">
+        <b>Zora Creator Coin - live card</b>
+        <span>Zora public REST (api-sdk.zora.engineering/coin) returns market cap, price, and holders for Zaal's coin (0x2275c5e507f1d01a0c043a4f888ec58f8215c285 on Base). Live-verified at $3,793 market cap at build time (2026-07-15).</span>
+        <span class="src">bettercallzaal/zaalcaster, zora.js, CLAUDE.md (Zora card section, 2026-07-15)</span>
+      </div>
+    </section>
+
+    <section>
+      <span class="num">06</span>
+      <h2>Ecosystem integration</h2>
+      <p>Zaalcaster is both a personal tool and an integration surface for the ZAO ecosystem. The same cockpit that Zaal uses to manage his Farcaster presence also surfaces WaveWarZ battle results (via /wavewarz channel reads), ZABAL Gamez Empire Builder activity, POIDH bounties from BCZ rounds, and Zora creator coin data - all in one interface.</p>
+      <p>The Farcaster connection is foundational to the broader ZAO stack: COC Concertz show announcements go out via post.js, WaveWarZ battle results get amplified via the channels view, and daily community engagement (replies, follows, channel moderation) all flow through the cockpit. The action ledger captures every write, which feeds into future analytics on Zaal's reach and influence across Farcaster.</p>
+      <p>The Empire Builder tab connects zaalcaster to ZABAL's onchain leaderboard and booster ecosystem: Zaal can see where ZABAL ranks, who is boosting it, and queue up engagement with booster candidates without leaving the cockpit. The same tab will eventually support staking distributions and token creation (Clanker) once those flows are live-tested.</p>
+    </section>
+
+    <section>
+      <span class="num">07</span>
+      <h2>Roadmap</h2>
+      <h3>Built (live as of July 2026)</h3>
+      <p>Full CLI suite, web cockpit + Mini App, SIWF guest access, gamified daily loop, Empire Builder read + staking + booster queue, POIDH tab, Zora coin card, Juke Spaces (pending JUKE_API_KEY), action ledger, health monitor, rate-limit guard, Clanker launch prep, Bluesky cross-post (bsky.js).</p>
+
+      <h3>Pending (one manual step each)</h3>
+      <p><strong>Farcaster account association:</strong> Zaal signs z.thezao.xyz via dev.farcaster, pastes the result into public/farcaster.json. Unlocks full in-feed Mini App discoverability. <strong>JUKE_API_KEY:</strong> Pending Juke admin approval. Unlocks Spaces create from the CLI. <strong>Neynar Client ID:</strong> Register an app in the Neynar dev portal, set NEYNAR_CLIENT_ID + SESSION_SECRET in Vercel. Enables the SIWF sign-in button for guests in the hosted web cockpit.</p>
+
+      <h3>On the roadmap (not yet spec'd)</h3>
+      <p>Weekly engagement recap with Farcaster cast sharing (draft + confirm, never auto-post). Deeper ZABAL Gamez integration: leaderboard creation once non-tokenHolders type schemas are documented by Empire Builder. ZAO Papers link from Daily (surface relevant paper for the day's main project). Bluesky full posting parity (currently partial via bsky.js).</p>
+    </section>
+
+    <section>
+      <span class="num">08</span>
+      <h2>How to use it</h2>
+      <h3>Web cockpit (any device)</h3>
+      <p>Navigate to <a href="https://z.thezao.xyz" target="_blank" rel="noopener">z.thezao.xyz</a>. Sign in with your Farcaster account via the SIWF button (guest read access). If you are Zaal (FID 19640), you get full access including the cockpit inbox, Post tab, Daily loop, Grow tab, and Empire tab. Guests see Feed, Channels, Search, and Empire reads.</p>
+
+      <h3>Farcaster Mini App</h3>
+      <p>Any cast that embeds z.thezao.xyz renders a mini app launch button in Warpcast. Tap it to open the cockpit inside the Farcaster client. Once the account association is set, the Mini App will also be discoverable in the Warpcast app directory.</p>
+
+      <h3>Local CLI</h3>
+      <p>Clone <a href="https://github.com/bettercallzaal/zaalcaster" target="_blank" rel="noopener">bettercallzaal/zaalcaster</a>, run <code>npm install</code>, create <code>~/.zao/private/farcaster-zaal.env</code> with NEYNAR_API_KEY + ZAAL_SIGNER_UUID + ZAAL_FID, then use <code>npm run timeline</code>, <code>npm run cockpit</code>, <code>npm run morning</code>. The CLI is the primary development surface; the web cockpit is for mobile and multi-device access.</p>
+
+      <h3>For builders</h3>
+      <p>The repo is a reference implementation for a personal Farcaster client. The patterns here - preview-first posting, shared lib.js across CLI and serverless, SIWF with role-based access, KV-backed game state - are reusable for any ZAO spoke that wants a Farcaster-native interface. Coordinate with Zaal before forking or adapting for a different ZAO project.</p>
+    </section>
+
+  </div>
+  <footer><div class="wrap">
+    <p class="draft-flag">Draft v0.1, 2026-07-17 - not published</p>
+    <h3 style="margin-top:2rem">References</h3>
+    <ol class="references">
+      <li id="ref1">Zaalcaster repository. <a href="https://github.com/bettercallzaal/zaalcaster" target="_blank" rel="noopener">github.com/bettercallzaal/zaalcaster</a>. Personal Farcaster client for @zaal (FID 19640). Node.js ESM, Vercel deployment, Farcaster Mini App. Active development through July 2026.</li>
+      <li id="ref2">Zaalcaster package.json. <a href="https://github.com/bettercallzaal/zaalcaster/blob/main/package.json" target="_blank" rel="noopener">bettercallzaal/zaalcaster package.json</a>. name: "zaalcaster", version: "0.1.0", type: "module". Bin map: zaalcaster-timeline, zaalcaster-notifs, zaalcaster-post, zaalcaster-reply, zaalcaster-cockpit, zaalcaster-empire, and others.</li>
+      <li id="ref3">Neynar API v2. <a href="https://docs.neynar.com" target="_blank" rel="noopener">docs.neynar.com</a>. Used for all Farcaster reads (/v2/farcaster/feed, /v2/farcaster/notifications, /v2/farcaster/cast, /v2/farcaster/user/follow, etc.) and writes (post, reply, like, recast, delete, follow/unfollow). Managed signer (ZAAL_SIGNER_UUID) required for write operations. Live-verified endpoint stability 2026-07-04.</li>
+      <li id="ref4">Vercel KV. <a href="https://vercel.com/docs/storage/vercel-kv" target="_blank" rel="noopener">vercel.com/docs/storage/vercel-kv</a>. Stores: zc:state.game (gamification state), zc:actions (action ledger list), zc:cron:last (health cron timestamp). Loaded via KV_REST_API_URL + KV_REST_API_TOKEN from Vercel env or ~/.zao/private/farcaster-zaal.env. 2026-07-06.</li>
+      <li id="ref5">Empire Builder API. <a href="https://empirebuilder.world" target="_blank" rel="noopener">empirebuilder.world</a>. Public API for empire reads (empires/search/owner/top-empires/leaderboards/address-stats/boosters). Partner-whitelisted API for write operations (deploy-empire-tokenless, add-booster, activate-staking). Zaalcaster empire.js live-verified against ZABAL and ZABAL GAMEZ empires 2026-07-14. Field drift noted: burned_rewards (not burned), user_address (not address) vs. May 2026 docs.</li>
+      <li id="ref6">POIDH (Pics or It Didn't Happen). <a href="https://poidh.xyz" target="_blank" rel="noopener">poidh.xyz</a>. On-chain bounty platform on Degen/Base/Arbitrum. tRPC endpoints: getBounty, getBountyClaims, getBountyWithClaims. Same endpoint pattern as bettercallzaal/zpoidh refresh-poidh-leaderboard.py (production-proven). BCZ Round R1-R4 hardcoded chips in poidh.js. PoidhV2 contract addresses recorded in POIDH_CONTRACTS. 2026-07-15.</li>
+      <li id="ref7">Zora API. <a href="https://api-sdk.zora.engineering/coin" target="_blank" rel="noopener">api-sdk.zora.engineering/coin</a>. Public REST endpoint (no auth). Returns market cap, price, holder count for a coin address. Zaal's Creator Coin: 0x2275c5e507f1d01a0c043a4f888ec58f8215c285 on Base. Live-verified: $3,793 market cap at build time 2026-07-15.</li>
+      <li id="ref8">Neynar Sign In With Neynar (SIWN). <a href="https://docs.neynar.com/docs/sign-in-with-neynar" target="_blank" rel="noopener">docs.neynar.com/docs/sign-in-with-neynar</a>. Zero-new-dep SIWF implementation. Client button: neynar_signin div + data-client_id + hosted script. Server: POST /api/auth receives {fid, signer_uuid}, independently re-verifies via getSignerInfo() (GET /farcaster/signer?signer_uuid=), issues HMAC-SHA256-signed session cookie. Implemented in auth.js + api/auth.js, 2026-07-14.</li>
+      <li id="ref9">Cockpit (bin/cockpit.js). <a href="https://github.com/bettercallzaal/zaalcaster/blob/main/bin/cockpit.js" target="_blank" rel="noopener">bettercallzaal/zaalcaster bin/cockpit.js</a>. Keyboard-driven single-screen inbox walk. Keys: [a] send draft, [e] edit+confirm+send, [s] skip, [n] later, [q] quit. --dry disables sends entirely. Built on getUnansweredInbound() shared between cockpit and engage. 2026-07-06.</li>
+      <li id="ref10">Daily gamification. <a href="https://github.com/bettercallzaal/zaalcaster/blob/main/CLAUDE.md" target="_blank" rel="noopener">bettercallzaal/zaalcaster CLAUDE.md</a> (Gamify + Neynar depth section). 8 daily quests, +10 XP each, consecutive-day streak with best-ever tracking, 8 unlockable badges with toast notifications, XP bar. Auto-ticks when Zaal's activity already matches. KV key: zc:state.game. 2026-07-05.</li>
+      <li id="ref11">Booster engagement queue. <a href="https://github.com/bettercallzaal/zaalcaster/blob/main/CLAUDE.md" target="_blank" rel="noopener">bettercallzaal/zaalcaster CLAUDE.md</a> (Empire tab section, 2026-07-15). lib.js getBoosterCandidates() - finds who liked Zaal's recent casts or posted booster phrases, ranks phrase-casters first, pairs each with one of their casts. Scan is a manual button (~15-20 Neynar calls per run). Never auto-engages.</li>
+      <li id="ref12">Juke Audio Spaces. <a href="https://juke.audio" target="_blank" rel="noopener">juke.audio</a>. Live Farcaster audio rooms. API: POST /v1/developer/spaces (create), GET /v1/rooms/{id} (info). juke.js + bin/spaces.js. JUKE_API_KEY required (pending admin approval). Preview-first: create requires --yes like post. 2026-07-15 (from Zuke integration pattern).</li>
+      <li id="ref13">Reliability trio. <a href="https://github.com/bettercallzaal/zaalcaster/blob/main/CLAUDE.md" target="_blank" rel="noopener">bettercallzaal/zaalcaster CLAUDE.md</a> (Reliability trio section, 2026-07-06). Rate-limit guard (fetchNeynar 429 retry with Retry-After, 3 tries), action ledger (logAction appends to zc:actions KV list), self-monitor (cron/post-due writes zc:cron:last, getSystemHealth checks signer + cron, bin/health.js exits non-zero if unhealthy).</li>
+    </ol>
+    <p>Part of the ZAO papers - <a href="/papers">thezao.xyz/papers</a></p>
+    <p style="font-family:var(--sans);font-size:0.8rem;margin-top:0.6rem;opacity:0.75;"><a href="https://github.com/ZAODEVZ/ZAOcowork/edit/main/public/papers/drafts/zaalcaster.html" target="_blank" rel="noopener">Propose an edit (GitHub)</a></p>
+  </div></footer>
+</main>
+<script src="/papers/quote.js"></script>
+<script type="module">
+  try {
+    const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk');
+    await sdk.actions.ready();
+  } catch (e) { /* not in a mini-app context */ }
+</script>
+</body></html>
