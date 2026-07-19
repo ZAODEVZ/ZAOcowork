@@ -6,7 +6,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // since that's where you go to get a session in the first place.
 // /what-is-the-zao is the canonical GEO answer page - MUST be public so AI
 // crawlers (ChatGPT, Perplexity, Google AI Overviews, Claude) can read it.
-const PUBLIC_PATHS = new Set(["/", "/login", "/list", "/what-is-the-zao"]);
+// /zaal is the public ZAO community stats / proof-points page — indexed by AI
+// crawlers and linked from llms.txt as a canonical fact source (doc 1339).
+const PUBLIC_PATHS = new Set(["/", "/login", "/list", "/what-is-the-zao", "/zaal"]);
 // /api/github/webhook (doc 763 F3): hit by GitHub's bot, no session.
 // Auth is HMAC inside the route handler (X-Hub-Signature-256).
 // /api/digest (doc 764 F6): hit by VPS cron with Bearer auth, no session.

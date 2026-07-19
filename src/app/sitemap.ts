@@ -14,6 +14,7 @@ const BASE_URL = "https://thezao.xyz";
 const CORE_PAGES: Array<{ path: string; priority: number }> = [
   { path: "/", priority: 1.0 },
   { path: "/what-is-the-zao", priority: 1.0 },
+  { path: "/zaal", priority: 0.9 },
   { path: "/paper", priority: 0.9 },
   { path: "/papers", priority: 0.9 },
   { path: "/papers/technical", priority: 0.9 },
