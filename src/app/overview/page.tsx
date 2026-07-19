@@ -9,6 +9,8 @@ import { DeadlinesWidget } from "@/components/overview/DeadlinesWidget";
 import { ReposWidget } from "@/components/overview/ReposWidget";
 import { SurfacesWidget } from "@/components/overview/SurfacesWidget";
 import { TerminalsWidget } from "@/components/overview/TerminalsWidget";
+import { AIFrontDoor } from "@/components/overview/AIFrontDoor";
+import { DirectoryWidget } from "@/components/overview/DirectoryWidget";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +34,19 @@ export default async function OverviewPage() {
         {/* Attention Strip - What needs you now */}
         <AttentionStrip />
 
+        {/* AI Front Door - Jump-in context for AIs */}
+        <AIFrontDoor />
+
         {/* Responsive grid layout */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-max">
           {/* Row 1: Goals (full width) */}
           <div className="lg:col-span-3">
             <GoalsWidget />
+          </div>
+
+          {/* Row 1b: Directory (full width, all links) */}
+          <div className="lg:col-span-3">
+            <DirectoryWidget />
           </div>
 
           {/* Row 2: Task Status (2 cols) + Deadlines (1 col) */}
