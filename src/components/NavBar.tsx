@@ -9,6 +9,7 @@ import ActivityStrip from "./ActivityStrip";
 import { MentionsBadge } from "./MentionsBadge";
 import { CommandPalette } from "./CommandPalette";
 import { KeyboardHelp } from "./KeyboardHelp";
+import { ThemeControl } from "./ThemeControl";
 
 // NavBar's brand tabs. Phase D switched from a hardcoded BRANDS const to a
 // `brands` prop loaded server-side from the brands table. Each brand carries
@@ -88,16 +89,16 @@ export function NavBar({
   // below the tabs as an unobtrusive status footer.
   return (
     <>
-    <nav className="flex flex-col rounded-xl bg-black/25 border border-white/10 p-1.5">
-      <div className="flex items-center gap-1.5">
+    <nav className="sticky top-0 z-40 flex flex-col rounded-xl border backdrop-blur-sm transition-colors duration-300" style={{ backgroundColor: 'rgba(10, 22, 40, 0.7)', borderColor: 'var(--border)' }} >
+      <div className="flex items-center gap-2 px-2 py-2">
         {/* Top-level tabs: Mission Control | Paths | Board | Repos */}
-        <div className="flex items-center gap-1.5 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
+        <div className="flex items-center gap-1 overflow-x-auto flex-1 min-w-0 scrollbar-thin">
           <BrandTab href="/overview" label="Mission Control" active={onOverview} color={null} />
           <BrandTab href="/paths" label="Paths" active={onPaths} color={null} />
           <BrandTab href="/board" label="Board" active={onBoard && !activeBrand} color={null} />
           <BrandTab href="/repos" label="Repos" active={onRepos} color={null} />
           {/* Separator */}
-          <div className="h-4 w-px bg-white/10 flex-shrink-0" />
+          <div className="h-4 w-px bg-white/10 flex-shrink-0 mx-0.5" />
           {/* Brand tabs */}
           {primary.map((b) => (
             <BrandTab
@@ -125,6 +126,7 @@ export function NavBar({
           >
             ⌕
           </button>
+          <ThemeControl />
           <NavMenu
             showAdmin={showAdminTab}
             active={{
@@ -162,12 +164,12 @@ function BrandTab({
   active: boolean;
   color: string | null;
 }) {
-  const activeClass = color ?? "bg-blue-500/20 text-blue-200 border-blue-500/40";
+  const activeClass = color ?? "bg-white/10 text-white border-white/20";
   return (
     <Link
       href={href}
       prefetch={false}
-      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap ${
+      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
         active
           ? activeClass
           : "border-transparent text-white/55 hover:text-white/85 hover:bg-white/[0.06]"

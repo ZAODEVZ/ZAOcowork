@@ -56,12 +56,27 @@ const organizationJsonLd = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                const theme = localStorage.getItem('zao-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                const hue = parseInt(localStorage.getItem('zao-accent-hue') || '36', 10);
+                const root = document.documentElement;
+                root.setAttribute('data-theme', theme);
+                root.style.setProperty('--accent', 'hsl(' + hue + ', 95%, 48%)');
+                root.style.setProperty('--accent-light', 'hsl(' + hue + ', 95%, 58%)');
+                root.style.setProperty('--accent-dark', 'hsl(' + hue + ', 95%, 38%)');
+              })();
+            `,
+          }}
         />
       </head>
       <body className="min-h-screen antialiased">
