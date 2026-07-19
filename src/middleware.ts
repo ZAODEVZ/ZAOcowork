@@ -21,7 +21,11 @@ const PUBLIC_PATHS = new Set(["/", "/login", "/list", "/what-is-the-zao", "/zaal
 // Was missing from this list, so every og:image tag across every paper was
 // silently redirecting to /login instead of returning an image - found by
 // checking the live response, not just the code.
-const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1", "/api/og", "/verify-"];
+// /board/mini: Telegram Mini App board view — handles its own Telegram initData
+// auth via TgAuthGate client component + /api/tg/auth. Must be public so
+// Telegram's webview opens it without a cookie redirect loop.
+// /api/tg/auth: validates Telegram initData HMAC and sets a session cookie.
+const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1", "/api/og", "/verify-", "/board/mini", "/api/tg/auth"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
