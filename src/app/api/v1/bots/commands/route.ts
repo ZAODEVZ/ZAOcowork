@@ -6,7 +6,8 @@ import { readJsonObject, optObject, apiError } from "@/lib/api-validate";
 
 // /api/v1/bots/commands — the control-plane command queue (doc 800 Phase 2-4).
 //
-// POST  enqueue a command       — board, session + isAdmin (RBAC).
+// POST  enqueue a command       — board, session required.
+//   "ask" is open to any team session; lifecycle + run_task require isAdmin.
 // GET   pull pending commands    — bot token. ?bot=<self> for a bot's own queue,
 //                                   ?scope=host for the fleet-agent (start|stop).
 //
@@ -18,6 +19,9 @@ export const dynamic = "force-dynamic";
 const BOT_SELF_COMMANDS = ["restart", "pause", "resume", "run_task", "ask"] as const;
 const HOST_COMMANDS = ["start", "stop"] as const;
 const ALL_COMMANDS: string[] = [...BOT_SELF_COMMANDS, ...HOST_COMMANDS];
+
+// Commands that any team session can send (not just admins).
+const SESSION_COMMANDS = ["ask"] as const;
 
 interface CommandRow {
   id: number;
@@ -77,13 +81,10 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ---- POST: the board enqueues a command (admin only) --------------------------
+// ---- POST: the board enqueues a command -------------------------------------
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  if (!(await isAdmin(session))) {
-    return Response.json({ ok: false, error: "Forbidden" }, { status: 403 });
-  }
 
   let body: Record<string, unknown>;
   let args: Record<string, unknown>;
@@ -102,6 +103,12 @@ export async function POST(req: NextRequest) {
       { ok: false, error: `command must be one of: ${ALL_COMMANDS.join(", ")}` },
       { status: 400 },
     );
+  }
+
+  // Lifecycle / task commands require admin; "ask" is open to any team session.
+  const sessionOnly = (SESSION_COMMANDS as readonly string[]).includes(command);
+  if (!sessionOnly && !(await isAdmin(session))) {
+    return Response.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
   try {

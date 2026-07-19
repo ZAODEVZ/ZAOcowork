@@ -6,9 +6,9 @@ import { BotsBoard } from "@/components/BotsBoard";
 
 export const dynamic = "force-dynamic";
 
-// /bots — fleet liveness + control plane. Session-gated like the rest of the board.
-// Observe is any session; the control affordances render only for admins (the
-// enqueue API also enforces isAdmin server-side).
+// /bots — fleet liveness + ZOE chat + control plane. Session-gated like the board.
+// Any session can: see live bot status, ask ZOE a question, read command history.
+// Admins can also: use lifecycle controls and assign tasks to bots.
 export default async function BotsPage() {
   const user = await getSession();
   if (!user) redirect("/login");
@@ -24,8 +24,8 @@ export default async function BotsPage() {
           <div>
             <h1 className="text-2xl font-bold text-white mb-1">Bot fleet</h1>
             <p className="text-sm text-slate-400">
-              Live status of the ZAO bot fleet. Green = heartbeat within the last 10 minutes,
-              red = offline/stale. Expand a bot for its activity and (admins) controls.
+              Live status of the ZAO bot fleet. Expand a bot to ask ZOE a question
+              or see its recent activity. Admins: lifecycle controls also available.
             </p>
           </div>
           <BotsBoard isAdmin={admin} />
