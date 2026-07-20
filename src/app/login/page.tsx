@@ -4,6 +4,7 @@ import Image from "next/image";
 import { getSession, verifyPassword, createSession } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { PasswordInput } from "@/components/PasswordInput";
+import { Web3LoginButtons } from "@/components/Web3LoginButtons";
 import ZaoLogo from "../../../ZAO LOGO.jpg";
 
 // Only honor same-origin relative paths as a post-login redirect target.
@@ -90,6 +91,7 @@ export default async function LoginPage({
           <p>Team workspace — sign in with your password.</p>
         </div>
       </form>
+      <Web3LoginButtons />
     </main>
   );
 }
