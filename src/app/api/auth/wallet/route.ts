@@ -33,9 +33,17 @@ function buildMessage(address: string, nonce: string, domain: string): string {
   ].join("\n");
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const address = req.nextUrl.searchParams.get("address") ?? "";
+  if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+    return NextResponse.json({ error: "bad_address" }, { status: 400 });
+  }
   const nonce = randomBytes(16).toString("hex");
-  const res = NextResponse.json({ nonce });
+  const domain = req.headers.get("host") ?? "thezao.xyz";
+  // Return the FULL message so the client signs byte-for-byte what POST
+  // reconstructs and verifies. Returning only the nonce invites drift between
+  // the two message builders, which fails verification in confusing ways.
+  const res = NextResponse.json({ nonce, message: buildMessage(address, nonce, domain) });
   res.cookies.set(NONCE_COOKIE, nonce, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
