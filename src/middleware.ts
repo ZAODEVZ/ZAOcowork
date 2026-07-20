@@ -25,7 +25,7 @@ const PUBLIC_PATHS = new Set(["/", "/login", "/list", "/what-is-the-zao", "/zaal
 // auth via TgAuthGate client component + /api/tg/auth. Must be public so
 // Telegram's webview opens it without a cookie redirect loop.
 // /api/tg/auth: validates Telegram initData HMAC and sets a session cookie.
-const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1", "/api/og", "/verify-", "/board/mini", "/api/tg/auth"];
+const PUBLIC_PREFIXES = ["/login", "/api/login", "/api/github/webhook", "/api/digest", "/api/my-digest", "/shipped", "/api/v1", "/api/og", "/verify-", "/board/mini", "/api/tg/auth", "/api/auth"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_PATHS.has(pathname)) return true;
