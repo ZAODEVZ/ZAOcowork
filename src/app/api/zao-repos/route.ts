@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth";
+import { getDecisions, type RepoDecision } from "@/lib/repo-decisions";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,8 @@ interface RepoData {
 interface RepoWithStatus extends RepoData {
   status: "active" | "recent" | "stale" | "archived";
   suggestion: string;
+  decision: RepoDecision;
+  decisionNote: string | null;
 }
 
 const CURATED_SUGGESTIONS: Record<string, string> = {
@@ -99,6 +102,29 @@ async function fetchOrgRepos(org: string, token?: string): Promise<RepoData[]> {
   }
 }
 
+// Merge persisted keep/archive decisions onto GitHub repo data. Decisions live
+// in their own table and change often, so they are applied fresh on every
+// request (not baked into the 1h GitHub cache).
+async function applyDecisions(repos: RepoWithStatus[]): Promise<RepoWithStatus[]> {
+  const decisions = await getDecisions();
+  return repos.map((r) => {
+    const d = decisions.get(r.name);
+    return {
+      ...r,
+      decision: d?.decision ?? "pending",
+      decisionNote: d?.note ?? null,
+    };
+  });
+}
+
+function decisionCounts(repos: RepoWithStatus[]) {
+  return {
+    keep: repos.filter((r) => r.decision === "keep").length,
+    archive: repos.filter((r) => r.decision === "archive").length,
+    pending: repos.filter((r) => r.decision === "pending").length,
+  };
+}
+
 export async function GET() {
   try {
     await requireSession();
@@ -109,12 +135,14 @@ export async function GET() {
     );
   }
 
-  // Check cache
+  // Check cache (GitHub data only; decisions merged fresh below)
   if (cachedData && Date.now() - cachedData.timestamp < CACHE_TTL) {
+    const repos = await applyDecisions(cachedData.repos);
     return NextResponse.json({
       ok: true,
-      repos: cachedData.repos,
+      repos,
       cached: true,
+      byDecision: decisionCounts(repos),
     });
   }
 
@@ -140,6 +168,8 @@ export async function GET() {
           ...repo,
           status,
           suggestion: "",
+          decision: "pending" as RepoDecision,
+          decisionNote: null,
         };
       })
       .map((repo) => ({
@@ -162,23 +192,26 @@ export async function GET() {
         return bPushed - aPushed;
       });
 
-    // Cache the result
+    // Cache the GitHub-derived data (decisions merged fresh per request)
     cachedData = {
       repos,
       timestamp: Date.now(),
     };
 
+    const withDecisions = await applyDecisions(repos);
+
     return NextResponse.json({
       ok: true,
-      repos,
+      repos: withDecisions,
       cached: false,
-      total: repos.length,
+      total: withDecisions.length,
       byStatus: {
-        active: repos.filter((r) => r.status === "active").length,
-        recent: repos.filter((r) => r.status === "recent").length,
-        stale: repos.filter((r) => r.status === "stale").length,
-        archived: repos.filter((r) => r.status === "archived").length,
+        active: withDecisions.filter((r) => r.status === "active").length,
+        recent: withDecisions.filter((r) => r.status === "recent").length,
+        stale: withDecisions.filter((r) => r.status === "stale").length,
+        archived: withDecisions.filter((r) => r.status === "archived").length,
       },
+      byDecision: decisionCounts(withDecisions),
       note: token
         ? "Using authenticated GitHub API (higher rate limit)"
         : "Using unauthenticated GitHub API (60 req/hr limit - set GITHUB_TOKEN env var for higher limit)",
