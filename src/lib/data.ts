@@ -18,6 +18,7 @@ import type {
   TaskType,
   TaskUpdate,
 } from "./types";
+import { compareIds } from "./sort";
 
 export type {
   ActionStatus,
@@ -432,7 +433,7 @@ const loadBoard = cache(async (): Promise<ActionItem[]> => {
   }
   const items = rows
     .map((row) => normalizeItem(rowToItem(row, team)))
-    .sort((a, b) => (Number(a.id) || 0) - (Number(b.id) || 0));
+    .sort((a, b) => compareIds(a.id, b.id));
   // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +
   // returns the items with archivedAt populated so the UI hides them on this
   // same render. Inside the cached load so it runs once per request, not per

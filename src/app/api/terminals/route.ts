@@ -139,8 +139,12 @@ async function fetchCommits(
       return [];
     }
     const data = await res.json();
-    return data.map((c: { commit: any; html_url: string }) => ({
-      message: c.commit.message.split("\n")[0], // First line only
+    type GitHubCommit = {
+      commit: { message?: string; author?: { name?: string; date?: string } };
+      html_url: string;
+    };
+    return (data as GitHubCommit[]).map((c) => ({
+      message: (c.commit.message ?? "").split("\n")[0], // First line only; null-safe
       author: c.commit.author?.name || "Unknown",
       date: c.commit.author?.date || new Date().toISOString(),
       html_url: c.html_url,

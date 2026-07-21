@@ -50,6 +50,9 @@ interface PhotoRow {
 }
 
 function rowToPhoto(r: PhotoRow): Photo {
+  // Guard against non-numeric/null price_usd (NaN would propagate silently
+  // through pricing math + display). Fall back to 0 for invalid data.
+  const price = Number(r.price_usd);
   return {
     id: r.id,
     storagePath: r.storage_path,
@@ -57,7 +60,7 @@ function rowToPhoto(r: PhotoRow): Photo {
     credit: r.credit,
     event: r.event,
     photoDate: r.photo_date,
-    priceUsd: Number(r.price_usd),
+    priceUsd: Number.isFinite(price) ? price : 0,
     status: r.status,
     fotocasterUrl: r.fotocaster_url,
     collected: r.collected,

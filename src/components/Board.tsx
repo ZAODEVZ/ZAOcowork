@@ -31,6 +31,7 @@ import {
 import { BRANDS, brandColor } from "@/lib/brands";
 import { resolveSource } from "@/lib/source-resolver";
 import { computeWaitingState, formatWaitingState, getWaitingStateBadgeClass } from "@/lib/waiting-state";
+import { compareIds } from "@/lib/sort";
 import { patchField, claimTask } from "@/app/actions";
 import { TaskRoom } from "./TaskRoom";
 import { TodoPanel, TodoTrigger } from "./TodoPanel";
@@ -1655,7 +1656,7 @@ function TableView({
       let cmp = 0;
       switch (sortKey) {
         case "id":
-          cmp = (Number(a.id) || 0) - (Number(b.id) || 0);
+          cmp = compareIds(a.id, b.id);
           break;
         case "title":
           cmp = (a.title || "").localeCompare(b.title || "");
