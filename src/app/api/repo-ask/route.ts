@@ -42,8 +42,8 @@ async function fetchRecentCommits(org: string, name: string, token?: string): Pr
     const res = await fetch(url, { headers });
     if (!res.ok) return "";
     const commits = await res.json();
-    return commits
-      .map((c: any) => `- ${c.commit.message.split("\n")[0]}`)
+    return (commits as { commit: { message?: string } }[])
+      .map((c) => `- ${(c.commit.message ?? "").split("\n")[0]}`)
       .join("\n");
   } catch {
     return "";

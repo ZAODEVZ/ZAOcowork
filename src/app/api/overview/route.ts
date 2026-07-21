@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getActions } from "@/lib/data";
+import type { ActionItem } from "@/lib/types";
 import { requireSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -48,7 +49,7 @@ interface TaskStatusData {
   cycleTime: CycleTimeMetrics;
 }
 
-function computeGoalProgress(items: any[]): GoalProgress[] {
+function computeGoalProgress(items: ActionItem[]): GoalProgress[] {
   const goals: GoalProgress[] = [];
 
   for (const [goalKey, keywords] of Object.entries(GOAL_MATCHERS)) {
@@ -74,7 +75,7 @@ function computeGoalProgress(items: any[]): GoalProgress[] {
   return goals;
 }
 
-function computeCycleTimeMetrics(items: any[]): CycleTimeMetrics {
+function computeCycleTimeMetrics(items: ActionItem[]): CycleTimeMetrics {
   // Completed items in the last 30 days (using completedAt)
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;

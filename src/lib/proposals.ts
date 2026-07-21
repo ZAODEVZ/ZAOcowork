@@ -72,8 +72,8 @@ export async function createProposal(
       return null;
     }
     return { id: (data as { id: string }).id };
-  } catch (err) {
-    console.warn(`[proposals] createProposal threw: ${err}`);
+  } catch (err: unknown) {
+    console.warn("[proposals] createProposal threw:", err instanceof Error ? err.message : String(err));
     return null;
   }
 }

@@ -58,9 +58,17 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const digest = await buildWeeklyDigest();
-  const text = digestToText(digest);
-  const html = digestToHtml(digest);
+  let digest: Awaited<ReturnType<typeof buildWeeklyDigest>>;
+  let text: string;
+  let html: string;
+  try {
+    digest = await buildWeeklyDigest();
+    text = digestToText(digest);
+    html = digestToHtml(digest);
+  } catch (err: unknown) {
+    console.error("[digest] failed to build:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ ok: false, error: "Failed to build digest" }, { status: 500 });
+  }
 
   if (!wantSend) {
     return NextResponse.json({ ok: true, digest, text, html });
