@@ -38,9 +38,10 @@ export type TaskType =
   | "incident"
   | "approval_request"
   | "goal"
-  | "maintenance";
+  | "maintenance"
+  | "event";
 export const TASK_TYPES: TaskType[] = [
-  "task", "work_order", "incident", "approval_request", "goal", "maintenance",
+  "task", "work_order", "incident", "approval_request", "goal", "maintenance", "event",
 ];
 export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   task: "Task",
@@ -49,6 +50,7 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   approval_request: "Approval Request",
   goal: "Goal",
   maintenance: "Maintenance",
+  event: "Event",
 };
 
 export type ReviewStatus = "pending" | "approved" | "rejected" | "changes_requested";
@@ -236,6 +238,11 @@ export type ActionItem = {
   // Explicit related tasks: bidirectional informational links. Array of task IDs
   // (app-facing legacy_id or UUID). Stored in metadata.relatedIds for persistence.
   relatedIds?: string[];
+  // Event fields (only populated if taskType === 'event' or is_event=true)
+  isEvent?: boolean;
+  eventAt?: string | null;  // ISO 8601 datetime string for event start
+  eventLocation?: string | null;
+  eventUrl?: string | null;
 };
 
 // Provenance taxonomy (doc 765 decision 2). Every task carries exactly

@@ -169,6 +169,10 @@ interface TaskRow {
   source: string | null;
   public_override: boolean | null;
   parent_task_id: string | null;
+  is_event: boolean | null;
+  event_at: string | null;
+  event_location: string | null;
+  event_url: string | null;
 }
 
 interface TeamMaps {
@@ -256,6 +260,11 @@ export function normalizeItem(
   if (Array.isArray(raw.subtasks)) base.subtasks = raw.subtasks;
   // Explicit related tasks
   if (Array.isArray(raw.relatedIds)) base.relatedIds = raw.relatedIds;
+  // Event fields
+  if (raw.isEvent !== undefined) base.isEvent = raw.isEvent;
+  if (raw.eventAt !== undefined) base.eventAt = raw.eventAt;
+  if (raw.eventLocation !== undefined) base.eventLocation = raw.eventLocation;
+  if (raw.eventUrl !== undefined) base.eventUrl = raw.eventUrl;
   return base;
 }
 
@@ -322,6 +331,11 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (row.parent_task_id) item.parentTaskId = row.parent_task_id;
   // Explicit related tasks: bidirectional informational links
   if (Array.isArray(meta.relatedIds)) item.relatedIds = (meta.relatedIds as string[]).filter((id) => typeof id === "string");
+  // Event fields: tasks flagged as events with scheduled date/time
+  if (row.is_event) item.isEvent = row.is_event;
+  if (row.event_at) item.eventAt = row.event_at;
+  if (row.event_location) item.eventLocation = row.event_location;
+  if (row.event_url) item.eventUrl = row.event_url;
   return item;
 }
 
@@ -388,6 +402,11 @@ function itemToRow(item: ActionItem, team: TeamMaps, hasParentTaskIdColumn: bool
   if (hasParentTaskIdColumn) {
     row.parent_task_id = item.parentTaskId ?? null;
   }
+  // Event fields (migration 023)
+  row.is_event = Boolean(item.isEvent);
+  row.event_at = item.eventAt ?? null;
+  row.event_location = item.eventLocation ?? null;
+  row.event_url = item.eventUrl ?? null;
   return row;
 }
 

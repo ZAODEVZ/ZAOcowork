@@ -180,6 +180,17 @@ function readForm(form: FormData, id: string, actor: string, prev?: ActionItem):
     // they pass via form, else inherit prev. Default "human-web" since
     // readForm is called from server actions invoked by the web UI.
     source: ((form.get("source") as string) ?? prev?.source ?? "human-web") as ActionItem["source"],
+    // Event fields: tasks that are flagged as events with a scheduled date/time
+    isEvent: form.get("isEvent") === "true" || form.get("isEvent") === "1" || (taskTypeRaw === "event") || prev?.isEvent,
+    eventAt: (form.get("eventAt") != null
+      ? String(form.get("eventAt") ?? "").trim() || null
+      : prev?.eventAt ?? null),
+    eventLocation: (form.get("eventLocation") != null
+      ? String(form.get("eventLocation") ?? "").trim() || null
+      : prev?.eventLocation ?? null),
+    eventUrl: (form.get("eventUrl") != null
+      ? safeHttpUrl(form.get("eventUrl"))
+      : prev?.eventUrl ?? null),
   });
   if (prev) {
     if (prev.status !== "DONE" && next.status === "DONE") {
