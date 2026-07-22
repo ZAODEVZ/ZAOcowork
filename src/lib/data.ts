@@ -596,9 +596,45 @@ async function applyDiff(
   for (const item of inserts) {
     const row = itemToRow(item, team, hasParentTaskIdColumn);
     row.legacy_id = null;
+
+    // Only include columns that are guaranteed to exist in all production instances
+    // to avoid "column does not exist" errors. Optional migration-dependent columns
+    // (created_at, updated_at, service_class, archived_at, project_id, source)
+    // are excluded from the insert and will use database defaults.
+    const safeRow: Record<string, unknown> = {
+      legacy_source: row.legacy_source,
+      legacy_id: row.legacy_id,
+      kind: row.kind,
+      project: row.project,
+      title: row.title,
+      status: row.status,
+      owner_id: row.owner_id,
+      created_by: row.created_by,
+      completed_by: row.completed_by,
+      category: row.category,
+      priority: row.priority,
+      phase: row.phase,
+      important: row.important,
+      urgent: row.urgent,
+      due: row.due,
+      notes: row.notes,
+      completed_at: row.completed_at,
+      metadata: row.metadata,
+      brands: row.brands,
+    };
+
+    // Add optional columns only if they were explicitly set
+    if (row.service_class !== undefined) safeRow.service_class = row.service_class;
+    if (row.archived_at !== undefined) safeRow.archived_at = row.archived_at;
+    if (row.project_id !== undefined) safeRow.project_id = row.project_id;
+    if (row.source !== undefined) safeRow.source = row.source;
+    if (hasParentTaskIdColumn && row.parent_task_id !== undefined) safeRow.parent_task_id = row.parent_task_id;
+
+    // created_at and updated_at are omitted to use database defaults
+
     const { data, error } = await db()
       .from("tasks")
-      .insert(row)
+      .insert(safeRow)
       .select("id, legacy_id")
       .single();
     if (error) throw new Error(`task insert failed (${item.id}): ${error.message}`);
