@@ -169,10 +169,6 @@ interface TaskRow {
   source: string | null;
   public_override: boolean | null;
   parent_task_id: string | null;
-  is_event: boolean | null;
-  event_at: string | null;
-  event_location: string | null;
-  event_url: string | null;
 }
 
 interface TeamMaps {
@@ -331,11 +327,11 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (row.parent_task_id) item.parentTaskId = row.parent_task_id;
   // Explicit related tasks: bidirectional informational links
   if (Array.isArray(meta.relatedIds)) item.relatedIds = (meta.relatedIds as string[]).filter((id) => typeof id === "string");
-  // Event fields: tasks flagged as events with scheduled date/time
-  if (row.is_event) item.isEvent = row.is_event;
-  if (row.event_at) item.eventAt = row.event_at;
-  if (row.event_location) item.eventLocation = row.event_location;
-  if (row.event_url) item.eventUrl = row.event_url;
+  // Event fields: tasks flagged as events with scheduled date/time (stored in metadata)
+  if (typeof meta.isEvent === "boolean") item.isEvent = meta.isEvent;
+  if (typeof meta.eventAt === "string") item.eventAt = meta.eventAt;
+  if (typeof meta.eventLocation === "string") item.eventLocation = meta.eventLocation;
+  if (typeof meta.eventUrl === "string") item.eventUrl = meta.eventUrl;
   return item;
 }
 
@@ -358,6 +354,11 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   if (item.prState !== undefined && item.prState !== null) meta.prState = item.prState;
   if (item.videoUrl !== undefined && item.videoUrl !== null) meta.videoUrl = item.videoUrl;
   if (Array.isArray(item.relatedIds) && item.relatedIds.length > 0) meta.relatedIds = item.relatedIds;
+  // Event fields: stored in metadata jsonb (no dedicated columns)
+  if (item.isEvent !== undefined) meta.isEvent = item.isEvent;
+  if (item.eventAt !== undefined && item.eventAt !== null) meta.eventAt = item.eventAt;
+  if (item.eventLocation !== undefined && item.eventLocation !== null) meta.eventLocation = item.eventLocation;
+  if (item.eventUrl !== undefined && item.eventUrl !== null) meta.eventUrl = item.eventUrl;
   return meta;
 }
 
@@ -402,11 +403,8 @@ function itemToRow(item: ActionItem, team: TeamMaps, hasParentTaskIdColumn: bool
   if (hasParentTaskIdColumn) {
     row.parent_task_id = item.parentTaskId ?? null;
   }
-  // Event fields (migration 023)
-  row.is_event = Boolean(item.isEvent);
-  row.event_at = item.eventAt ?? null;
-  row.event_location = item.eventLocation ?? null;
-  row.event_url = item.eventUrl ?? null;
+  // Event fields are stored in metadata (no dedicated columns)
+  // buildMetadata() handles including them in the metadata object above
   return row;
 }
 
