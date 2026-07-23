@@ -1701,7 +1701,7 @@ function TableView({
       let keys: string[];
       if (groupBy === "status") keys = [it.status];
       else if (groupBy === "owner") keys = [String(it.owner) || "Open"];
-      else if (groupBy === "priority") keys = [it.priority];
+      else if (groupBy === "priority") keys = [it.priority || "P2"];
       else keys = (it.brands ?? []).length ? (it.brands as string[]) : ["(no brand)"];
       for (const k of keys) {
         const arr = map.get(k) ?? [];
@@ -1768,10 +1768,10 @@ function TableView({
                     <td className="px-3 py-2 text-right text-white/40 tabular-nums">{it.id}</td>
                     <td className="px-3 py-2">
                       <span
-                        className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-black/80 ${PRIORITY_DOT[it.priority]}`}
-                        title={`Priority ${it.priority}`}
+                        className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-black/80 ${PRIORITY_DOT[it.priority ?? "P2"]}`}
+                        title={`Priority ${it.priority ?? "P2"}`}
                       >
-                        {it.priority.slice(1)}
+                        {(it.priority ?? "P2").slice(1)}
                       </span>
                     </td>
                     <td className="px-3 py-2 text-white/90 max-w-0">
@@ -2127,17 +2127,17 @@ function Card({
           />
         )}
         <button
-          aria-label={`Priority ${item.priority} — click to cycle`}
-          title={`Priority ${item.priority} — click to cycle`}
+          aria-label={`Priority ${item.priority ?? "P2"} — click to cycle`}
+          title={`Priority ${item.priority ?? "P2"} — click to cycle`}
           onClick={() => {
             const next =
               item.priority === "P1" ? "P2" : item.priority === "P2" ? "P3" : "P1";
             setField("priority", next);
           }}
-          className={`mt-0.5 h-4 w-4 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-black/80 ${PRIORITY_DOT[item.priority]} hover:ring-2 ring-white/30`}
+          className={`mt-0.5 h-4 w-4 rounded-full flex-shrink-0 flex items-center justify-center text-[8px] font-bold text-black/80 ${PRIORITY_DOT[item.priority ?? "P2"]} hover:ring-2 ring-white/30`}
         >
           {/* a11y: never encode meaning by color alone — show the level (1/2/3) */}
-          {item.priority.slice(1)}
+          {(item.priority ?? "P2").slice(1)}
         </button>
         <button
           onClick={() => onOpenRoom(item.id)}
