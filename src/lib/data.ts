@@ -19,6 +19,7 @@ import type {
   TaskUpdate,
 } from "./types";
 import { compareIds } from "./sort";
+import { applyTaskDefaults, describeDefaults } from "./task-defaults";
 
 export type {
   ActionStatus,
@@ -79,8 +80,6 @@ const STATUS_FROM_DB: Record<string, ActionStatus> = {
   done: "DONE",
 };
 
-// TASK_COLUMNS is now built dynamically based on whether parent_task_id column exists.
-// See buildTaskColumns() below.
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -100,47 +99,19 @@ function db(): SupabaseClient {
   return cachedClient;
 }
 
-// Cache whether parent_task_id column exists. Detected once on first query,
-// then reused to avoid repeated schema checks. Allows the app to work both
-// before and after migration 020_parent_task_id is applied.
-let hasParentTaskIdColumn: boolean | null = null;
-
-async function detectParentTaskIdColumn(): Promise<boolean> {
-  if (hasParentTaskIdColumn !== null) return hasParentTaskIdColumn;
-  try {
-    // Query information_schema to check if the column exists.
-    const { data, error } = await db()
-      .from("information_schema.columns")
-      .select("column_name")
-      .eq("table_name", "tasks")
-      .eq("column_name", "parent_task_id")
-      .limit(1)
-      .maybeSingle();
-
-    hasParentTaskIdColumn = Boolean(data);
-    return hasParentTaskIdColumn;
-  } catch {
-    // On any error (e.g., permission denied, table not found), assume the
-    // column does not exist. This is safe: if it doesn't exist, we'll operate
-    // in degraded mode (no subtasks). If it does exist but the query failed,
-    // the next request will retry.
-    hasParentTaskIdColumn = false;
-    return false;
-  }
-}
-
-// Build TASK_COLUMNS dynamically based on whether parent_task_id exists.
-// This allows the app to work both before and after the migration.
-function buildTaskColumns(hasParentTaskId: boolean): string {
-  let cols =
-    "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
-    "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
-    "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override";
-  if (hasParentTaskId) {
-    cols += ", parent_task_id";
-  }
-  return cols;
-}
+// The set of columns every task read selects.
+//
+// This used to be built dynamically behind detectParentTaskIdColumn(), which
+// probed information_schema on every cold request to find out whether migration
+// 020 had been applied. That migration has been applied in production since it
+// shipped, so the probe was a guaranteed-outcome round-trip on the hot path
+// (the board's first query of every request). Removed: the column is part of
+// the schema now, exactly like every other column here.
+const TASK_COLUMNS =
+  "id, legacy_id, legacy_source, title, status, owner_id, created_by, completed_by, category, " +
+  "priority, phase, important, urgent, due, notes, completed_at, created_at, " +
+  "updated_at, metadata, brands, service_class, archived_at, project_id, source, public_override, " +
+  "parent_task_id";
 
 interface TaskRow {
   id: string;
@@ -362,7 +333,7 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   return meta;
 }
 
-function itemToRow(item: ActionItem, team: TeamMaps, hasParentTaskIdColumn: boolean): Record<string, unknown> {
+function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
   const ownerStr = String(item.owner ?? "");
   const ownerKey =
     ownerStr && ownerStr !== "Both" && ownerStr !== "Open" ? ownerStr.toLowerCase() : null;
@@ -399,10 +370,7 @@ function itemToRow(item: ActionItem, team: TeamMaps, hasParentTaskIdColumn: bool
     project_id: item.projectId ?? null,
     source: item.source ?? "human-web",
   };
-  // Only include parent_task_id if the column exists (migration 020 applied)
-  if (hasParentTaskIdColumn) {
-    row.parent_task_id = item.parentTaskId ?? null;
-  }
+  row.parent_task_id = item.parentTaskId ?? null;
   // Event fields are stored in metadata (no dedicated columns)
   // buildMetadata() handles including them in the metadata object above
   return row;
@@ -416,10 +384,6 @@ function itemToRow(item: ActionItem, team: TeamMaps, hasParentTaskIdColumn: bool
 // deep copy so one caller's in-memory mutations can't leak through the cache.
 const loadBoard = cache(async (): Promise<ActionItem[]> => {
   const team = await teamMaps();
-  // Detect once whether parent_task_id column exists. This allows graceful
-  // degradation if the migration hasn't been applied yet.
-  const hasParentTaskId = await detectParentTaskIdColumn();
-  const taskColumns = buildTaskColumns(hasParentTaskId);
 
   // Read EVERY task regardless of legacy_source. Pre-unification the read was
   // scoped to legacy_source='cowork-actions.json' which hid meeting-captured
@@ -436,7 +400,7 @@ const loadBoard = cache(async (): Promise<ActionItem[]> => {
   for (let offset = 0; ; offset += PAGE) {
     const { data, error } = await db()
       .from("tasks")
-      .select(taskColumns)
+      .select(TASK_COLUMNS)
       // The board is private to the cowork team roster (team_members login), so
       // Zaal's personal (project=zaal-personal) items are folded into the shared
       // board + my-work rather than a separate /agentic-todos surface. They open
@@ -451,11 +415,18 @@ const loadBoard = cache(async (): Promise<ActionItem[]> => {
   const items = rows
     .map((row) => normalizeItem(rowToItem(row, team)))
     .sort((a, b) => compareIds(a.id, b.id));
-  // Auto-archive DONE rows older than 30 days (doc 763 F4). Mutates DB +
-  // returns the items with archivedAt populated so the UI hides them on this
-  // same render. Inside the cached load so it runs once per request, not per
-  // getActions() call.
-  return autoArchive(items);
+
+  // Auto-archive (DONE older than 30 days, doc 763 F4) used to run HERE, which
+  // meant every board render issued a DB *write* from inside a read path - on a
+  // page already marked `force-dynamic`, so it fired on every request from
+  // every user. It is a housekeeping sweep, not a read concern.
+  //
+  // Split in two: the *decision* stays on the read (pure, in-memory, so the UI
+  // hides the same rows it always did, with zero behaviour change and zero
+  // writes), and the *persistence* moves to the existing 15-minute auto-close
+  // cron via sweepAutoArchive(). Without the in-memory half, DONE rows older
+  // than 30 days would pop back onto the board until the next cron tick.
+  return markArchivable(items);
 });
 
 export async function getActions(): Promise<ActionDoc> {
@@ -481,13 +452,10 @@ export function looksLikeUuid(s: string): boolean {
  */
 export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
   const team = await teamMaps();
-  // Detect once whether parent_task_id column exists for both read and subtask queries.
-  const hasParentTaskId = await detectParentTaskIdColumn();
-  const taskColumns = buildTaskColumns(hasParentTaskId);
 
   const { data, error } = await db()
     .from("tasks")
-    .select(taskColumns)
+    .select(TASK_COLUMNS)
     .eq(looksLikeUuid(idOrDbId) ? "id" : "legacy_id", idOrDbId)
     .limit(1)
     .maybeSingle();
@@ -496,12 +464,11 @@ export async function getItem(idOrDbId: string): Promise<ActionItem | null> {
 
   const item = normalizeItem(rowToItem(data as unknown as TaskRow, team));
 
-  // Fetch subtasks if this is a parent task AND the parent_task_id column exists.
-  // If the column doesn't exist yet (migration not applied), skip subtask loading.
-  if (item.dbId && hasParentTaskId) {
+  // Fetch subtasks if this is a parent task.
+  if (item.dbId) {
     const { data: subtaskRows, error: subtaskError } = await db()
       .from("tasks")
-      .select(taskColumns)
+      .select(TASK_COLUMNS)
       .eq("parent_task_id", item.dbId)
       .order("created_at", { ascending: true });
 
@@ -528,8 +495,7 @@ export async function saveItem(
 ): Promise<void> {
   if (!item.dbId) throw new Error(`saveItem: item ${item.id} has no dbId`);
   const team = await teamMaps();
-  const hasParentTaskId = await detectParentTaskIdColumn();
-  const row = itemToRow(item, team, hasParentTaskId);
+  const row = itemToRow(item, team);
   delete row.legacy_source;
   delete row.legacy_id;
   delete row.kind;
@@ -560,7 +526,6 @@ async function applyDiff(
   before: ActionItem[],
   after: ActionItem[],
   team: TeamMaps,
-  hasParentTaskIdColumn: boolean,
 ): Promise<void> {
   // Key the diff by the real DB primary key (dbId / UUID), NOT by legacy_id.
   // getActions() reads every source, and legacy_id collides across sources
@@ -612,7 +577,14 @@ async function applyDiff(
   // each item. Per-row (not batch) keeps each returned row unambiguously
   // correlated to its source item without relying on RETURNING order.
   for (const item of inserts) {
-    const row = itemToRow(item, team, hasParentTaskIdColumn);
+    // Enforce the three basics (owner / priority / due) at the single point
+    // every new task funnels through, whatever created it - web QuickAdd, the
+    // Telegram bot, a meeting capture, research dispatch. Doing it here rather
+    // than in each caller's form is what keeps it zero-friction: nobody is
+    // asked for more input, the row just can't land incomplete.
+    const { item: filled, applied } = applyTaskDefaults(item);
+    Object.assign(item, filled);
+    const row = itemToRow(item, team);
     row.legacy_id = null;
     const { data, error } = await db()
       .from("tasks")
@@ -621,6 +593,10 @@ async function applyDiff(
       .single();
     if (error) throw new Error(`task insert failed (${item.id}): ${error.message}`);
     assignPersistedId(item, data as { id: string; legacy_id: string | null });
+    const summary = describeDefaults(applied);
+    if (summary) {
+      console.info(`[data] task ${item.id}: auto-filled ${summary}`);
+    }
   }
   for (const item of updates) {
     if (!item.dbId) {
@@ -628,7 +604,7 @@ async function applyDiff(
       // we cannot target the row safely — skip instead of mass-updating.
       continue;
     }
-    const row = itemToRow(item, team, hasParentTaskIdColumn);
+    const row = itemToRow(item, team);
     // Never rewrite identity / source-scoping columns on update. We target the
     // row by its UUID, so legacy_source/legacy_id/kind/project/created_at are
     // immutable here. Rewriting legacy_source to the cowork value re-homes the
@@ -660,14 +636,13 @@ export async function saveActions(
   _summary: string,
 ): Promise<void> {
   const team = await teamMaps();
-  const hasParentTaskId = await detectParentTaskIdColumn();
   // Diff against the snapshot captured when the caller read (doc.before), NOT a
   // fresh read. Re-reading here pulled in rows other requests inserted between
   // the caller's read and this write, then applyDiff treated those rows as
   // deletes (absent from the caller's `doc.items`) and erased them. Falling back
   // to a fresh read keeps old call sites that build a doc by hand working.
   const before = doc.before ?? (await getActions()).items;
-  await applyDiff(before, doc.items, team, hasParentTaskId);
+  await applyDiff(before, doc.items, team);
 }
 
 export function newId(existing: ActionItem[]): string {
@@ -678,41 +653,56 @@ export function newId(existing: ActionItem[]): string {
   return String(max + 1);
 }
 
-// Auto-archive DONE items older than 30 days. Called once per read in
-// getActions when items count exceeds the archive threshold so a no-op
-// path stays fast. Modifies the DB rows directly (one bulk UPDATE) and
-// flags the resulting items in the returned doc so the UI doesn't show
-// them in the default view.
-const ARCHIVE_DAYS = 30;
+// DONE items older than this are archived out of the default board view.
+export const ARCHIVE_DAYS = 30;
 
-async function autoArchive(items: ActionItem[]): Promise<ActionItem[]> {
+/** Does this item qualify for auto-archive? Pure. */
+function isArchivable(it: ActionItem, cutoffMs: number): boolean {
+  if (it.status !== "DONE") return false;
+  if (it.archivedAt) return false;
+  const completed = it.completedAt || it.updatedAt;
+  if (!completed) return false;
+  const t = new Date(completed).getTime();
+  return Number.isFinite(t) && t < cutoffMs;
+}
+
+/**
+ * Read half of auto-archive: tag qualifying items in memory so the board hides
+ * them exactly as it did when this was a write. No DB access, no mutation of
+ * the input. The tag is provisional until sweepAutoArchive() persists it.
+ */
+function markArchivable(items: ActionItem[]): ActionItem[] {
   const cutoffMs = Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000;
-  const dbIdsToArchive: string[] = [];
-  for (const it of items) {
-    if (it.status !== "DONE") continue;
-    if (it.archivedAt) continue;
-    const completed = it.completedAt || it.updatedAt;
-    if (!completed) continue;
-    const t = new Date(completed).getTime();
-    if (Number.isFinite(t) && t < cutoffMs && it.dbId) {
-      dbIdsToArchive.push(it.dbId);
-    }
-  }
-  if (dbIdsToArchive.length === 0) return items;
-  const archivedIso = nowIso();
-  const { error } = await db()
+  const provisional = nowIso();
+  let any = false;
+  const out = items.map((it) => {
+    if (!isArchivable(it, cutoffMs)) return it;
+    any = true;
+    return { ...it, archivedAt: provisional };
+  });
+  return any ? out : items;
+}
+
+/**
+ * Write half of auto-archive. Runs on the 15-minute auto-close cron rather than
+ * on every board render. Returns how many rows it stamped.
+ *
+ * Queries the DB directly instead of going through loadBoard() so the cron
+ * doesn't pull the whole table into memory just to find a handful of rows.
+ */
+export async function sweepAutoArchive(): Promise<{ archived: number }> {
+  const cutoffIso = new Date(Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await db()
     .from("tasks")
-    .update({ archived_at: archivedIso })
-    .in("id", dbIdsToArchive)
-    .is("archived_at", null);
+    .update({ archived_at: nowIso() })
+    .eq("status", "done")
+    .is("archived_at", null)
+    .lt("completed_at", cutoffIso)
+    .select("id");
   if (error) {
-    // Non-fatal: log + continue with in-memory tag so the view still hides
-    // them on this request, real DB row will catch up on the next read.
-    console.warn(`[data] auto-archive failed: ${error.message}`);
+    console.warn(`[data] auto-archive sweep failed: ${error.message}`);
+    return { archived: 0 };
   }
-  const dbIdSet = new Set(dbIdsToArchive);
-  return items.map((it) =>
-    it.dbId && dbIdSet.has(it.dbId) ? { ...it, archivedAt: archivedIso } : it,
-  );
+  return { archived: (data ?? []).length };
 }
 

@@ -7,10 +7,18 @@ import { resolveSource } from "@/lib/source-resolver";
 import { getPrStatuses } from "@/lib/source-status";
 import { logAudit } from "@/lib/audit";
 import { onTaskClosed } from "@/lib/dep-flow";
+import { FALLBACK_OWNER } from "@/lib/task-defaults";
+
+/** team_members.legacy_owner is stored lowercase; FALLBACK_OWNER is display-cased. */
+const FALLBACK_OWNER_SLUG = FALLBACK_OWNER.toLowerCase();
 
 export interface AutoCloseResult {
   closed: string[];
   checked: number;
+}
+
+export interface AdoptResult {
+  adopted: number;
 }
 
 interface TaskRowForClose {
@@ -116,4 +124,72 @@ export async function closeMergedSources(): Promise<AutoCloseResult> {
   }
 
   return { closed, checked: prTasks.length };
+}
+
+/**
+ * Adopt orphaned in-flight work.
+ *
+ * Audit finding (2026-07-26): 17 tasks sat in `in_progress` with `owner_id`
+ * NULL. That state is a lie - the board claimed work was underway while it was
+ * in nobody's my-work view, nobody's digest, and nobody's mentions. Those rows
+ * are invisible to every per-person surface, so they can sit "in progress"
+ * indefinitely without anyone noticing.
+ *
+ * Per Zaal's call: unowned in-flight work falls to Zaal. He is the operational
+ * backstop and can route it out again in one click. A wrong-but-present owner
+ * beats an honest-but-invisible NULL.
+ *
+ * Only touches `in_progress`. An unowned `todo` is a legitimate backlog item
+ * waiting to be picked up - claiming those for Zaal would just re-create the
+ * 220-task pile the audit flagged.
+ */
+export async function adoptUnownedInProgress(): Promise<AdoptResult> {
+  const { data: fallback, error: memberError } = await db()
+    .from("team_members")
+    .select("id")
+    .ilike("legacy_owner", FALLBACK_OWNER_SLUG)
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (memberError) {
+    console.error(`adopt-unowned: team lookup failed: ${memberError.message}`);
+    return { adopted: 0 };
+  }
+  if (!fallback) {
+    console.error(`adopt-unowned: no active team member "${FALLBACK_OWNER_SLUG}"; skipping`);
+    return { adopted: 0 };
+  }
+
+  const fallbackId = (fallback as { id: string }).id;
+  const { data, error } = await db()
+    .from("tasks")
+    .update({ owner_id: fallbackId, updated_at: new Date().toISOString() })
+    .eq("status", "in_progress")
+    .is("owner_id", null)
+    .is("archived_at", null)
+    .select("id, legacy_id");
+
+  if (error) {
+    console.error(`adopt-unowned: update failed: ${error.message}`);
+    return { adopted: 0 };
+  }
+
+  const rows = (data ?? []) as Array<{ id: string; legacy_id: string | null }>;
+  for (const row of rows) {
+    try {
+      await logAudit({
+        actor: "system-adopt-unowned",
+        entity_type: "task",
+        entity_id: row.id,
+        entity_label: row.legacy_id || row.id,
+        action: "owner_change",
+        detail: `unowned in_progress adopted by ${FALLBACK_OWNER_SLUG}`,
+      });
+    } catch (err) {
+      console.error(`adopt-unowned: audit failed for ${row.id}:`, err);
+    }
+  }
+
+  return { adopted: rows.length };
 }
