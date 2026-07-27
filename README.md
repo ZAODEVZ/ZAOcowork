@@ -2,7 +2,7 @@
 
 The ZAO operational tracker. Tasks for **Zaal, Iman, ThyRev, Samantha, Tyler** in one Kanban board, live at **[thezao.xyz](https://www.thezao.xyz)**, edit-in-browser, persistent in Supabase, with a Telegram bot writing to the same table and an autonomous research-dispatch pipeline writing alongside it.
 
-> **Repo:** [github.com/ZAODEVZ/ZAOcowork](https://github.com/ZAODEVZ/ZAOcowork). Deploy = Vercel. Auth = per-user password (env-var) + HMAC-signed cookie.
+> **Repo:** [github.com/ZAODEVZ/ZAOcowork](https://github.com/ZAODEVZ/ZAOcowork). Deploy = Vercel. Auth = Farcaster/wallet sign-in with admin approval (or legacy per-user password env var) + HMAC-signed cookie. See [Users](#users).
 
 ---
 
@@ -16,7 +16,7 @@ Rebuilt out of `bettercallzaal/imanprojects` (the Phase-1 GitHub-Contents-API tr
 
 - **Web:** Next.js 15 (App Router) + React 19 + Tailwind v3, deployed on Vercel
 - **DB:** Supabase Postgres, project `etwvzrmlxeobinrlytza` (cowork-tracker)
-- **Auth:** per-user password env vars + HMAC-signed httpOnly cookie (`src/lib/auth.ts`). No NextAuth, no DB session.
+- **Auth:** Farcaster/wallet sign-in gated by `team_members.approval_status`, plus legacy per-user password env vars. Both issue the same HMAC-signed httpOnly cookie (`src/lib/auth.ts`), verified at the edge in `src/middleware.ts`. No NextAuth, no DB session. See [Users](#users).
 - **Bot:** `agent/` - Node + TypeScript Telegram bot that writes to the same `tasks` table. Supports NL add with due/priority/notes/category in one op + `/ping <name>` for teammate DMs + ping-on-assign from the web.
 - **Research dispatch:** `research-dispatch/` - autonomous research pipeline (cron-driven, has its own README + CLAUDE.md). Writes research-task rows back into the tracker.
 - **AI Assistant:** `/chat` route - board-aware chat powered by MiniMax. Snapshot of every task injected into system prompt. Read-only - it suggests changes, doesn't make them.
@@ -45,13 +45,61 @@ Every writer hits the same table by UUID, so cross-source visibility is real: bo
 
 ## Users
 
+People live in the `team_members` table, not in code. There are **two ways to get
+an account**, and the difference matters when you are adding someone.
+
+### 1. Self-serve: Farcaster or wallet (preferred)
+
+`/api/auth/farcaster` and `/api/auth/wallet` let someone sign in with a Farcaster
+account or a wallet. On first sign-in `src/lib/identity.ts` inserts a
+`team_members` row with `approval_status = 'pending'`; they can authenticate but
+see nothing until an admin approves them at `/admin`.
+
+`team_members.approval_status`:
+
+| Value | Meaning |
+|-------|---------|
+| `active` | approved, full board access |
+| `pending` | signed in via Farcaster/wallet, awaiting admin approval |
+| `rejected` | denied (also set when `active = false`) |
+
+Adding a teammate this way is **no deploy and no env var** - they sign in, you
+approve the row. This is the path to use.
+
+### 2. Legacy: per-user password env vars
+
+The original scheme. Each person got a `<NAME>_PASSWORD` env var, checked at
+`/login` against `src/lib/auth.ts`, which then issues the HMAC-signed
+`iman-session` cookie. Both paths issue the same cookie, so everything
+downstream is identical.
+
 | User | Env var | Role |
 |------|---------|------|
-| Zaal | `ZAAL_PASSWORD` | core |
+| Zaal | `ZAAL_PASSWORD` | core - also the fallback owner for unowned work (see below) |
 | Iman | `IMAN_PASSWORD` | core (ZAO Devz lead) |
 | ThyRev | `THYREV_PASSWORD` | core |
 | Samantha | `SAMANTHA_PASSWORD` | core (candytoybox) |
-| Tyler | `TYLER_PASSWORD` | external collaborator (Magnetic) - **pending merge of `ws/add-tyler-user` + Vercel env var** |
+| Tyler | `TYLER_PASSWORD` | external collaborator (Magnetiq) |
+
+This path still works, but **adding a person requires a Vercel env var plus a
+redeploy**, which is why it is no longer the default. Do not add new people this
+way; use Farcaster/wallet + approval instead.
+
+> Whichever path a person used, `team_members.legacy_owner` is the lowercase slug
+> that `tasks.owner_id` resolves through. A member with no `legacy_owner` cannot
+> own tasks and renders as "Both" on cards.
+
+### Unowned work
+
+`tasks.owner_id` is nullable, but an unowned task in `in_progress` is invisible
+to every per-person surface (my-work, digests, mentions). The 15-minute
+`auto-close` cron calls `adoptUnownedInProgress()`, which reassigns any such row
+to **Zaal** as the operational backstop. Unowned `todo` rows are left alone -
+those are legitimate unclaimed backlog.
+
+New tasks also get the three basics filled in server-side by
+`src/lib/task-defaults.ts` (owner, priority, due-from-service-class) so no row
+can land incomplete regardless of which writer created it.
 
 ## Local dev
 

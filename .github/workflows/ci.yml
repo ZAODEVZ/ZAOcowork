@@ -1,0 +1,65 @@
+# ci - the ship gate.
+#
+# Before this existed, nothing stopped a broken build from reaching
+# thezao.xyz: the only two workflows were a cron (auto-close) and a
+# single-path JSON check. This runs on every PR into main and on every
+# push to main.
+#
+# typecheck + test are hard gates (they are deterministic and need no
+# secrets). build is a hard gate too, using placeholder env vars - the
+# app reads SUPABASE_* at request time, not at build time, so a fake
+# value is enough to compile.
+#
+# lint is advisory for now (continue-on-error) because the repo has
+# never been lint-clean; flipping it to a hard gate is a follow-up once
+# the existing warnings are burned down.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      # Build must run BEFORE the typecheck: `next build` is what generates
+      # next-env.d.ts, which carries the ambient declarations for static image
+      # imports (src/app/login/page.tsx imports a .jpg). Without it a bare
+      # `tsc --noEmit` on a clean checkout fails on an error that does not
+      # exist in the real build.
+      - name: Build
+        env:
+          # Placeholders only. Nothing here touches a real project: the
+          # Supabase clients are constructed lazily at request time, so
+          # the build just needs the vars to be present and well-formed.
+          SUPABASE_URL: https://placeholder.supabase.co
+          SUPABASE_SERVICE_KEY: placeholder-service-key
+          AUTH_SECRET: ci-placeholder-secret-at-least-32-chars-long
+        run: npm run build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint (advisory)
+        continue-on-error: true
+        run: npm run lint

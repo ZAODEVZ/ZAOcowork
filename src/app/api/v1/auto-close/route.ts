@@ -6,7 +6,8 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { closeMergedSources } from "@/lib/auto-close";
+import { adoptUnownedInProgress, closeMergedSources } from "@/lib/auto-close";
+import { sweepAutoArchive } from "@/lib/data";
 
 // Constant-time string compare so the bearer-token check can't be brute-forced
 // by measuring response time (a plain !== leaks the matching prefix length).
@@ -37,8 +38,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await closeMergedSources();
-    return NextResponse.json({ ok: true, ...result });
+    // Three independent housekeeping sweeps on one 15-minute tick.
+    // Each is isolated: one failing must not stop the others, so a rejected
+    // sweep degrades to a reported error rather than a 500 for the whole cron.
+    const [closeRes, adoptRes, archiveRes] = await Promise.allSettled([
+      closeMergedSources(),
+      adoptUnownedInProgress(),
+      sweepAutoArchive(),
+    ]);
+
+    if (closeRes.status === "rejected") {
+      // The PR-close sweep is the one this endpoint is named for; surface a
+      // real failure rather than reporting ok on a no-op.
+      throw closeRes.reason;
+    }
+
+    if (adoptRes.status === "rejected") {
+      console.error("auto-close: adopt-unowned sweep failed:", adoptRes.reason);
+    }
+    if (archiveRes.status === "rejected") {
+      console.error("auto-close: archive sweep failed:", archiveRes.reason);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      ...closeRes.value,
+      adopted: adoptRes.status === "fulfilled" ? adoptRes.value.adopted : null,
+      archived: archiveRes.status === "fulfilled" ? archiveRes.value.archived : null,
+    });
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Unknown error occurred";
