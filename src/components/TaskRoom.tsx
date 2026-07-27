@@ -11,12 +11,12 @@ import type {
   Priority,
   TaskType,
 } from "@/lib/types";
+import { useTeamPeople } from "@/lib/use-team";
 import {
   effectiveAssignees,
   BOARD_STATUSES,
   PRIORITIES,
   PHASES,
-  OWNERS,
   CATEGORIES,
   TASK_TYPES,
   TASK_TYPE_LABELS,
@@ -1075,24 +1075,10 @@ function DetailsPanel({
   useEffect(() => setStatusValue(item.status), [item.status]);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Multi-assignee: live roster for the people checkboxes (active team_members),
-  // with the hardcoded OWNERS as a fallback before the fetch lands. Optimistic
-  // local selection so a tap doesn't wait on the round-trip.
-  const [people, setPeople] = useState<Array<{ slug: string; name: string }>>(
-    OWNERS.filter((o) => o !== "Both" && o !== "Open").map((o) => ({ slug: o.toLowerCase(), name: o })),
-  );
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/team")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { people?: Array<{ slug: string; name: string }> } | null) => {
-        if (!cancelled && d?.people && d.people.length > 0) setPeople(d.people);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // Multi-assignee: live roster for the people checkboxes (active team_members).
+  // Shared roster hook - was a private fetch here; every other people picker
+  // used the hardcoded OWNERS union and was missing 7 of 14 members.
+  const people = useTeamPeople();
   const [assigneeList, setAssigneeList] = useState<string[]>(effectiveAssignees(item));
   useEffect(() => setAssigneeList(effectiveAssignees(item)), [item]);
   // Assignee modal state

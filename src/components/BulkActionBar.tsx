@@ -10,7 +10,9 @@ import {
   bulkSetStatus,
 } from "@/app/actions";
 import { BRANDS } from "@/lib/brands";
-import { OWNERS, PRIORITIES, STATUSES } from "@/lib/types";
+import { PRIORITIES, STATUSES } from "@/lib/types";
+import { PSEUDO_OWNERS } from "@/lib/team-options";
+import { useTeamPeople } from "@/lib/use-team";
 
 // Floating bar that appears at the bottom of the viewport when one or more
 // tasks are checked. Surfaces every bulk op behind a single dropdown so the
@@ -30,6 +32,9 @@ export function BulkActionBar({
   const [action, setAction] = useState<Action>("owner");
   const [value, setValue] = useState("");
   const [pending, start] = useTransition();
+  // Live roster. Must be called before the early return below - hooks cannot be
+  // conditional.
+  const people = useTeamPeople();
 
   if (selectedIds.length === 0) return null;
 
@@ -105,7 +110,18 @@ export function BulkActionBar({
             className="flex-1 min-w-[140px] rounded-md bg-[#0b1220] border border-white/10 px-2 py-1.5 text-sm text-white/85"
           >
             <option value="">Choose...</option>
-            {action === "owner" && OWNERS.map((o) => <option key={o} value={o}>{o}</option>)}
+            {action === "owner" && [
+              ...people.map((p) => (
+                <option key={p.slug} value={p.slug}>
+                  {p.name}
+                </option>
+              )),
+              ...PSEUDO_OWNERS.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              )),
+            ]}
             {action === "status" && STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
             {action === "priority" && PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
             {action === "brand" && BRANDS.map((b) => <option key={b} value={b}>{b}</option>)}

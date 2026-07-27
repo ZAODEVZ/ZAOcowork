@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { bulkAssignUnowned } from "@/app/actions";
-import { OWNERS } from "@/lib/types";
+import { useTeamPeople } from "@/lib/use-team";
 
 // /admin Bulk task ops panel. The board's BulkActionBar covers the
 // "select-rows-then-act" flow; this surface is for fire-and-forget shortcuts
@@ -16,8 +16,11 @@ import { OWNERS } from "@/lib/types";
 
 export function BulkOpsPanel({ unownedCount }: { unownedCount: number }) {
   const router = useRouter();
-  const [owner, setOwner] = useState<string>("Zaal");
+  const [owner, setOwner] = useState<string>("zaal");
   const [pending, start] = useTransition();
+  // Live roster instead of the hardcoded OWNERS union, which was missing 7 of
+  // the 14 active members (audit 2026-07-26).
+  const people = useTeamPeople();
   const [result, setResult] = useState<string | null>(null);
 
   function runAssignUnowned() {
@@ -58,9 +61,9 @@ export function BulkOpsPanel({ unownedCount }: { unownedCount: number }) {
                 onChange={(e) => setOwner(e.target.value)}
                 className="rounded-md bg-[#0b1220] border border-white/10 px-2 py-1.5 text-sm text-white/85"
               >
-                {OWNERS.filter((o) => o !== "Open" && o !== "Both").map((o) => (
-                  <option key={o} value={o}>
-                    {o}
+                {people.map((p) => (
+                  <option key={p.slug} value={p.slug}>
+                    {p.name}
                   </option>
                 ))}
               </select>
