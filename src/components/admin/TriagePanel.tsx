@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  OWNERS,
   PRIORITIES,
   SERVICE_CLASSES,
   SERVICE_CLASS_LABELS,
@@ -11,6 +10,8 @@ import {
   type ActionItem,
 } from "@/lib/types";
 import { triageRoute, triageReject } from "@/app/actions";
+import { PSEUDO_OWNERS } from "@/lib/team-options";
+import { useTeamPeople } from "@/lib/use-team";
 
 // TriagePanel renders the inbox of TRIAGE items and lets a lead route
 // each one in a single submit: owner + priority + service class + brand.
@@ -52,6 +53,12 @@ function TriageCard({ item, brands }: { item: ActionItem; brands: string[] }) {
   const [priority, setPriority] = useState<string>(item.priority);
   const [serviceClass, setServiceClass] = useState<string>(item.serviceClass ?? "Standard");
   const [brand, setBrand] = useState<string>((item.brands && item.brands[0]) || "");
+  // Live roster + the pseudo-owners (Both/Open). The Selector takes flat string
+  // values with an optional label map, so slugs are the values and display
+  // names the labels - keeping the written value canonical.
+  const people = useTeamPeople();
+  const ownerOptions = [...people.map((p) => p.slug), ...PSEUDO_OWNERS];
+  const ownerLabels = Object.fromEntries(people.map((p) => [p.slug, p.name]));
 
   function onRoute() {
     const fd = new FormData();
@@ -90,7 +97,13 @@ function TriageCard({ item, brands }: { item: ActionItem; brands: string[] }) {
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <Selector label="Owner" value={owner} onChange={setOwner} options={[...OWNERS]} />
+        <Selector
+          label="Owner"
+          value={owner}
+          onChange={setOwner}
+          options={ownerOptions}
+          labels={ownerLabels}
+        />
         <Selector label="Priority" value={priority} onChange={setPriority} options={[...PRIORITIES]} />
         <Selector
           label="Service class"

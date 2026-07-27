@@ -11,7 +11,6 @@ import {
   PRIORITIES,
   PHASES,
   CATEGORIES,
-  OWNERS,
   SERVICE_CLASSES,
   SERVICE_CLASS_COLORS,
   SERVICE_CLASS_LABELS,
@@ -28,6 +27,8 @@ import {
   type Priority,
   type ServiceClass,
 } from "@/lib/types";
+import { PSEUDO_OWNERS, mergeOwnerOptions } from "@/lib/team-options";
+import { useTeamPeople } from "@/lib/use-team";
 import { BRANDS, brandColor } from "@/lib/brands";
 import { resolveSource } from "@/lib/source-resolver";
 import { computeWaitingState, formatWaitingState, getWaitingStateBadgeClass } from "@/lib/waiting-state";
@@ -1114,6 +1115,24 @@ function FilterBar({
   onDensityChange: (d: "light" | "mid" | "power") => void;
 }) {
   const set = (patch: Partial<Filters>) => onChange({ ...filters, ...patch });
+  // Owner filter options come from the live roster, not the hardcoded OWNERS
+  // union - that union listed 9 names while team_members holds 14 active
+  // people, so 7 of them (incl. an admin with open tasks) could not be selected
+  // here at all. Owners still present on tasks are merged in so a deactivated
+  // member's remaining work stays filterable.
+  const people = useTeamPeople();
+  const ownerChoices = useMemo(
+    () => mergeOwnerOptions(people, items.map((it) => String(it.owner ?? ""))),
+    [people, items],
+  );
+  const ownerOptions = useMemo(
+    () => [...ownerChoices.map((p) => p.slug), ...PSEUDO_OWNERS],
+    [ownerChoices],
+  );
+  const ownerLabels = useMemo(
+    () => Object.fromEntries(ownerChoices.map((p) => [p.slug, p.name])),
+    [ownerChoices],
+  );
   return (
     <div className="space-y-2 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-3">
       <div className="flex gap-2">
@@ -1200,7 +1219,8 @@ function FilterBar({
           <SelectPill
             value={filters.owner}
             onChange={(v) => set({ owner: v })}
-            options={["", ...OWNERS]}
+            options={["", ...ownerOptions]}
+            labels={ownerLabels}
             placeholder="Owner"
           />
           <SelectPill
@@ -1236,7 +1256,8 @@ function FilterBar({
           <SelectPill
             value={filters.owner}
             onChange={(v) => set({ owner: v })}
-            options={["", ...OWNERS]}
+            options={["", ...ownerOptions]}
+            labels={ownerLabels}
             placeholder="Owner"
           />
           <SelectPill
@@ -1375,11 +1396,14 @@ function SelectPill({
   onChange,
   options,
   placeholder,
+  labels,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: string[];
   placeholder: string;
+  /** Optional display labels keyed by option value (owner slug -> name). */
+  labels?: Record<string, string>;
 }) {
   return (
     <select
@@ -1396,7 +1420,7 @@ function SelectPill({
         .filter((o) => o !== "")
         .map((o) => (
           <option key={o} value={o}>
-            {o}
+            {labels?.[o] ?? o}
           </option>
         ))}
     </select>
