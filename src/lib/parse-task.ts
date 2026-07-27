@@ -31,7 +31,7 @@ export interface ParsedTask {
   priority: ParsedPriority | null;
   urgent: boolean;
   important: boolean;
-  owner: OwnerName | null;
+  owner: OwnerName | string | null;
   due: string | null;
 }
 
@@ -77,22 +77,35 @@ function resolveDueToken(raw: string, now: Date = new Date()): string | null {
   return null;
 }
 
-function ownerFromHandle(raw: string): OwnerName | null {
-  const lower = raw.toLowerCase();
+// `extraSlugs` lets a caller widen recognition to the live roster. Without it
+// only the 8 built-in names match, so `@dcoop` (and the other members added
+// after this list was written) fell through and landed in the task title as
+// literal text instead of setting an owner. Unknown handles still fall through
+// on purpose - that is what keeps `@somerandomword` in the title.
+function ownerFromHandle(raw: string, extraSlugs: readonly string[] = []): string | null {
+  const lower = raw.trim().toLowerCase();
+  if (!lower) return null;
   for (const o of KNOWN_OWNERS) {
     if (o.toLowerCase() === lower) return o;
+  }
+  for (const slug of extraSlugs) {
+    if (String(slug).trim().toLowerCase() === lower) return lower;
   }
   return null;
 }
 
 const TOKEN_RE = /(?:\s|^)(#[a-z0-9-]+|![a-zA-Z0-9]+|@[a-zA-Z0-9_]+|due:[a-zA-Z0-9-]+)(?=\s|$)/g;
 
-export function parseTask(input: string, now: Date = new Date()): ParsedTask {
+export function parseTask(
+  input: string,
+  now: Date = new Date(),
+  knownOwnerSlugs: readonly string[] = [],
+): ParsedTask {
   const brands: BrandName[] = [];
   let priority: ParsedPriority | null = null;
   let urgent = false;
   let important = false;
-  let owner: OwnerName | null = null;
+  let owner: OwnerName | string | null = null;
   let due: string | null = null;
 
   // Replace recognized tokens with placeholders we'll strip later. Anything
@@ -122,7 +135,7 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
       return whole;
     }
     if (tok.startsWith("@")) {
-      const o = ownerFromHandle(tok.slice(1));
+      const o = ownerFromHandle(tok.slice(1), knownOwnerSlugs);
       if (o) {
         owner = o;
         return " ";

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { quickCreate } from "@/app/actions";
+import { useTeamPeople } from "@/lib/use-team";
 import { parseTask, type ParsedPriority } from "@/lib/parse-task";
 import { brandColor } from "@/lib/brands";
 import { VoiceButton } from "./VoiceButton";
@@ -49,22 +50,26 @@ export function QuickAddBody({
     }
   }, [autoFocus]);
 
-  const parsed = useMemo(() => parseTask(text), [text]);
+  // Pass the live roster so `@dcoop` and the other post-hoc members resolve to
+  // an owner instead of falling through into the title text.
+  const qaPeople = useTeamPeople();
+  const ownerSlugs = useMemo(() => qaPeople.map((p) => p.slug), [qaPeople]);
+  const parsed = useMemo(() => parseTask(text, undefined, ownerSlugs), [text, ownerSlugs]);
   const effectiveBrands = parsed.brands.length > 0
     ? parsed.brands
     : tabBrand
       ? [tabBrand]
       : [];
 
-  const defaultOwner = useMemo(() => {
-    const me = currentUser.trim().toLowerCase();
-    if (me === "zaal") return "Zaal";
-    if (me === "iman") return "Iman";
-    if (me === "thyrev") return "ThyRev";
-    if (me === "samantha") return "Samantha";
-    if (me === "tyler") return "Tyler";
-    return "Open";
-  }, [currentUser]);
+  // A new task defaults to whoever is adding it. This was a hardcoded 5-name
+  // list that returned "Open" for everyone else - so the 9 members outside it
+  // (Aziz, Dcoop, JANGO, Metamu, Nemesis, Ohnahji, Vishnu, Jose, Shawn) created
+  // unowned tasks even when adding work for themselves. The owner slug is
+  // resolved case-insensitively downstream, so the session slug is enough.
+  const defaultOwner = useMemo(
+    () => currentUser.trim().toLowerCase() || "Open",
+    [currentUser],
+  );
 
   const effectiveOwner = parsed.owner ?? defaultOwner;
   const effectivePriority: ParsedPriority = parsed.priority ?? "P2";

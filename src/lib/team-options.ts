@@ -73,7 +73,37 @@ export function ownerLabel(value: unknown, options: TeamOption[]): string {
   if (match) return match.name;
   const pseudo = PSEUDO_OWNERS.find((p) => p.toLowerCase() === slug);
   if (pseudo) return pseudo;
-  return raw;
+  // Off-roster: title-case the slug rather than echoing raw casing, so a
+  // lowercase legacy_owner does not render as "dcoop" beside "Zaal".
+  return raw === slug ? titleCaseSlug(raw) : raw;
+}
+
+/**
+ * Title-case a slug for display when no roster entry is available.
+ * "dcoop" -> "Dcoop". Deliberately dumb: the roster's `name` is the real source
+ * of a person's display name (it is what preserves "ThyRev" and "JANGO"), this
+ * is only the fallback for server paths that have no roster in hand.
+ */
+export function titleCaseSlug(slug: string): string {
+  const s = String(slug ?? "").trim();
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Initials for an owner avatar chip. Case-insensitive - it previously compared
+ * `o === "ThyRev"` against a raw legacy_owner value whose casing varied, so the
+ * special cases silently stopped applying for anyone stored lowercase.
+ */
+export function ownerInitials(value: unknown, options: TeamOption[] = []): string {
+  const slug = ownerSlug(value);
+  if (!slug) return "?";
+  if (slug === "both") return "Z+I";
+  if (slug === "open") return "?";
+  if (slug === "thyrev") return "TR";
+  if (slug === "samantha") return "SM";
+  const label = ownerLabel(value, options);
+  return label.slice(0, 1).toUpperCase();
 }
 
 /**

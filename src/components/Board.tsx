@@ -27,8 +27,25 @@ import {
   type Priority,
   type ServiceClass,
 } from "@/lib/types";
-import { PSEUDO_OWNERS, mergeOwnerOptions } from "@/lib/team-options";
+import {
+  PSEUDO_OWNERS,
+  mergeOwnerOptions,
+  ownerInitials,
+  ownerLabel,
+} from "@/lib/team-options";
 import { useTeamPeople } from "@/lib/use-team";
+import { wipFor, wipLimit, wipWarning } from "@/lib/wip";
+import { dueUrgency, exportItemsCsv, parseDueDate } from "@/components/board/board-csv";
+import {
+  DailyReminderModal,
+  HelpModal,
+  Portal,
+  ProjectPickerBar,
+  Toast,
+  TOUR_STEPS,
+  TourModal,
+  WelcomeModal,
+} from "@/components/board/modals";
 import { BRANDS, brandColor } from "@/lib/brands";
 import { resolveSource } from "@/lib/source-resolver";
 import { computeWaitingState, formatWaitingState, getWaitingStateBadgeClass } from "@/lib/waiting-state";
@@ -95,13 +112,11 @@ const CATEGORY_COLOR: Record<string, string> = {
   Campaigns: "bg-red-500/15 text-red-300 border-red-500/30",
 };
 
+// Delegates to the shared helper so the special cases are case-insensitive.
+// These comparisons used to be `o === "ThyRev"` against a raw legacy_owner
+// whose casing varied, so they silently stopped applying for lowercase rows.
 function ownerInitial(o: string): string {
-  if (!o) return "?";
-  if (o === "Both") return "Z+I";
-  if (o === "Open") return "?";
-  if (o === "ThyRev") return "TR";
-  if (o === "Samantha") return "SM";
-  return o.slice(0, 1).toUpperCase();
+  return ownerInitials(o);
 }
 
 type Filters = {
@@ -150,15 +165,6 @@ function migrateFilters(raw: Partial<Filters> & { brand?: string }): Partial<Fil
   return raw;
 }
 
-function parseDueDate(raw: string): Date | null {
-  const s = String(raw ?? "").trim();
-  if (!s) return null;
-  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
-  if (!m) return null;
-  const d = new Date(`${m[1]}T00:00:00Z`);
-  if (!Number.isFinite(d.getTime())) return null;
-  return d;
-}
 
 // Urgency/importance sort bucket. Module-scope (pure, no deps) so it's a stable
 // reference and doesn't invalidate the byStatus useMemo every render.
@@ -286,120 +292,6 @@ function SavedViews({
 }
 
 
-const TOUR_STEPS: Array<{ title: string; lines: string[] }> = [
-  {
-    title: "Welcome to The Zao Co-Works",
-    lines: [
-      "This is your shared operational workspace.",
-      "Add tasks, track progress, submit updates, and collaborate — all in one place.",
-    ],
-  },
-  {
-    title: "Task Rooms",
-    lines: [
-      "Click any task title to open its Task Room — a dedicated workspace for that task.",
-      "Inside you'll find the full history, comments, progress updates, and approval workflow.",
-    ],
-  },
-  {
-    title: "Add tasks fast",
-    lines: [
-      'Use the "+ add item" box at the top of any column and press Enter.',
-      "Set owner, priority, and importance before submitting.",
-    ],
-  },
-  {
-    title: "Approve or reject updates",
-    lines: [
-      "Workers can submit progress updates from inside a Task Room.",
-      "If approval is required, the update goes to the review queue for the lead to approve or reject.",
-    ],
-  },
-  {
-    title: "Stay organized",
-    lines: [
-      "Use the filters at the top — Mine, Aging, Owner, Category, Priority, DMAIC.",
-      "Tasks sort by urgency/importance first, then priority, then age.",
-    ],
-  },
-  {
-    title: "Everything lives in the ☰ Menu",
-    lines: [
-      "Top-right ☰ Menu holds My Work (your tasks + @mentions), Activity (every comment & update across all tasks), the AI Assistant, and Settings.",
-      "A red dot on the menu means someone @mentioned you.",
-    ],
-  },
-  {
-    title: "Search anywhere — ⌘K",
-    lines: [
-      "Press ⌘K (or just /) from any screen to jump straight to a task by title, #id, or owner.",
-    ],
-  },
-  {
-    title: "Saved views & instant edits",
-    lines: [
-      "Save any filter combo as a View for one-click reuse.",
-      "Change a task's status from the dropdown and it saves instantly — and comments, updates, and notes autosave as you type, so nothing gets lost.",
-    ],
-  },
-  {
-    title: "Settings & all features",
-    lines: [
-      "Open ☰ Menu → Settings any time to see every feature explained and set your preferences (AI model, notifications).",
-    ],
-  },
-];
-
-// Due-date urgency for the card's "due" badge. Makes a date preattentive:
-// overdue reads red, due within 2 days reads amber, otherwise neutral.
-// DONE tasks never flag — a shipped task's due date is history.
-function dueUrgency(due: string | undefined, status: string): "overdue" | "soon" | "none" {
-  if (!due || status === "DONE") return "none";
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const d = new Date(`${due}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return "none";
-  const diffDays = Math.round((d.getTime() - today.getTime()) / 86_400_000);
-  if (diffDays < 0) return "overdue";
-  if (diffDays <= 2) return "soon";
-  return "none";
-}
-
-// CSV export of the currently-filtered items. Kept dependency-free: builds the
-// text in-browser and downloads via a Blob URL. RFC-4180 quoting (wrap in
-// quotes, double any embedded quotes) so titles/notes with commas survive.
-const CSV_COLUMNS: { header: string; get: (it: ActionItem) => string }[] = [
-  { header: "id", get: (it) => String(it.id ?? "") },
-  { header: "title", get: (it) => it.title ?? "" },
-  { header: "status", get: (it) => it.status ?? "" },
-  { header: "owner", get: (it) => String(it.owner ?? "") },
-  { header: "priority", get: (it) => it.priority ?? "" },
-  { header: "category", get: (it) => it.category ?? "" },
-  { header: "brands", get: (it) => (it.brands ?? []).join("; ") },
-  { header: "due", get: (it) => it.due ?? "" },
-  { header: "createdAt", get: (it) => it.createdAt ?? "" },
-  { header: "updatedAt", get: (it) => it.updatedAt ?? "" },
-  { header: "completedAt", get: (it) => it.completedAt ?? "" },
-];
-
-function csvCell(v: string): string {
-  return /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-}
-
-function exportItemsCsv(items: ActionItem[]) {
-  const header = CSV_COLUMNS.map((c) => c.header).join(",");
-  const rows = items.map((it) => CSV_COLUMNS.map((c) => csvCell(c.get(it))).join(","));
-  const csv = [header, ...rows].join("\r\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `zao-tasks-${new Date().toISOString().slice(0, 10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
 
 export function Board({
   items,
@@ -580,22 +472,16 @@ export function Board({
   const [dailyViewOpen, setDailyViewOpen] = useState(false);
   const [toast, setToast] = useState<{ title: string; message: string } | null>(null);
   const prevById = useRef<Map<string, ActionItem>>(new Map());
+  // Live roster, used to resolve the greeting name below. Cached at module
+  // scope in use-team, so this shares the FilterBar's fetch.
+  const boardPeople = useTeamPeople();
 
-  // Hardcoded ternary used to default any unknown session user (Shawn,
-  // Tyler, future admin-added users) to "Samantha", which made the
-  // welcome modal greet a freshly-added Shawn as "Hi Samantha". Use the
-  // same KNOWN_LABELS + capitalize fallback as the server-side
-  // userLabel() in @/lib/auth.
-  const KNOWN_LABELS: Record<string, string> = {
-    zaal: "Zaal",
-    iman: "Iman",
-    thyrev: "ThyRev",
-    samantha: "Samantha",
-    tyler: "Tyler",
-    shawn: "Shawn",
-  };
+  // Was a hardcoded 6-name map, so anyone added later (Aziz, Dcoop, JANGO,
+  // Metamu, Nemesis, Ohnahji, Vishnu) fell through to a bare capitalize.
+  // Resolve against the live roster instead, which carries their real display
+  // name, and title-case the slug only as a last resort.
   const lowered = effectiveUser.trim().toLowerCase();
-  const userLabel = KNOWN_LABELS[lowered] ?? (lowered ? lowered.charAt(0).toUpperCase() + lowered.slice(1) : "User");
+  const userLabel = lowered ? ownerLabel(lowered, boardPeople) : "User";
   const storageUserKey = userLabel.trim().toLowerCase() || "user";
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -1133,6 +1019,14 @@ function FilterBar({
     () => Object.fromEntries(ownerChoices.map((p) => [p.slug, p.name])),
     [ownerChoices],
   );
+  // Soft WIP indicator for the current user. Advisory only - it never blocks a
+  // status change, it just makes "how much am I juggling" visible at a glance.
+  const limit = wipLimit();
+  const myWip = useMemo(() => wipFor(items, currentUser, limit), [items, currentUser, limit]);
+  const myWipWarning = useMemo(
+    () => wipWarning(items, currentUser, limit),
+    [items, currentUser, limit],
+  );
   return (
     <div className="space-y-2 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/10 p-3">
       <div className="flex gap-2">
@@ -1215,6 +1109,14 @@ function FilterBar({
             label="Aging > 14d"
             tone="red"
           />
+          {myWipWarning && (
+            <span
+              title={myWipWarning}
+              className="rounded-full text-xs px-3 py-1 border border-amber-400/40 bg-amber-500/10 text-amber-200 whitespace-nowrap"
+            >
+              WIP {myWip.count}/{limit}
+            </span>
+          )}
           <Divider />
           <SelectPill
             value={filters.owner}
@@ -1252,6 +1154,14 @@ function FilterBar({
             label="Aging > 14d"
             tone="red"
           />
+          {myWipWarning && (
+            <span
+              title={myWipWarning}
+              className="rounded-full text-xs px-3 py-1 border border-amber-400/40 bg-amber-500/10 text-amber-200 whitespace-nowrap"
+            >
+              WIP {myWip.count}/{limit}
+            </span>
+          )}
           <Divider />
           <SelectPill
             value={filters.owner}
@@ -2349,414 +2259,6 @@ function Card({
         {commentCount > 0 && (
           <span className="text-[10px] text-white/35" title={`${commentCount} comment${commentCount > 1 ? "s" : ""}`}>
             💬{commentCount}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HelpModal({ onClose }: { onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md bg-zao-ink border border-white/10 rounded-2xl p-5 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold">How to use</h2>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white text-xl leading-none"
-          >
-            ×
-          </button>
-        </div>
-        <ol className="space-y-2 text-sm text-white/80 list-decimal list-inside">
-          <li>
-            <b className="text-white">Task Rooms</b>: Click any task title or "open" to enter its
-            dedicated workspace — history, comments, approvals all in one place.
-          </li>
-          <li>
-            <b className="text-white">Add items</b>: type in the "+ add item" box at top of any
-            column, press Enter.
-          </li>
-          <li>
-            <b className="text-white">Move items</b>: use the status dropdown on a card, or
-            submit a progress update from inside the Task Room.
-          </li>
-          <li>
-            <b className="text-white">Approval workflow</b>: enable "Require Approval" on a task
-            so updates go to review before the status changes.
-          </li>
-          <li>
-            <b className="text-white">Set priority</b>: click the colored dot on the left of any
-            card to cycle P1 → P2 → P3.
-          </li>
-          <li>
-            <b className="text-white">Filter</b>: use the chips at top. "Mine" shows what's on
-            you. "Aging" shows items open more than 14 days.
-          </li>
-        </ol>
-        <h3 className="mt-4 text-xs uppercase tracking-wider text-white/40">Six Sigma cheat</h3>
-        <ul className="mt-1 space-y-1 text-xs text-white/70 list-disc list-inside">
-          <li>
-            <b className="text-white">DMAIC phase</b>: Define → Measure → Analyze → Improve →
-            Control.
-          </li>
-          <li>
-            <b className="text-white">Notes template</b>: Customer / Success / Measurement.
-          </li>
-          <li>
-            <b className="text-white">WIP limit</b>: aim for 5 active items per person max.
-          </li>
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-// Renders children into document.body. Without this, a fixed-position modal
-// nested under a backdrop-blur/transform ancestor is positioned relative to
-// that ancestor (the tall task board) instead of the viewport - which dropped
-// the welcome + tour prompts to the middle of the page.
-function Portal({ children }: { children: ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  if (!mounted) return null;
-  return createPortal(children, document.body);
-}
-
-function WelcomeModal({
-  userLabel,
-  onClose,
-  onTour,
-}: {
-  userLabel: string;
-  onClose: () => void;
-  onTour: () => void;
-}) {
-  return (
-    <Portal>
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] w-[calc(100vw-2rem)] max-w-md">
-        <div className="bg-[#0d1f35] border border-white/10 rounded-2xl p-5 shadow-2xl">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold">Hi {userLabel}</h2>
-            <button
-              onClick={onClose}
-              className="text-white/50 hover:text-white text-xl leading-none"
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-          <p className="mt-2 text-sm text-white/70">
-            Welcome to The Zao Co-Works — your operational workspace. Click any task to open its
-            dedicated room with comments, history, and the approval workflow.
-          </p>
-          <div className="mt-4 flex gap-2 justify-end">
-            <button
-              onClick={onClose}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70"
-            >
-              Not now
-            </button>
-            <button
-              onClick={onTour}
-              className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
-            >
-              Yes, tour me
-            </button>
-          </div>
-        </div>
-      </div>
-    </Portal>
-  );
-}
-
-function TourModal({
-  step,
-  onClose,
-  onBack,
-  onNext,
-}: {
-  step: number;
-  onClose: () => void;
-  onBack: () => void;
-  onNext: () => void;
-}) {
-  const s = TOUR_STEPS[Math.max(0, Math.min(TOUR_STEPS.length - 1, step))];
-  const last = step >= TOUR_STEPS.length - 1;
-  return (
-    <Portal>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <div className="text-xs text-white/45">
-            Tour {step + 1} / {TOUR_STEPS.length}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white text-xl leading-none"
-          >
-            ×
-          </button>
-        </div>
-        <h2 className="mt-2 text-base font-semibold">{s.title}</h2>
-        <ul className="mt-2 space-y-2 text-sm text-white/75 list-disc list-inside">
-          {s.lines.map((l) => (
-            <li key={l}>{l}</li>
-          ))}
-        </ul>
-        <div className="mt-5 flex items-center justify-between gap-2">
-          <button
-            onClick={onBack}
-            className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70 disabled:opacity-40"
-            disabled={step === 0}
-          >
-            Back
-          </button>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm hover:bg-white/5 text-white/70"
-            >
-              Close
-            </button>
-            <button
-              onClick={last ? onClose : onNext}
-              className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
-            >
-              {last ? "Done" : "Next"}
-            </button>
-          </div>
-        </div>
-      </div>
-      </div>
-    </Portal>
-  );
-}
-
-function DailyReminderModal({
-  userLabel,
-  items,
-  todayKey,
-  storageUserKey,
-  onClose,
-}: {
-  userLabel: string;
-  items: ActionItem[];
-  todayKey: string;
-  storageUserKey: string;
-  onClose: () => void;
-}) {
-  const mine = storageUserKey;
-  // Doc 763 F4 + F6: exclude archived + TRIAGE from daily counts.
-  const active = items.filter((it) => !it.archivedAt && it.status !== "TRIAGE");
-  const openMine = active.filter((it) => {
-    if (it.status === "DONE") return false;
-    return isAssignedTo(it, mine);
-  });
-  const openAll = active.filter((it) => it.status !== "DONE");
-  const openUnowned = active.filter((it) => {
-    if (it.status === "DONE") return false;
-    const o = String(it.owner ?? "").trim();
-    return !o || o === "Open";
-  });
-  const overdueMine = openMine.filter((it) => {
-    const due = parseDueDate(it.due);
-    if (!due) return false;
-    return due.toISOString().slice(0, 10) < todayKey;
-  });
-  const lastSeenKey = `zao-cowork-last-seen:${storageUserKey}`;
-  const lastSeenRaw =
-    typeof window === "undefined" ? "" : window.localStorage.getItem(lastSeenKey) || "";
-  const lastSeenMs = lastSeenRaw ? new Date(lastSeenRaw).getTime() : 0;
-  const completedByCoworker = items.filter((it) => {
-    if (it.status !== "DONE") return false;
-    if (!it.completedAt) return false;
-    const doneMs = new Date(it.completedAt).getTime();
-    if (!Number.isFinite(doneMs) || doneMs <= lastSeenMs) return false;
-    const created = String(it.createdBy || "").toLowerCase();
-    const completedBy = String(it.completedBy || "").toLowerCase();
-    return created === mine && completedBy && completedBy !== mine;
-  });
-  const pendingReviews = items.reduce(
-    (n, it) => n + ((it.updates || []).filter((u) => u.reviewStatus === "pending").length),
-    0,
-  );
-
-  return (
-    <Portal>
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-[#0d1f35] backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold">Daily check-in</h2>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white text-xl leading-none"
-          >
-            ×
-          </button>
-        </div>
-        <p className="mt-2 text-sm text-white/70">
-          Hey {userLabel}, here's what's waiting for you today.
-        </p>
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
-            <div className="text-[10px] uppercase tracking-wider text-white/45">My open</div>
-            <div className="mt-0.5 text-xl font-bold leading-none">{openMine.length}</div>
-            <div className="text-[9px] text-white/35 mt-0.5">
-              of {openAll.length} team · {openUnowned.length} unowned
-            </div>
-          </div>
-          <div className="rounded-xl bg-black/30 border border-red-500/25 px-3 py-2">
-            <div className="text-[10px] uppercase tracking-wider text-white/45">Overdue</div>
-            <div className="mt-0.5 text-xl font-bold leading-none text-red-200">
-              {overdueMine.length}
-            </div>
-          </div>
-          <div className="rounded-xl bg-black/30 border border-emerald-500/25 px-3 py-2">
-            <div className="text-[10px] uppercase tracking-wider text-white/45">Done</div>
-            <div className="mt-0.5 text-xl font-bold leading-none text-emerald-200">
-              {completedByCoworker.length}
-            </div>
-          </div>
-          <div className={`rounded-xl bg-black/30 border ${pendingReviews > 0 ? "border-amber-500/30" : "border-white/10"} px-3 py-2`}>
-            <div className="text-[10px] uppercase tracking-wider text-white/45">Reviews</div>
-            <div className={`mt-0.5 text-xl font-bold leading-none ${pendingReviews > 0 ? "text-amber-200" : ""}`}>
-              {pendingReviews}
-            </div>
-          </div>
-        </div>
-        {overdueMine.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs uppercase tracking-wider text-white/45">Overdue tasks</div>
-            <ul className="mt-2 space-y-1 text-sm text-white/75">
-              {overdueMine.slice(0, 5).map((it) => (
-                <li key={it.id} className="flex items-baseline justify-between gap-3">
-                  <span className="truncate">{it.title}</span>
-                  <span className="text-xs text-white/45 whitespace-nowrap">{it.due}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {completedByCoworker.length > 0 && (
-          <div className="mt-4">
-            <div className="text-xs uppercase tracking-wider text-white/45">Updates</div>
-            <ul className="mt-2 space-y-1 text-sm text-white/75">
-              {completedByCoworker.slice(0, 5).map((it) => (
-                <li key={it.id} className="truncate">
-                  Completed by {it.completedBy || it.owner}: {it.title}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        <div className="mt-5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-lg bg-zao-accent hover:bg-blue-500 px-4 py-2 text-sm font-medium"
-          >
-            Got it
-          </button>
-        </div>
-      </div>
-      </div>
-    </Portal>
-  );
-}
-
-function Toast({
-  title,
-  message,
-  onClose,
-}: {
-  title: string;
-  message: string;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const id = window.setTimeout(onClose, 7000);
-    return () => window.clearTimeout(id);
-  }, [onClose]);
-  return (
-    <div className="fixed top-4 right-4 z-50 w-[calc(100vw-2rem)] max-w-sm">
-      <div className="rounded-2xl bg-zao-ink border border-white/10 shadow-2xl p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-sm font-semibold">{title}</div>
-            <div className="mt-1 text-sm text-white/70">{message}</div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/50 hover:text-white text-lg leading-none"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// ProjectPickerBar (doc 765 Phase I): horizontal scrollable chip row
-// listing active projects. "All projects" chip clears the filter.
-// Mounted above the FilterBar so the picker is the first decision the
-// user makes ("which project am I looking at?") before refining by
-// owner/priority/status.
-function ProjectPickerBar({
-  projects,
-  activeId,
-  activeSlug,
-  activeName,
-}: {
-  projects: Array<{ id: string; slug: string; name: string; color: string }>;
-  activeId: string | null;
-  activeSlug: string | null;
-  activeName: string | null;
-}) {
-  return (
-    <div className="rounded-xl bg-white/[0.03] border border-white/10 p-2 overflow-x-auto">
-      <div className="flex items-center gap-1.5 min-w-min">
-        <span className="text-[10px] uppercase tracking-wider text-white/45 px-2 flex-shrink-0">
-          Project
-        </span>
-        <a
-          href="/board"
-          className={`text-xs rounded-md px-2 py-1 border whitespace-nowrap transition flex-shrink-0 ${
-            !activeId
-              ? "bg-indigo-500/20 text-indigo-100 border-indigo-500/40"
-              : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/5"
-          }`}
-        >
-          All projects
-        </a>
-        {projects.map((p) => {
-          const active = activeId === p.id;
-          return (
-            <a
-              key={p.id}
-              href={`/?project=${encodeURIComponent(p.slug)}`}
-              className={`text-xs rounded-md border px-2 py-1 whitespace-nowrap transition flex-shrink-0 ${
-                active
-                  ? p.color
-                  : "border-white/10 text-white/55 hover:text-white/85 hover:bg-white/5"
-              }`}
-              title={p.name}
-            >
-              {p.name}
-            </a>
-          );
-        })}
-        {activeSlug && activeName && (
-          <span className="text-[10px] text-white/45 ml-auto pl-2 flex-shrink-0">
-            scope: {activeName}
           </span>
         )}
       </div>
