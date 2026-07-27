@@ -1,5 +1,9 @@
 # auto-close-merged-tasks
-# Polls every 15 min: closes tracker tasks whose PR merged.
+# Runs the housekeeping sweeps: closes tracker tasks whose PR merged, adopts
+# unowned in-progress work, and archives long-done rows.
+#
+# Declared every 15 min, but GitHub throttles scheduled workflows hard - in
+# practice this lands roughly hourly. Do not rely on the exact cadence.
 name: auto-close-merged-tasks
 on:
   schedule:
@@ -10,7 +14,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Hit auto-close endpoint
+        env:
+          AUTOCLOSE_KEY: ${{ secrets.AUTOCLOSE_KEY }}
         run: |
-          curl -fsS -X POST "https://www.thezao.xyz/api/v1/auto-close" \
-            -H "Authorization: Bearer ${{ secrets.AUTOCLOSE_KEY }}" \
-            -H "Content-Type: application/json" | tee /dev/stderr
+          # `set -o pipefail` is the whole point of this rewrite. The previous
+          # version was:
+          #     curl -fsS ... | tee /dev/stderr
+          # In a pipeline bash reports the LAST command's status, so tee's exit
+          # code (always 0) masked curl's. The endpoint had been returning 503
+          # "AUTOCLOSE_KEY not configured" on every run since 2026-06-06 while
+          # this job reported success ~hourly for seven weeks. Nothing was being
+          # auto-closed and nobody could tell.
+          set -euo pipefail
+
+          if [ -z "${AUTOCLOSE_KEY}" ]; then
+            echo "::error::AUTOCLOSE_KEY secret is empty" >&2
+            exit 1
+          fi
+
+          # Capture body and status separately so a non-2xx prints the server's
+          # actual error message instead of just a curl exit code.
+          http_status=$(curl -sS -o /tmp/autoclose-body.json -w '%{http_code}' \
+            -X POST "https://www.thezao.xyz/api/v1/auto-close" \
+            -H "Authorization: Bearer ${AUTOCLOSE_KEY}" \
+            -H "Content-Type: application/json")
+
+          echo "HTTP ${http_status}"
+          cat /tmp/autoclose-body.json
+          echo
+
+          if [ "${http_status}" != "200" ]; then
+            echo "::error::auto-close returned HTTP ${http_status}" >&2
+            exit 1
+          fi
+
+          # A 200 with ok:false still means the sweep did not do its job.
+          if ! grep -q '"ok":true' /tmp/autoclose-body.json; then
+            echo "::error::auto-close returned ok:false" >&2
+            exit 1
+          fi
