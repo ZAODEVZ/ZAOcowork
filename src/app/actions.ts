@@ -13,6 +13,7 @@ import {
   getItem,
   saveItem,
   newId,
+  insertItem,
   normalizeItem,
   type ActionItem,
   type ActionStatus,
@@ -212,13 +213,13 @@ function revalidateAll() {
 
 export async function createItem(form: FormData): Promise<void> {
   const user = await requireSession();
-  const doc = await getActions();
-  const id = newId(doc.items);
-  const item = readForm(form, id, user);
+  // Placeholder id - the DB trigger assigns the real legacy_id and insertItem
+  // reads it back. Same targeted-insert path as quickCreate: this used to load
+  // and diff the whole table just to add one row.
+  const item = readForm(form, "new", user);
   if (!item.title) return;
   item.activity = [makeActivity(user, "created", undefined, item.createdAt)];
-  doc.items.push(item);
-  await saveActions(doc, user, `add #${id} ${item.title.slice(0, 40)}`);
+  await insertItem(item);
   revalidateAll();
 }
 
@@ -228,17 +229,18 @@ export async function quickCreate(
   const user = await requireSession();
   const title = String(form.get("title") ?? "").trim();
   if (!title) return null;
-  const doc = await getActions();
-  const id = newId(doc.items);
   const status = asStatus(form.get("status"));
   const category = asCategory(form.get("category"));
-  const item = readForm(form, id, user);
+  // Placeholder id only - the DB trigger assigns the real legacy_id on insert
+  // and createItem reads it back. Previously this called getActions() purely to
+  // compute newId(), which meant reading and cloning the entire table (1200+
+  // rows) to add one task. That is the add path timing out as the board grows.
+  const item = readForm(form, "new", user);
   item.title = title;
   item.status = status;
   item.category = category;
   item.activity = [makeActivity(user, "created", undefined, item.createdAt)];
-  doc.items.push(item);
-  await saveActions(doc, user, `quick-add #${id} ${title.slice(0, 40)}`);
+  await insertItem(item);
   revalidateAll();
   // Return the new task's identity so the UI can show an obvious "created #N
   // in <column>" confirmation with a jump-to link. Read item.id (not the

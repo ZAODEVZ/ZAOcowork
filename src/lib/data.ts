@@ -514,6 +514,44 @@ export async function saveItem(
  * `legacy_id ?? id` rule so the app-facing id matches what a later read would
  * produce (and falls back to the UUID if the trigger is somehow absent).
  */
+/**
+ * Insert ONE new task. The targeted counterpart to saveItem().
+ *
+ * quickCreate used to go through getActions() + saveActions(), which reads the
+ * entire tasks table (1200+ rows, paginated), structuredClones it TWICE, then
+ * JSON.stringify-diffs every row - all to add a single task. On a serverless
+ * function with a ~10-15s ceiling and no maxDuration configured, that is the
+ * add path timing out under its own weight as the board grows. Reported from
+ * the field as "can't add tasks / same error".
+ *
+ * None of that work was load-bearing: legacy_id is assigned by the DB trigger
+ * (tasks_legacy_id_seq), so the caller's optimistic id is overwritten anyway.
+ * This does the one INSERT and reads the assigned id back.
+ */
+export async function insertItem(item: ActionItem): Promise<ActionItem> {
+  const team = await teamMaps();
+  // Same required-basics pass applyDiff runs, so a task created through this
+  // path is not shaped differently from one created through a full save.
+  const { item: filled, applied } = applyTaskDefaults(item);
+  Object.assign(item, filled);
+
+  const row = itemToRow(item, team);
+  // legacy_id NULL => the DB trigger owns id assignment, race-free.
+  row.legacy_id = null;
+
+  const { data, error } = await db()
+    .from("tasks")
+    .insert(row)
+    .select("id, legacy_id")
+    .single();
+  if (error) throw new Error(`task insert failed (${item.title.slice(0, 40)}): ${error.message}`);
+
+  assignPersistedId(item, data as { id: string; legacy_id: string | null });
+  const summary = describeDefaults(applied);
+  if (summary) console.info(`[data] task ${item.id}: auto-filled ${summary}`);
+  return item;
+}
+
 export function assignPersistedId(
   item: ActionItem,
   row: { id: string; legacy_id: string | null },
