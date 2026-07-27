@@ -54,9 +54,16 @@ describe("ownerLabel", () => {
     expect(ownerLabel("jose", ROSTER)).toBe("Jose");
   });
 
-  it("falls back to the raw value for someone off the roster", () => {
-    // A deactivated member still owning historical work must not vanish.
-    expect(ownerLabel("ghost", ROSTER)).toBe("ghost");
+  it("title-cases a bare slug for someone off the roster", () => {
+    // A deactivated member still owning historical work must not vanish, but
+    // must not render as raw lowercase next to properly-cased names either.
+    expect(ownerLabel("ghost", ROSTER)).toBe("Ghost");
+  });
+
+  it("preserves the original casing of an off-roster value that has some", () => {
+    // Only bare slugs get title-cased; anything already styled is left alone
+    // so a name like "McCoy" or "JANGO" is never mangled.
+    expect(ownerLabel("McCoy", ROSTER)).toBe("McCoy");
   });
 
   it("renders pseudo-owners with their canonical casing", () => {

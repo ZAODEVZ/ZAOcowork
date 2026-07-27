@@ -126,6 +126,9 @@ Repo is already deployed and live at thezao.xyz. To set up a new deploy:
    - `SUPABASE_URL` - `https://etwvzrmlxeobinrlytza.supabase.co`
    - `SUPABASE_SERVICE_KEY` - service-role key (server-side ONLY, never expose to browser)
    - `MINIMAX_API_KEY` / `MINIMAX_API_URL` / `MINIMAX_MODEL` - AI Assistant (Assistant tab degrades to 503 without these)
+   - `NEXT_PUBLIC_WIP_LIMIT` - optional, default 5. Per-person work-in-progress
+     limit. **Advisory only** - the board shows an amber `WIP n/limit` chip when
+     you are over it and never blocks a status change.
 3. Deploy. Custom domain config maps `thezao.xyz` -> www subdomain.
 
 ## Data model
