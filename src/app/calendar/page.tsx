@@ -1,5 +1,5 @@
 import { getSession, isAdmin, isLead } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import { listActiveBrands } from "@/lib/brands-db";
 import { listMeetings } from "@/lib/meetings";
 import { NavBar } from "@/components/NavBar";
@@ -14,9 +14,9 @@ export default async function CalendarPage() {
   const user = await getSession();
   if (!user) redirect("/login");
 
-  const [navBrands, doc, meetings] = await Promise.all([
+  const [navBrands, items, meetings] = await Promise.all([
     listActiveBrands().catch(() => []),
-    getActions(),
+    listItems(),
     listMeetings({ sinceDays: 60 }).catch(() => []),
   ]);
   const meetingMarks = meetings.map((m) => ({
@@ -26,7 +26,7 @@ export default async function CalendarPage() {
   }));
 
   // Extract events (tasks where isEvent=true and eventAt is set)
-  const events = doc.items.filter((item) => item.isEvent && item.eventAt);
+  const events = items.filter((item) => item.isEvent && item.eventAt);
 
   return (
     <main className="min-h-screen bg-zao-navy text-white">
@@ -54,7 +54,7 @@ export default async function CalendarPage() {
             <h2 className="text-lg font-semibold text-white/90">Tasks</h2>
             <span className="text-sm text-white/35">By due date</span>
           </div>
-          <CalendarView items={doc.items} currentUser={user} meetings={meetingMarks} />
+          <CalendarView items={items} currentUser={user} meetings={meetingMarks} />
         </section>
       </div>
     </main>

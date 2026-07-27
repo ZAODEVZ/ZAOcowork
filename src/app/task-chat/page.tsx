@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
-import { getActions, ageDays } from "@/lib/data";
+import { listItems, getBoardCounts } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { TaskChat } from "@/components/TaskChat";
@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 export default async function TaskChatPage() {
   const user = await getSession();
   if (!user) redirect("/login");
-  const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
+  const [items, counts, navBrands] = await Promise.all([
+    listItems({ openOnly: true }),
+    getBoardCounts(),
+    listActiveBrands(),
+  ]);
 
-  const open = doc.items.filter((x) => x.status !== "DONE").length;
-  const blocked = doc.items.filter((x) => x.status === "BLOCKED").length;
-  const aging = doc.items.filter(
-    (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,
-  ).length;
+  const { open, blocked, aging } = counts;
 
   const userLabelStr = userLabel(user);
 
