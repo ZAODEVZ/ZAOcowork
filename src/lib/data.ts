@@ -514,6 +514,112 @@ export async function saveItem(
  * `legacy_id ?? id` rule so the app-facing id matches what a later read would
  * produce (and falls back to the UUID if the trigger is somehow absent).
  */
+/**
+ * Insert ONE new task. The targeted counterpart to saveItem().
+ *
+ * quickCreate used to go through getActions() + saveActions(), which reads the
+ * entire tasks table (1200+ rows, paginated), structuredClones it TWICE, then
+ * JSON.stringify-diffs every row - all to add a single task. On a serverless
+ * function with a ~10-15s ceiling and no maxDuration configured, that is the
+ * add path timing out under its own weight as the board grows. Reported from
+ * the field as "can't add tasks / same error".
+ *
+ * None of that work was load-bearing: legacy_id is assigned by the DB trigger
+ * (tasks_legacy_id_seq), so the caller's optimistic id is overwritten anyway.
+ * This does the one INSERT and reads the assigned id back.
+ */
+/**
+ * Board-wide headline counts, computed by the DATABASE.
+ *
+ * my-work, activity and task-chat each did this by pulling every task into
+ * memory and running three .filter().length passes over 1200+ rows. Three
+ * numbers do not justify reading the whole table - and it is the same
+ * getActions() bottleneck that was breaking task creation, which is why those
+ * pages were reported as erroring/blank (doc 2079 items B2/B3).
+ *
+ * `aging` uses created_at older than 14 days, matching ageDays(x.createdAt) > 14.
+ */
+export async function getBoardCounts(): Promise<{
+  open: number;
+  blocked: number;
+  aging: number;
+}> {
+  const agingCutoff = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+  const base = () => db().from("tasks").select("id", { count: "exact", head: true }).is("archived_at", null);
+
+  const [openRes, blockedRes, agingRes] = await Promise.all([
+    base().neq("status", "done"),
+    base().eq("status", "blocked"),
+    base().neq("status", "done").lt("created_at", agingCutoff),
+  ]);
+
+  for (const r of [openRes, blockedRes, agingRes]) {
+    if (r.error) throw new Error(`board counts failed: ${r.error.message}`);
+  }
+  return {
+    open: openRes.count ?? 0,
+    blocked: blockedRes.count ?? 0,
+    aging: agingRes.count ?? 0,
+  };
+}
+
+/**
+ * Non-archived tasks only, optionally just the open ones.
+ *
+ * The board view legitimately needs every task. my-work, activity and calendar
+ * do not - they need a slice, and pulling the DONE archive alongside it is pure
+ * cost. Archived rows are excluded in SQL rather than filtered in JS.
+ */
+export async function listItems(opts: { openOnly?: boolean } = {}): Promise<ActionItem[]> {
+  const team = await teamMaps();
+  const PAGE = 1000;
+  const rows: TaskRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    let q = db().from("tasks").select(TASK_COLUMNS).is("archived_at", null);
+    if (opts.openOnly) q = q.neq("status", "done");
+    const { data, error } = await q.order("id", { ascending: true }).range(offset, offset + PAGE - 1);
+    if (error) throw new Error(`tasks read failed: ${error.message}`);
+    const batch = (data ?? []) as unknown as TaskRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  return rows.map((row) => normalizeItem(rowToItem(row, team))).sort((a, b) => compareIds(a.id, b.id));
+}
+
+/**
+ * Tasks flagged as events with a scheduled date - what /calendar renders.
+ * isEvent/eventAt live in the metadata jsonb, so the filter is applied after
+ * normalisation; the win here is dropping DONE + archived rows in SQL first.
+ */
+export async function listEventItems(): Promise<ActionItem[]> {
+  const items = await listItems();
+  return items.filter((it) => it.isEvent && it.eventAt);
+}
+
+export async function insertItem(item: ActionItem): Promise<ActionItem> {
+  const team = await teamMaps();
+  // Same required-basics pass applyDiff runs, so a task created through this
+  // path is not shaped differently from one created through a full save.
+  const { item: filled, applied } = applyTaskDefaults(item);
+  Object.assign(item, filled);
+
+  const row = itemToRow(item, team);
+  // legacy_id NULL => the DB trigger owns id assignment, race-free.
+  row.legacy_id = null;
+
+  const { data, error } = await db()
+    .from("tasks")
+    .insert(row)
+    .select("id, legacy_id")
+    .single();
+  if (error) throw new Error(`task insert failed (${item.title.slice(0, 40)}): ${error.message}`);
+
+  assignPersistedId(item, data as { id: string; legacy_id: string | null });
+  const summary = describeDefaults(applied);
+  if (summary) console.info(`[data] task ${item.id}: auto-filled ${summary}`);
+  return item;
+}
+
 export function assignPersistedId(
   item: ActionItem,
   row: { id: string; legacy_id: string | null },

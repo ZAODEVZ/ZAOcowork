@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
-import { getActions, ageDays, relativeTime } from "@/lib/data";
+import { listItems, getBoardCounts, ageDays, relativeTime } from "@/lib/data";
 import { matchMentions } from "@/lib/mentions";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
@@ -132,11 +132,15 @@ export default async function ActivityPage({
   const curPerson = (sp.person ?? "").trim().toLowerCase();
   const curMentions = sp.mentions === "me";
 
-  const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
+  const [items, counts, navBrands] = await Promise.all([
+    listItems(),
+    getBoardCounts(),
+    listActiveBrands(),
+  ]);
 
   // Flatten comments + updates + activity events across all tasks.
   const all: FeedEntry[] = [];
-  for (const it of doc.items) {
+  for (const it of items) {
     for (const c of it.comments ?? []) {
       if (!c.content) continue;
       all.push({
@@ -271,11 +275,7 @@ export default async function ActivityPage({
     else groups.push({ key, label: dayLabel(key), items: [e] });
   }
 
-  const open = doc.items.filter((x) => x.status !== "DONE").length;
-  const blocked = doc.items.filter((x) => x.status === "BLOCKED").length;
-  const aging = doc.items.filter(
-    (x) => x.status !== "DONE" && ageDays(x.createdAt) > 14,
-  ).length;
+  const { open, blocked, aging } = counts;
   const userLabelStr = userLabel(user);
 
   return (

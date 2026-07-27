@@ -67,7 +67,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                const theme = localStorage.getItem('zao-theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                // Default to dark, NOT to the OS preference.
+                //
+                // The light palette sets --bg-primary to #f5f3f0 (near-white),
+                // but the app has ~1200 hardcoded \`text-white\` classes (86 in
+                // Board.tsx alone) that never read the theme variable. So a user
+                // whose DEVICE is in light mode was auto-served white text on a
+                // near-white background - a board they physically cannot read,
+                // without ever touching a theme toggle. Reported from the field
+                // as "can't see / can't read the words".
+                //
+                // Honouring an explicit saved choice is kept. Only the automatic
+                // OS-based selection is removed, until the components actually
+                // support the light palette.
+                const theme = localStorage.getItem('zao-theme') || 'dark';
                 const hue = parseInt(localStorage.getItem('zao-accent-hue') || '36', 10);
                 const root = document.documentElement;
                 root.setAttribute('data-theme', theme);

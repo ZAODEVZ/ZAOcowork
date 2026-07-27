@@ -13,8 +13,11 @@ export function ThemeControl() {
     const savedTheme = localStorage.getItem("zao-theme") as "light" | "dark" | null;
     const savedHue = localStorage.getItem("zao-accent-hue");
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const newTheme = savedTheme || (prefersDark ? "dark" : "light");
+    // Matches the layout.tsx bootstrap: default dark, never auto-select light
+    // from the OS. The light palette is not actually implemented in the
+    // components (~1200 hardcoded text-white), so auto-selecting it renders an
+    // unreadable board. An explicit saved choice is still honoured.
+    const newTheme = savedTheme || "dark";
     const newHue = savedHue ? parseInt(savedHue, 10) : 36;
 
     setTheme(newTheme);

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
-import { getActions, ageDays, relativeTime, type ActionItem } from "@/lib/data";
+import { listItems, getBoardCounts, ageDays, relativeTime, type ActionItem } from "@/lib/data";
 import { isAssignedTo } from "@/lib/types";
 import { matchMentions } from "@/lib/mentions";
 import { logout } from "@/app/actions";
@@ -84,8 +84,14 @@ export default async function MyWorkPage() {
   const user = await getSession();
   if (!user) redirect("/login");
   const lead = isLead(user);
-  const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
-  const items = doc.items.filter((x) => !x.archivedAt);
+  // Scoped reads instead of getActions(): archived rows are dropped in SQL and
+  // the three headline numbers are counted by the DB. This page used to pull
+  // every task (1200+) into memory to render one person's list.
+  const [items, counts, navBrands] = await Promise.all([
+    listItems(),
+    getBoardCounts(),
+    listActiveBrands(),
+  ]);
 
   const me = user.toLowerCase();
   const aliases = [userLabel(user), user];
@@ -145,9 +151,7 @@ export default async function MyWorkPage() {
     pending.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
   }
 
-  const open = doc.items.filter((x) => x.status !== "DONE").length;
-  const blocked = doc.items.filter((x) => x.status === "BLOCKED").length;
-  const aging = doc.items.filter((x) => x.status !== "DONE" && ageDays(x.createdAt) > 14).length;
+  const { open, blocked, aging } = counts;
   const userLabelStr = userLabel(user);
 
   return (
