@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const ZAO_GOLD = "#f5a623";
+
 // Map paper slugs to titles and descriptions
 const paperMetadata: Record<
   string,
@@ -8,97 +10,97 @@ const paperMetadata: Record<
   "what-is-the-zao": {
     title: "What is The ZAO?",
     subtitle: "A decentralized impact network returning profit, data, and IP to artists",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   whitepaper: {
     title: "The ZAO Whitepaper",
     subtitle: "The vision, governance model, and production lanes",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   technical: {
     title: "The ZAO Technical Whitepaper",
     subtitle: "Respect, Fibonacci, OREC, and on-chain governance",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   manifesto: {
     title: "The ZAO Manifesto",
     subtitle: "Five commitments. The permanent creed.",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   "the-zao-protocol": {
     title: "The ZAO Protocol",
     subtitle: "Creator-economy dominance through decentralized impact networks",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   wavewarz: {
     title: "The WaveWarZ Whitepaper",
     subtitle: "Live-traded music battles where artists are paid instantly",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   "coc-concertz": {
     title: "COC Concertz Whitepaper",
     subtitle: "Recurring live concerts bringing independent artists and Web3 communities together",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   history: {
     title: "The ZAO History",
     subtitle: "A dated index of what The ZAO has actually shipped",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   fishbowlz: {
     title: "FISHBOWLZ Whitepaper",
     subtitle: "Persistent audio rooms with hot seat rotation and live transcription",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   poidh: {
     title: "poidh Whitepaper",
     subtitle: "An on-chain bounty platform that turns creative moments into paid work",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   zabalgamez: {
     title: "ZABAL Games Whitepaper",
     subtitle: "A Farcaster-native builder onboarding event - ship real, earn Respect",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   "zabal-token": {
     title: "ZABAL Token Whitepaper",
     subtitle: "The front-end coordination token for The ZAO ecosystem",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   songjam: {
     title: "SongJam Whitepaper",
     subtitle: "Live audio spaces for the ZABAL community",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   "zao-newsletter": {
     title: "The ZAO Newsletter Whitepaper",
     subtitle: "The daily build-in-public log of The ZAO ecosystem",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   zuke: {
     title: "Zuke Whitepaper",
     subtitle: "The ZAO's audio-spaces app, wired into the content pipeline",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   zounz: {
     title: "ZOUNZ Whitepaper",
     subtitle: "An ERC-721 NFT DAO on Base governing the ZABAL token treasury",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   "zao-festivals": {
     title: "ZAO Festivals Whitepaper",
     subtitle: "The in-real-life arm of The ZAO",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   candy: {
     title: "Candy (Samantha Denton-Kinney)",
     subtitle: "ZAO Co-Founder, WaveWarZ Co-Founder - ZID 2",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
   django: {
     title: "Django",
     subtitle: "Musician, origin story figure - the seed of The ZAO",
-    accentColor: "#f5a623",
+    accentColor: ZAO_GOLD,
   },
 };
 

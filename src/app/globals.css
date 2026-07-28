@@ -40,6 +40,18 @@
 html, body {
   background: var(--bg-primary);
   color: var(--ink-primary);
+
+/* PR #231 introduced --zao-navy / --zao-gold to replace inline hex in the
+   components. Kept, but defined in terms of the THEME variables instead of the
+   literal hex the original PR used.
+   #231 predates the light/dark theme system on main; as written it set
+   `html, body { background: var(--zao-navy) }` with navy hardcoded, which would
+   have pinned the app to dark and silently undone the theme work. Aliasing
+   keeps #231's token cleanup AND leaves the tokens theme-aware. */
+:root {
+  --zao-navy: var(--bg-primary);
+  --zao-gold: var(--accent);
+}
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
