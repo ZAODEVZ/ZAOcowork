@@ -944,6 +944,38 @@ export async function itemExistsByLegacySource(legacySource: string): Promise<bo
   return (data ?? []).length > 0;
 }
 
+/**
+ * Tasks with no owner. Backs the "assign every unowned task" admin action,
+ * which used to scan all 1314 rows in JS to find them.
+ *
+ * owner is derived from owner_id via the team map, and "Open" is what
+ * normalizeItem substitutes when owner_id is NULL - so `owner_id is null` is
+ * exactly the predicate the JS loop used. Verified against the live DB
+ * 2026-07-28: no team_members row is named "Open", and no task has an
+ * owner_id that fails to resolve to a name, so the two cannot disagree.
+ *
+ * Deliberately does NOT filter archived, because the loop it replaces did
+ * not either. Narrowing that is a product decision, not a perf fix.
+ */
+export async function listUnownedItems(): Promise<ActionItem[]> {
+  const team = await teamMaps();
+  const PAGE = 1000;
+  const rows: TaskRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await db()
+      .from("tasks")
+      .select(TASK_COLUMNS)
+      .is("owner_id", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) throw new Error(`unowned tasks read failed: ${error.message}`);
+    const batch = (data ?? []) as unknown as TaskRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  return rows.map((r) => normalizeItem(rowToItem(r, team))).sort((a, b) => compareIds(a.id, b.id));
+}
+
 export async function listItemsByIds(ids: string[]): Promise<ActionItem[]> {
   const clean = [...new Set(ids.map((i) => String(i).trim()).filter(Boolean))];
   if (clean.length === 0) return [];
@@ -978,6 +1010,45 @@ export async function listItemsByIds(ids: string[]): Promise<ActionItem[]> {
  * JSON.stringify per row to work out what changed; when the caller already
  * knows exactly which rows it touched, that whole diff is wasted work.
  */
+/**
+ * Hard-delete tasks by app-facing id. Returns how many rows actually went.
+ *
+ * The delete paths used to read the whole board, filter the doomed rows out
+ * of the array, and hand the result to saveActions so applyDiff would infer
+ * "these are missing, therefore delete them". That is a full-table read and
+ * a full diff to express `delete from tasks where id in (...)`.
+ *
+ * Inferred deletes are also the dangerous kind: anything that trimmed
+ * doc.items for an unrelated reason would have been silently deleted. This
+ * says what it means.
+ *
+ * Callers own audit logging, exactly as they did with saveActions.
+ */
+export async function deleteItemsByIds(ids: string[]): Promise<number> {
+  const clean = [...new Set(ids.map((i) => String(i).trim()).filter(Boolean))];
+  if (clean.length === 0) return 0;
+
+  const uuids = clean.filter(looksLikeUuid);
+  const legacy = clean.filter((i) => !looksLikeUuid(i));
+
+  const CHUNK = 150;
+  let removed = 0;
+  const run = async (col: "id" | "legacy_id", vals: string[]) => {
+    for (let i = 0; i < vals.length; i += CHUNK) {
+      const { data, error } = await db()
+        .from("tasks")
+        .delete()
+        .in(col, vals.slice(i, i + CHUNK))
+        .select("id");
+      if (error) throw new Error(`task delete failed (${col}): ${error.message}`);
+      removed += (data ?? []).length;
+    }
+  };
+  if (legacy.length) await run("legacy_id", legacy);
+  if (uuids.length) await run("id", uuids);
+  return removed;
+}
+
 export async function saveItems(items: ActionItem[], actor: string, summary: string): Promise<void> {
   for (const item of items) {
     if (!item.dbId) continue; // never seen the DB; not a bulk-edit target
@@ -1184,12 +1255,20 @@ function markArchivable(items: ActionItem[]): ActionItem[] {
  *
  * Queries the DB directly instead of going through loadBoard() so the cron
  * doesn't pull the whole table into memory just to find a handful of rows.
+ *
+ * `days` is a parameter because the admin "archive old done" action wants a
+ * shorter window than the cron. That action used to be a second, slower
+ * implementation of this same predicate - full board read plus one UPDATE
+ * per row - and is now a call to this.
  */
-export async function sweepAutoArchive(): Promise<{ archived: number }> {
-  const cutoffIso = new Date(Date.now() - ARCHIVE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+export async function sweepAutoArchive(days: number = ARCHIVE_DAYS): Promise<{ archived: number }> {
+  const cutoffIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await db()
     .from("tasks")
-    .update({ archived_at: nowIso() })
+    // updated_at moves too: archiving is a modification, and the manual
+    // admin path (autoArchiveOldDone) always stamped it. Both callers now
+    // share this one statement, so they cannot drift apart again.
+    .update({ archived_at: nowIso(), updated_at: nowIso() })
     .eq("status", "done")
     .is("archived_at", null)
     .lt("completed_at", cutoffIso)
