@@ -754,6 +754,57 @@ export async function listEventItems(): Promise<ActionItem[]> {
   return items.filter((it) => it.isEvent && it.eventAt);
 }
 
+/**
+ * Fetch a specific set of tasks by their app-facing ids (legacy_id / #N).
+ *
+ * The targeted read for bulk operations. Every bulk* action in actions.ts used
+ * to call getActions() - reading all 1300+ rows and cloning them twice - to
+ * mutate the handful of ids the user had actually selected.
+ *
+ * Chunked because PostgREST puts the `in` list in the URL and a few hundred
+ * uuids will blow the URL length limit.
+ */
+export async function listItemsByIds(ids: string[]): Promise<ActionItem[]> {
+  const clean = [...new Set(ids.map((i) => String(i).trim()).filter(Boolean))];
+  if (clean.length === 0) return [];
+  const team = await teamMaps();
+
+  // Ids arrive as legacy_id (#N) from the UI, but callers may pass UUIDs.
+  const uuids = clean.filter(looksLikeUuid);
+  const legacy = clean.filter((i) => !looksLikeUuid(i));
+
+  const CHUNK = 150;
+  const rows: TaskRow[] = [];
+  const fetchChunk = async (col: "id" | "legacy_id", vals: string[]) => {
+    for (let i = 0; i < vals.length; i += CHUNK) {
+      const { data, error } = await db()
+        .from("tasks")
+        .select(TASK_COLUMNS)
+        .in(col, vals.slice(i, i + CHUNK));
+      if (error) throw new Error(`tasks read failed (${col}): ${error.message}`);
+      rows.push(...((data ?? []) as unknown as TaskRow[]));
+    }
+  };
+  if (legacy.length) await fetchChunk("legacy_id", legacy);
+  if (uuids.length) await fetchChunk("id", uuids);
+
+  return rows.map((r) => normalizeItem(rowToItem(r, team))).sort((a, b) => compareIds(a.id, b.id));
+}
+
+/**
+ * Persist a set of already-loaded tasks, one targeted UPDATE each.
+ *
+ * The write half of the bulk path. saveActions() diffs the ENTIRE board with
+ * JSON.stringify per row to work out what changed; when the caller already
+ * knows exactly which rows it touched, that whole diff is wasted work.
+ */
+export async function saveItems(items: ActionItem[], actor: string, summary: string): Promise<void> {
+  for (const item of items) {
+    if (!item.dbId) continue; // never seen the DB; not a bulk-edit target
+    await saveItem(item, actor, summary);
+  }
+}
+
 export async function insertItem(item: ActionItem): Promise<ActionItem> {
   const team = await teamMaps();
   // Same required-basics pass applyDiff runs, so a task created through this

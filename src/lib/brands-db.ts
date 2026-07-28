@@ -94,7 +94,12 @@ export async function listBrands(opts?: { activeOnly?: boolean }): Promise<Brand
     const { data, error } = await q;
     if (error || !data) return opts?.activeOnly ? FALLBACK_BRANDS.filter((b) => b.active) : FALLBACK_BRANDS;
     return data as BrandRow[];
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[brands-db] swallowed:`, err instanceof Error ? err.message : err);
     return FALLBACK_BRANDS;
   }
 }

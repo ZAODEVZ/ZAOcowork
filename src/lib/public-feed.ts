@@ -139,7 +139,12 @@ export async function getPublicShipped(limitPerGroup = 50): Promise<ShippedGroup
     });
 
     return groups;
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[public-feed] swallowed:`, err instanceof Error ? err.message : err);
     // Any DB error -> return empty array, never throw.
     return [];
   }

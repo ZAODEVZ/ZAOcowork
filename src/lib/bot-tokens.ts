@@ -80,7 +80,12 @@ export async function listBotsWithActiveTokens(): Promise<string[]> {
       .is("revoked_at", null);
     if (error || !data) return [];
     return Array.from(new Set(data.map((r) => String((r as { bot: unknown }).bot).toLowerCase())));
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[bot-tokens] swallowed:`, err instanceof Error ? err.message : err);
     return [];
   }
 }

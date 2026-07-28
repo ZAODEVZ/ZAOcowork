@@ -9,6 +9,8 @@ import { onTaskClosed, recomputeBlockedState } from "@/lib/dep-flow";
 import { addDependency, removeDependency } from "@/lib/dependencies";
 import {
   getActions,
+  saveItems,
+  listItemsByIds,
   saveActions,
   getItem,
   saveItem,
@@ -253,10 +255,10 @@ export async function updateItem(form: FormData): Promise<void> {
   const user = await requireSession();
   const id = String(form.get("id") ?? "");
   if (!id) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const prev = doc.items[idx];
+  // Targeted single-row read. This used to load the entire board (1300+ rows,
+  // cloned twice) to edit one task, then JSON-diff every row on save.
+  const prev = await getItem(id);
+  if (!prev) return;
   const next = readForm(form, id, user, prev);
   // Log status change in activity
   if (prev.status !== next.status) {
@@ -265,8 +267,7 @@ export async function updateItem(form: FormData): Promise<void> {
       makeActivity(user, "status_changed", `${prev.status} → ${next.status}`),
     ];
   }
-  doc.items[idx] = next;
-  await saveActions(doc, user, `edit #${id}`);
+  await saveItem(next, user, `edit #${id}`);
   // Unblock dependent tasks when manually transitioning to DONE
   if (prev.status !== "DONE" && next.status === "DONE") {
     await onTaskClosed(id);
@@ -1111,11 +1112,12 @@ export async function bulkSetStatus(form: FormData): Promise<void> {
   // Workers can't bulk-mark DONE — that must go through review (mirrors
   // patchField; doc 766 finding #3). Other statuses stay Notify-tier.
   if (!isLead(user) && status === "DONE") return;
-  const doc = await getActions();
+  // Targeted read: only the selected ids, not the whole board.
+  const picked = await listItemsByIds(ids);
   const now = new Date().toISOString();
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.includes(it.id)) continue;
+  const dirty: ActionItem[] = [];
+  for (const it of picked) {
     if (it.status === status) continue;
     const from = it.status;
     it.status = status;
@@ -1127,10 +1129,11 @@ export async function bulkSetStatus(form: FormData): Promise<void> {
       it.completedBy = "";
     }
     appendActivity(it, user, "bulk_status_change", `${from} -> ${status}`);
+    dirty.push(it);
     touched++;
   }
   if (touched) {
-    await saveActions(doc, user, `bulk set status ${status} on ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk set status ${status} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1148,19 +1151,20 @@ export async function bulkSetOwner(form: FormData): Promise<void> {
   if (ids.length === 0) return;
   const owner = String(form.get("owner") ?? "").trim();
   if (!owner) return;
-  const doc = await getActions();
+  const picked = await listItemsByIds(ids);
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.includes(it.id)) continue;
+  const dirty: ActionItem[] = [];
+  for (const it of picked) {
     if (it.owner === owner) continue;
     const from = it.owner;
     it.owner = owner;
     it.claimable = owner === "Open";
     appendActivity(it, user, "bulk_owner_change", `${from} -> ${owner}`);
+    dirty.push(it);
     touched++;
   }
   if (touched) {
-    await saveActions(doc, user, `bulk set owner ${owner} on ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk set owner ${owner} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1177,18 +1181,19 @@ export async function bulkSetPriority(form: FormData): Promise<void> {
   const ids = idsFromForm(form);
   if (ids.length === 0) return;
   const priority = asPriority(form.get("priority"));
-  const doc = await getActions();
+  const picked = await listItemsByIds(ids);
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.includes(it.id)) continue;
+  const dirty: ActionItem[] = [];
+  for (const it of picked) {
     if (it.priority === priority) continue;
     const from = it.priority;
     it.priority = priority;
     appendActivity(it, user, "bulk_priority_change", `${from} -> ${priority}`);
+    dirty.push(it);
     touched++;
   }
   if (touched) {
-    await saveActions(doc, user, `bulk set priority ${priority} on ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk set priority ${priority} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1206,18 +1211,19 @@ export async function bulkAddBrand(form: FormData): Promise<void> {
   if (ids.length === 0) return;
   const brand = String(form.get("brand") ?? "").trim();
   if (!brand) return;
-  const doc = await getActions();
+  const picked = await listItemsByIds(ids);
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.includes(it.id)) continue;
+  const dirty: ActionItem[] = [];
+  for (const it of picked) {
     const current = it.brands ?? [];
     if (current.includes(brand)) continue;
     it.brands = [...current, brand];
     appendActivity(it, user, "bulk_brand_add", brand);
+    dirty.push(it);
     touched++;
   }
   if (touched) {
-    await saveActions(doc, user, `bulk tag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk tag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1235,18 +1241,19 @@ export async function bulkRemoveBrand(form: FormData): Promise<void> {
   if (ids.length === 0) return;
   const brand = String(form.get("brand") ?? "").trim();
   if (!brand) return;
-  const doc = await getActions();
+  const picked = await listItemsByIds(ids);
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.includes(it.id)) continue;
+  const dirty: ActionItem[] = [];
+  for (const it of picked) {
     const current = it.brands ?? [];
     if (!current.includes(brand)) continue;
     it.brands = current.filter((b) => b !== brand);
     appendActivity(it, user, "bulk_brand_remove", brand);
+    dirty.push(it);
     touched++;
   }
   if (touched) {
-    await saveActions(doc, user, `bulk untag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk untag brand ${brand} on ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
