@@ -1,5 +1,8 @@
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
-import { getActions, ageDays } from "@/lib/data";
+import { getActions, getBrandRollup, getPersonRollup, ageDays } from "@/lib/data";
+import { BrandRollupStrip } from "@/components/BrandRollupStrip";
+import { PeopleStrip } from "@/components/PeopleStrip";
+import { AppBadge } from "@/components/AppBadge";
 import { logout } from "../actions";
 import { Board } from "@/components/Board";
 import { NavBar } from "@/components/NavBar";
@@ -47,11 +50,19 @@ export default async function BoardPage({
     ? activeProjects.find((p) => p.slug === urlProjectSlug) ?? null
     : null;
 
-  const [doc, forecast, depCounts] = await Promise.all([
+  const [doc, forecast, depCounts, brandRollup, personRollup] = await Promise.all([
     getActions(),
     computeForecast(urlBrand),
     getDependencyCounts(),
+    // Scoped 4-column aggregate, not another full-board read.
+    getBrandRollup(),
+    getPersonRollup(),
   ]);
+
+  // Actionable = overdue + at-risk on the signed-in user's own queue. Derived
+  // from the rollup already fetched above - no extra query.
+  const mine = personRollup.find((p) => p.slug === user.toLowerCase());
+  const myActionable = mine ? mine.overdue + mine.atRisk : 0;
 
   const portalItems = doc.items;
   const totalAll = portalItems.length;
@@ -148,6 +159,14 @@ export default async function BoardPage({
               {urlBrand ? `filtered to ${urlBrand}` : "every task, filter by owner or category"}
             </span>
           </div>
+          {/* Overview strip: three-second read of where to unblock first,
+              before the 300-row list. Hidden when already filtered to one
+              brand - the strip's whole job is cross-brand comparison. */}
+          {/* PWA icon badge: work that needs YOU today (overdue + at-risk).
+              Not the total - a permanent 238 on the app icon is wallpaper. */}
+          <AppBadge count={myActionable} label={`${myActionable} need you`} />
+          {!urlBrand && <BrandRollupStrip rollup={brandRollup} />}
+          {!urlBrand && <PeopleStrip people={personRollup} />}
           <Board
             items={portalItems}
             currentUser={user}
