@@ -9,6 +9,11 @@ const nextConfig = {
       { source: '/papers/manifesto', destination: '/papers/manifesto.html' },
       { source: '/papers/the-zao-protocol', destination: '/papers/the-zao-protocol.html' },
       { source: '/papers/drafts', destination: '/papers/drafts/index.html' },
+      // The clean URL papers.json advertises for this draft. Without it,
+      // /papers/drafts/zaalcaster 404s while the .html form serves 200 - so
+      // the canonical URL in the papers index was dead. The page itself is
+      // real and already public; only the route was missing.
+      { source: '/papers/drafts/zaalcaster', destination: '/papers/drafts/zaalcaster.html' },
       { source: '/papers/team', destination: '/papers/team/index.html' },
       { source: '/papers/team/django', destination: '/papers/team/django.html' },
       { source: '/papers/team/candy', destination: '/papers/team/candy.html' },
