@@ -1,12 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { getActions, saveActions, newId, normalizeItem, type ActionItem } from "@/lib/data";
+import {
+  listItemsByIds,
+  saveItems,
+  insertItem,
+  itemExistsByLegacySource,
+  normalizeItem,
+  type ActionItem,
+} from "@/lib/data";
 import { logAudit } from "@/lib/audit";
 import { onTaskClosed } from "@/lib/dep-flow";
 import {
   routeToTeammate,
   generateTestPlan,
-  isTestTaskAlreadyCreated,
   buildTestTaskLegacySource,
   TEAMMATE_CONFIG,
 } from "@/lib/teammate-test-tasks";
@@ -127,15 +133,16 @@ export async function POST(req: NextRequest) {
     prState = "open";
   }
 
-  const doc = await getActions();
+  // Only the tasks this PR references, not the whole board. Every GitHub
+  // event used to read all 1314 rows and then write all of them back.
+  const picked = await listItemsByIds(taskIds);
+  const dirty: ActionItem[] = [];
   let touched = 0;
   const now = new Date().toISOString();
   const actor = `github:${pr.user?.login ?? "webhook"}`;
 
-  for (const id of taskIds) {
-    const idx = doc.items.findIndex((x) => x.id === id);
-    if (idx < 0) continue;
-    const cur = doc.items[idx];
+  for (const cur of picked) {
+    const id = cur.id;
     const next: ActionItem = {
       ...cur,
       prUrl: pr.html_url,
@@ -167,7 +174,7 @@ export async function POST(req: NextRequest) {
         next.completedBy = actor;
       }
     }
-    doc.items[idx] = next;
+    dirty.push(next);
     touched++;
 
     await logAudit({
@@ -181,8 +188,8 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  if (touched > 0) {
-    await saveActions(doc, actor, `github: pr_${action} touched ${touched} task${touched === 1 ? "" : "s"}`);
+  if (dirty.length > 0) {
+    await saveItems(dirty, actor, `github: pr_${action} touched ${touched} task${touched === 1 ? "" : "s"}`);
   }
 
   // Auto-create a test task when a PR merges (teammate learning system).
@@ -193,7 +200,10 @@ export async function POST(req: NextRequest) {
       const repoShort = repoName.split("/")[1] ?? "repo";
 
       // Idempotency: don't create if test task already exists for this PR
-      if (!isTestTaskAlreadyCreated(doc.items, repoShort, pr.number)) {
+      // Exact match on the legacy_source column instead of scanning every
+      // task in memory for the same string.
+      const testSource = buildTestTaskLegacySource(repoShort, pr.number);
+      if (!(await itemExistsByLegacySource(testSource))) {
         // Route to teammate based on PR area + round-robin
         const teammate = routeToTeammate(repoShort, pr.title, []);
         const config = TEAMMATE_CONFIG[teammate];
@@ -206,10 +216,9 @@ export async function POST(req: NextRequest) {
         const testPlan = generateTestPlan(pr.title, pr.html_url, pr.number, changeDescription, config.startLevel);
 
         // Create test task
-        const testTaskId = newId(doc.items);
         const now = new Date().toISOString();
         const testTask: ActionItem = normalizeItem({
-          id: testTaskId,
+          id: "",
           title: `Test: ${pr.title} (#${pr.number})`,
           owner: config.name,
           status: "TODO",
@@ -219,7 +228,7 @@ export async function POST(req: NextRequest) {
           updatedAt: now,
           source: "pr-test-task",
           // Legacy source for idempotency: allows detecting if test task already exists
-          legacySource: buildTestTaskLegacySource(repoShort, pr.number),
+          legacySource: testSource,
         });
 
         testTask.activity = [
@@ -233,8 +242,10 @@ export async function POST(req: NextRequest) {
           },
         ];
 
-        doc.items.push(testTask);
-        await saveActions(doc, "github-webhook", `auto-created test task #${testTaskId} for PR #${pr.number} merge (assigned to ${config.name} at ${config.startLevel})`);
+        // insertItem is a single INSERT; the DB trigger assigns the id and
+        // returns it, so testTaskId is real rather than an optimistic guess.
+        const created = await insertItem(testTask);
+        const testTaskId = created.id;
 
         await logAudit({
           actor: "github-webhook",

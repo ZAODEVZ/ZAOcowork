@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { getSession } from "@/lib/auth";
-import { getActions, ageDays, type ActionItem } from "@/lib/data";
+import { listItems, ageDays, type ActionItem } from "@/lib/data";
 import { isAssignedTo } from "@/lib/types";
 import { listTeamMembers, type TeamMember } from "@/lib/team";
 import { matchMentions } from "@/lib/mentions";
@@ -108,7 +108,8 @@ export async function GET(req: NextRequest) {
     if (wantSend) return Response.json({ ok: false, error: "send requires Bearer DIGEST_CRON_TOKEN" }, { status: 401 });
   }
 
-  const [doc, members] = await Promise.all([getActions(), listTeamMembers()]);
+  // buildFor drops DONE and archived anyway, so openOnly is the same set.
+  const [items, members] = await Promise.all([listItems({ openOnly: true }), listTeamMembers()]);
   const active = members.filter((m) => m.active);
 
   // Session preview: just your own digest. Cron: everyone.
@@ -116,7 +117,7 @@ export async function GET(req: NextRequest) {
     ? active
     : active.filter((m) => (m.legacy_owner ?? m.name).toLowerCase() === sessionUser);
 
-  const digests = targets.map((m) => buildFor(m, doc.items)).filter((d) => !isEmpty(d));
+  const digests = targets.map((m) => buildFor(m, items)).filter((d) => !isEmpty(d));
 
   if (!wantSend) {
     return Response.json({ ok: true, digests });

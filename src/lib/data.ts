@@ -749,6 +749,31 @@ export async function listItems(opts: { openOnly?: boolean } = {}): Promise<Acti
  * isEvent/eventAt live in the metadata jsonb, so the filter is applied after
  * normalisation; the win here is dropping DONE + archived rows in SQL first.
  */
+/**
+ * id + title only, for pickers and autocomplete.
+ *
+ * /api/tasks-min was calling getActions() - 25 columns plus the metadata jsonb
+ * plus comments and activity, cloned twice - and then throwing all of it away
+ * except two fields. This selects the two fields.
+ */
+export async function listTaskStubs(): Promise<Array<{ id: string; title: string }>> {
+  const PAGE = 1000;
+  const out: Array<{ id: string; title: string }> = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await db()
+      .from("tasks")
+      .select("id, legacy_id, title")
+      .is("archived_at", null)
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) throw new Error(`task stubs read failed: ${error.message}`);
+    const batch = (data ?? []) as Array<{ id: string; legacy_id: string | null; title: string }>;
+    out.push(...batch.map((r) => ({ id: r.id || r.legacy_id || "", title: r.title })));
+    if (batch.length < PAGE) break;
+  }
+  return out;
+}
+
 export async function listEventItems(): Promise<ActionItem[]> {
   const items = await listItems();
   return items.filter((it) => it.isEvent && it.eventAt);
@@ -764,6 +789,161 @@ export async function listEventItems(): Promise<ActionItem[]> {
  * Chunked because PostgREST puts the `in` list in the URL and a few hundred
  * uuids will blow the URL length limit.
  */
+/**
+ * Filtered board read with the filters pushed into SQL.
+ *
+ * Written for /api/v1/items, which the bot fleet polls. That route used to
+ * pull all 1314 rows through getActions() and filter in JS on every single
+ * poll, so a bot asking "what is BLOCKED" paid for the entire board.
+ *
+ * WHAT CAN AND CANNOT BE PUSHED DOWN
+ *   status, q (title/notes) and archived  -> real columns, pushed to Postgres.
+ *   assignee                              -> lives in the metadata jsonb, so
+ *                                            it stays a JS filter.
+ *
+ * That split is why `limit` is only applied in SQL when the caller says no
+ * post-filtering follows (`exact: true`). Applying LIMIT before a JS filter
+ * would silently return fewer rows than asked for - the classic
+ * limit-then-filter bug - so the caller has to opt in.
+ */
+/**
+ * Make a user-supplied string safe to embed in a PostgREST filter.
+ *
+ * PostgREST parses or() as a comma/paren-delimited list and treats % and *
+ * as ilike wildcards, so raw user input can change the SHAPE of the filter
+ * rather than just the value being matched - a search for "a,status.eq.done"
+ * would otherwise graft an extra condition onto the query.
+ *
+ * Returns "" when nothing usable is left; callers must skip the filter
+ * rather than run it empty (an empty ilike matches everything).
+ */
+export function sanitizeFilterTerm(raw: string): string {
+  return raw.replace(/[,()%*\\]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export async function queryItems(opts: {
+  status?: string;
+  q?: string;
+  limit?: number;
+  exact?: boolean;
+  excludeTriage?: boolean;
+} = {}): Promise<ActionItem[]> {
+  const team = await teamMaps();
+  const dbStatus = opts.status ? STATUS_TO_DB[opts.status as ActionStatus] : undefined;
+  // An unknown status can match nothing - say so rather than silently
+  // dropping the filter and returning the whole board.
+  if (opts.status && !dbStatus) return [];
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST builder types do not survive being threaded through a helper
+  const applyFilters = (qb: any): any => {
+    let q = qb.is("archived_at", null);
+    if (dbStatus) q = q.eq("status", dbStatus);
+    else if (opts.excludeTriage) q = q.neq("status", "triage");
+    if (opts.q) {
+      const safe = sanitizeFilterTerm(opts.q);
+      if (safe) q = q.or(`title.ilike.%${safe}%,notes.ilike.%${safe}%`);
+    }
+    return q;
+  };
+
+  const rows: TaskRow[] = [];
+  const sqlLimit = opts.exact && opts.limit ? opts.limit : undefined;
+  const PAGE = 1000;
+  for (let offset = 0; ; offset += PAGE) {
+    const take = sqlLimit ? Math.min(PAGE, sqlLimit - rows.length) : PAGE;
+    if (take <= 0) break;
+    const base = applyFilters(db().from("tasks").select(TASK_COLUMNS));
+    const { data, error } = await base
+      .order("id", { ascending: true })
+      .range(offset, offset + take - 1);
+    if (error) throw new Error(`tasks query failed: ${error.message}`);
+    const batch = (data ?? []) as unknown as TaskRow[];
+    rows.push(...batch);
+    if (batch.length < take) break;
+    if (sqlLimit && rows.length >= sqlLimit) break;
+  }
+  return rows.map((r) => normalizeItem(rowToItem(r, team))).sort((a, b) => compareIds(a.id, b.id));
+}
+
+/**
+ * Command-palette search, pushed into SQL.
+ *
+ * The route used to read all 1314 rows and scan them in JS on every query.
+ * It matches on five things - id, title, owner, category, notes - and a
+ * pushdown that only covered title+notes would silently stop finding tasks
+ * by owner or category, so all five are covered here.
+ *
+ * Owner needs a second query rather than an extra or() clause: owner is
+ * owner_id (a uuid FK), so matching it means resolving names to ids first,
+ * and an `in.(uuid,uuid)` list nested inside PostgREST's comma-delimited
+ * or() is ambiguous to parse. Two queries and a merge is unambiguous, and
+ * it is still two indexed reads instead of a full-table scan.
+ *
+ * Ranking stays in the caller - it only orders rows that already matched.
+ */
+export async function searchItems(rawQuery: string, limit = 200): Promise<ActionItem[]> {
+  const q = rawQuery.trim();
+  if (!q) return [];
+  const team = await teamMaps();
+  const safe = sanitizeFilterTerm(q);
+  if (!safe) return [];
+
+  const byId = new Map<string, TaskRow>();
+  const collect = (rows: TaskRow[]) => {
+    for (const r of rows) byId.set(r.id, r);
+  };
+
+  const { data: textRows, error: textErr } = await db()
+    .from("tasks")
+    .select(TASK_COLUMNS)
+    .is("archived_at", null)
+    .or(
+      `title.ilike.%${safe}%,notes.ilike.%${safe}%,` +
+        `category.ilike.%${safe}%,legacy_id.ilike.%${safe}%`,
+    )
+    .limit(limit);
+  if (textErr) throw new Error(`task search failed: ${textErr.message}`);
+  collect((textRows ?? []) as unknown as TaskRow[]);
+
+  const ownerIds: string[] = [];
+  const needle = safe.toLowerCase();
+  for (const [owner, id] of team.ownerToId) {
+    if (owner.includes(needle)) ownerIds.push(id);
+  }
+  if (ownerIds.length) {
+    const { data: ownerRows, error: ownerErr } = await db()
+      .from("tasks")
+      .select(TASK_COLUMNS)
+      .is("archived_at", null)
+      .in("owner_id", ownerIds)
+      .limit(limit);
+    if (ownerErr) throw new Error(`task search failed (owner): ${ownerErr.message}`);
+    collect((ownerRows ?? []) as unknown as TaskRow[]);
+  }
+
+  return [...byId.values()]
+    .map((r) => normalizeItem(rowToItem(r, team)))
+    .sort((a, b) => compareIds(a.id, b.id));
+}
+
+/**
+ * Does a task already exist with this legacy_source?
+ *
+ * legacy_source is a real column, so this is a bounded lookup. The GitHub
+ * webhook used it for idempotency by scanning every task in memory, which
+ * meant a full-table read on every PR event just to answer yes/no.
+ */
+export async function itemExistsByLegacySource(legacySource: string): Promise<boolean> {
+  if (!legacySource) return false;
+  const { data, error } = await db()
+    .from("tasks")
+    .select("id")
+    .eq("legacy_source", legacySource)
+    .limit(1);
+  if (error) throw new Error(`legacy_source lookup failed: ${error.message}`);
+  return (data ?? []).length > 0;
+}
+
 export async function listItemsByIds(ids: string[]): Promise<ActionItem[]> {
   const clean = [...new Set(ids.map((i) => String(i).trim()).filter(Boolean))];
   if (clean.length === 0) return [];

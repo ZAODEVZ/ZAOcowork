@@ -140,15 +140,3 @@ export function buildTestTaskLegacySource(repoName: string, prNumber: number): s
   return `test:pr-${repoName}-${prNumber}`;
 }
 
-/**
- * Check if a task has already been created for this PR merge.
- * Tasks are tagged with legacySource="test:pr-<repo>-<num>".
- */
-export function isTestTaskAlreadyCreated(
-  allTasks: Array<{ legacySource?: string }>,
-  repoName: string,
-  prNumber: number,
-): boolean {
-  const legacySource = buildTestTaskLegacySource(repoName, prNumber);
-  return allTasks.some((t) => t.legacySource === legacySource);
-}

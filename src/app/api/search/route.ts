@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { searchItems } from "@/lib/data";
 
 // Auth-gated task search for the command palette. Server-side filtering so we
 // never dump the whole board; returns up to 30 ranked matches.
@@ -17,7 +17,8 @@ export async function GET(req: NextRequest) {
   const q = (new URL(req.url).searchParams.get("q") ?? "").trim().toLowerCase();
   if (!q) return Response.json({ results: [] });
 
-  const doc = await getActions();
+  // Matching happens in Postgres; the loop below only ranks what came back.
+  const matches = await searchItems(q);
   type Hit = {
     id: string;
     title: string;
@@ -28,8 +29,7 @@ export async function GET(req: NextRequest) {
   };
   const hits: Hit[] = [];
 
-  for (const it of doc.items) {
-    if (it.archivedAt) continue;
+  for (const it of matches) {
     const id = String(it.id).toLowerCase();
     const title = it.title.toLowerCase();
     const owner = String(it.owner).toLowerCase();

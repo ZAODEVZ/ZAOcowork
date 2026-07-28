@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import type { ActionItem } from "@/lib/types";
 import { requireSession } from "@/lib/auth";
 
@@ -124,11 +124,10 @@ export async function GET() {
   }
 
   try {
-    const doc = await getActions();
-    const items = doc.items;
+    // openOnly drops DONE and archived in SQL; only TRIAGE is left to filter.
+    const items = await listItems({ openOnly: true });
 
-    // Exclude archived and done/cancelled items
-    const active = items.filter((x) => !x.archivedAt && x.status !== "DONE" && x.status !== "TRIAGE");
+    const active = items.filter((x) => x.status !== "TRIAGE");
     const open = active.filter((x) => x.status !== "DONE");
 
     // Count by status

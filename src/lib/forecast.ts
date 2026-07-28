@@ -11,7 +11,7 @@
 // No story points needed. No estimation ceremony. Just counts of what
 // actually shipped.
 
-import { getActions, type ActionItem } from "@/lib/data";
+import { listItems, type ActionItem } from "@/lib/data";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const HISTORY_WEEKS = 12;
@@ -107,8 +107,8 @@ function bucketDistribution(sorted: number[]): { weeks: number; count: number }[
 }
 
 export async function computeForecast(brand: string | null = null): Promise<ForecastResult> {
-  const doc = await getActions();
-  const items = doc.items.filter((it) => !it.archivedAt);
+  // listItems excludes archived in SQL - same set, without the full read.
+  const items = await listItems();
 
   const history = buildHistory(items, brand);
   const sortedHist = [...history].sort((a, b) => a - b);

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getActions } from "@/lib/data";
+import { listEventItems } from "@/lib/data";
 import { requireSession } from "@/lib/auth";
 import type { ActionItem } from "@/lib/data";
 
@@ -13,12 +13,12 @@ export async function GET() {
   }
 
   try {
-    const doc = await getActions();
+    // listEventItems drops archived + non-event rows before they reach JS.
+    const eventItems = await listEventItems();
 
     // Filter to events (tasks with isEvent=true) and sort by eventAt ascending
-    const events = doc.items
-      .filter((item): item is ActionItem => Boolean(item.isEvent && item.eventAt))
-      .sort((a, b) => {
+    const events = eventItems
+      .sort((a: ActionItem, b: ActionItem) => {
         const aTime = new Date(a.eventAt || "").getTime();
         const bTime = new Date(b.eventAt || "").getTime();
         return aTime - bTime;

@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireSession } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { listItemsByIds } from "@/lib/data";
 import { listBrands } from "@/lib/brands-db";
 import { createProposal } from "@/lib/proposals";
 
@@ -29,16 +29,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "taskId required" }, { status: 400 });
   }
 
-  let doc;
+  let picked;
   let brands;
   try {
-    [doc, brands] = await Promise.all([getActions(), listBrands()]);
+    [picked, brands] = await Promise.all([listItemsByIds([taskId]), listBrands()]);
   } catch (err) {
     console.error("Failed to load actions or brands:", err);
     return NextResponse.json({ ok: false, error: "Failed to load data" }, { status: 500 });
   }
 
-  const task = doc.items.find((it) => it.id === taskId);
+  // One task by id. This read used to pull the whole board to find it.
+  const task = picked[0];
   if (!task) {
     return NextResponse.json({ ok: false, error: `task #${taskId} not found` }, { status: 404 });
   }
