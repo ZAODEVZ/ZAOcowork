@@ -395,7 +395,13 @@ export function Board({
   const [showInsights, setShowInsights] = useState(false);
   // Grouping axis for the Table view (research roadmap A): switchable grouping
   // is the standard way to re-slice the same items by owner/priority/brand.
-  const [groupBy, setGroupBy] = useState<GroupKey>("none");
+  // Default to BRAND grouping. A flat 309-row list is not readable; grouped by
+  // brand it is ~13 sections you can scan. A saved preference still wins, so
+  // anyone who deliberately chose "none" keeps it.
+  const [groupBy, setGroupBy] = useState<GroupKey>("brand");
+  // Collapsed group keys. Sections start expanded; collapsing is per-user and
+  // persisted so the board opens the way you left it.
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   useEffect(() => {
     try {
       const v = window.localStorage.getItem("zao-board-view");
@@ -422,6 +428,31 @@ export function Board({
       /* ignore */
     }
   }, [groupBy]);
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("zao-board-collapsed");
+      if (raw) setCollapsedGroups(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        "zao-board-collapsed",
+        JSON.stringify([...collapsedGroups]),
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [collapsedGroups]);
+  const toggleGroup = (key: string) =>
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   // Phase H: TaskRoom can be opened via the ?task=<id> URL param so a
   // /todo/N permalink lands the user directly on the task. We sync both
   // ways - state -> URL (history.replaceState so back button works) and
@@ -839,7 +870,13 @@ export function Board({
       )}
 
       {density === "power" && view === "table" && (
-        <TableView items={filtered} onOpenRoom={setTaskRoomId} groupBy={groupBy} />
+        <TableView
+          items={filtered}
+          onOpenRoom={setTaskRoomId}
+          groupBy={groupBy}
+          collapsedGroups={collapsedGroups}
+          onToggleGroup={toggleGroup}
+        />
       )}
 
       {/* Mobile: status tabs + single column */}
@@ -1567,10 +1604,14 @@ function TableView({
   items,
   onOpenRoom,
   groupBy,
+  collapsedGroups,
+  onToggleGroup,
 }: {
   items: ActionItem[];
   onOpenRoom: (id: string) => void;
   groupBy: GroupKey;
+  collapsedGroups: Set<string>;
+  onToggleGroup: (key: string) => void;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [dir, setDir] = useState<"asc" | "desc">("asc");
@@ -1629,7 +1670,7 @@ function TableView({
 
   // Group the (already sorted) rows. Order group headers sensibly per axis.
   const groups = useMemo(() => {
-    if (groupBy === "none") return [{ key: "", label: "", rows: sorted }];
+    if (groupBy === "none") return [{ key: "", label: "", rows: sorted, overdue: 0 }];
     const map = new Map<string, ActionItem[]>();
     for (const it of sorted) {
       let keys: string[];
@@ -1646,11 +1687,17 @@ function TableView({
     let keys = Array.from(map.keys());
     if (groupBy === "status") keys.sort((a, b) => (statusRank[a] ?? 9) - (statusRank[b] ?? 9));
     else keys = keys.sort((a, b) => a.localeCompare(b));
-    return keys.map((k) => ({
-      key: k,
-      label: groupBy === "status" ? STATUS_LABEL[k as ActionStatus] ?? k : k,
-      rows: map.get(k)!,
-    }));
+    return keys.map((k) => {
+      const rows = map.get(k)!;
+      return {
+        key: k,
+        label: groupBy === "status" ? STATUS_LABEL[k as ActionStatus] ?? k : k,
+        rows,
+        // Surfaced on the group header so a collapsed section still tells you
+        // whether anything inside it is late.
+        overdue: rows.filter((r) => dueUrgency(r.due, r.status) === "overdue").length,
+      };
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sorted, groupBy]);
 
@@ -1682,12 +1729,28 @@ function TableView({
             <Fragment key={g.key || "all"}>
               {groupBy !== "none" && (
                 <tr className="bg-white/[0.04]">
-                  <td colSpan={colCount} className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/60">
-                    {g.label} <span className="text-white/35">· {g.rows.length}</span>
+                  <td colSpan={colCount} className="px-0 py-0">
+                    <button
+                      type="button"
+                      onClick={() => onToggleGroup(g.key)}
+                      aria-expanded={!collapsedGroups.has(g.key)}
+                      className="w-full text-left px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-white/60 hover:bg-white/[0.03] flex items-center gap-2"
+                    >
+                      <span className="text-white/40 w-3 inline-block">
+                        {collapsedGroups.has(g.key) ? "+" : "-"}
+                      </span>
+                      {g.label}
+                      <span className="text-white/35">· {g.rows.length}</span>
+                      {g.overdue > 0 && (
+                        <span className="text-red-300/70 normal-case tracking-normal">
+                          {g.overdue} overdue
+                        </span>
+                      )}
+                    </button>
                   </td>
                 </tr>
               )}
-              {g.rows.map((it) => {
+              {(groupBy === "none" || !collapsedGroups.has(g.key)) && g.rows.map((it) => {
                 const age = ageDays(it.createdAt);
                 const ownerStr = String(it.owner);
                 const isOpen = it.claimable || ownerStr.toLowerCase() === "open";
