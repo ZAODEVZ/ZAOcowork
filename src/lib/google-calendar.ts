@@ -29,7 +29,12 @@ function loadServiceAccount(): ServiceAccount | null {
     const parsed = JSON.parse(raw) as ServiceAccount;
     if (!parsed.client_email || !parsed.private_key) return null;
     return parsed;
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[google-calendar] swallowed:`, err instanceof Error ? err.message : err);
     return null;
   }
 }

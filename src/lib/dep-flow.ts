@@ -75,7 +75,12 @@ export async function recomputeBlockedState(
           changed.push(id);
         }
       }
-    } catch {
+    } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[dep-flow] swallowed:`, err instanceof Error ? err.message : err);
       // Silently continue on per-task error
     }
   }

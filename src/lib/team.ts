@@ -138,7 +138,12 @@ export async function getRoleByLegacyOwner(legacyOwner: string): Promise<TeamRol
     if (error) return null;
     const role = (data as { role: TeamRole | null } | null)?.role;
     return role ?? null;
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[team] swallowed:`, err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -164,7 +169,12 @@ export function verifyPasswordHash(password: string, stored: string): boolean {
   try {
     salt = Buffer.from(saltHex, "hex");
     expected = Buffer.from(hashHex, "hex");
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[team] swallowed:`, err instanceof Error ? err.message : err);
     return false;
   }
   const actual = scryptSync(password, salt, expected.length, { N: SCRYPT_N });

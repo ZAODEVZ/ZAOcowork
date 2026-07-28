@@ -66,7 +66,12 @@ export async function logAudit(input: LogInput): Promise<void> {
         detail: input.detail ?? null,
         metadata: input.metadata ?? null,
       });
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[audit] swallowed:`, err instanceof Error ? err.message : err);
     // ignore - best-effort logging
   }
 }
@@ -106,7 +111,12 @@ export async function listAuditLogs(opts: ListOptions = {}): Promise<{
       total: count ?? null,
       available: true,
     };
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[audit] swallowed:`, err instanceof Error ? err.message : err);
     return { rows: [], total: null, available: false };
   }
 }
@@ -123,7 +133,12 @@ export async function listAuditActors(): Promise<string[]> {
       if (row.actor) seen.add(row.actor);
     }
     return Array.from(seen);
-  } catch {
+  } catch (err) {
+    // Was a bare `catch {}`. Behaviour is unchanged - this still degrades
+    // gracefully - but the failure is no longer invisible. Two outages this
+    // week (the auto-close cron, the Cloudinary key) survived for weeks
+    // precisely because the failure path was silent.
+    console.warn(`[audit] swallowed:`, err instanceof Error ? err.message : err);
     return [];
   }
 }
