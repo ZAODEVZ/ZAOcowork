@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
-import { getActions, ageDays } from "@/lib/data";
+import { getBoardCounts } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { SettingsPanel } from "@/components/SettingsPanel";
@@ -73,11 +73,16 @@ const FEATURES: Feature[] = [
 export default async function SettingsPage() {
   const user = await getSession();
   if (!user) redirect("/login");
-  const [doc, navBrands] = await Promise.all([getActions(), listActiveBrands()]);
-
-  const open = doc.items.filter((x) => x.status !== "DONE").length;
-  const blocked = doc.items.filter((x) => x.status === "BLOCKED").length;
-  const aging = doc.items.filter((x) => x.status !== "DONE" && ageDays(x.createdAt) > 14).length;
+  // Three SQL COUNTs instead of reading all 1314 tasks to length-filter them
+  // three times. This also makes the number CORRECT: the old count included
+  // archived rows, so this header read 304 open while the board header (which
+  // already used getBoardCounts) read 301. Measured 2026-07-28: 3 archived
+  // rows are not DONE, so open 304->301 and aging 128->125. blocked is
+  // unchanged at 4.
+  const [{ open, blocked, aging }, navBrands] = await Promise.all([
+    getBoardCounts(),
+    listActiveBrands(),
+  ]);
   const userLabelStr = userLabel(user);
   const admin = await isAdmin(user);
 

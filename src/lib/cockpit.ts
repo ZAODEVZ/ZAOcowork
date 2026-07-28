@@ -1,5 +1,6 @@
 import type { ActionItem } from "./types";
 import { ageDays, isStale, isAssignedTo } from "./types";
+import { priorityRank } from "./priority";
 
 /**
  * Cockpit brief computation functions - pure data transformations
@@ -17,18 +18,18 @@ export function computeDoFirst(
   const limit = options.limit ?? 3;
   const active = items.filter((x) => !x.archivedAt && x.status !== "DONE" && x.status !== "TRIAGE");
 
+  // Due date first, then the shared priority axis. The inline
+  // {P1:0,P2:1,P3:2} ladder that used to live here was one of three
+  // hand-rolled copies that had drifted apart - see lib/priority.ts.
   return active
     .sort((a, b) => {
-      // Sort by due date first (soonest first; no due at end)
       if (a.due && !b.due) return -1;
       if (!a.due && b.due) return 1;
       if (a.due && b.due) {
         const cmp = a.due.localeCompare(b.due);
         if (cmp !== 0) return cmp;
       }
-      // Then by priority (P1 > P2 > P3)
-      const priorityOrder = { P1: 0, P2: 1, P3: 2 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
+      return priorityRank(a.priority) - priorityRank(b.priority);
     })
     .slice(0, limit);
 }

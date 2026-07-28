@@ -5,7 +5,8 @@
 // and HTML. Cache-friendly - the route call should be cheap enough to
 // run on a cron timer without rate-limit concerns.
 
-import { getActions, ageDays, type ActionItem } from "@/lib/data";
+import { listItems, ageDays, type ActionItem } from "@/lib/data";
+import { priorityRank } from "@/lib/priority";
 import { listAuditLogs } from "@/lib/audit";
 
 export interface DigestStuckItem {
@@ -63,12 +64,10 @@ export async function buildWeeklyDigest(): Promise<Digest> {
   const weekStartMs = now.getTime() - 7 * DAY_MS;
   const prevWeekStartMs = weekStartMs - 7 * DAY_MS;
 
-  const [doc, recentAudit] = await Promise.all([
-    getActions(),
+  const [items, recentAudit] = await Promise.all([
+    listItems(),
     listAuditLogs({ limit: 1000 }).catch(() => ({ rows: [], total: null, available: false })),
   ]);
-
-  const items = doc.items.filter((it) => !it.archivedAt);
 
   // Shipped this week + last week
   const shippedThis: ActionItem[] = [];
@@ -157,7 +156,7 @@ export async function buildWeeklyDigest(): Promise<Digest> {
       status: it.status,
       ageDays: ageDays(it.createdAt),
       staleDays: staleDays(it),
-      priorityRank: it.priority === "P1" ? 0 : it.priority === "P2" ? 1 : 2,
+      priorityRank: priorityRank(it.priority),
     }))
     .sort((a, b) => {
       if (a.priorityRank !== b.priorityRank) return a.priorityRank - b.priorityRank;

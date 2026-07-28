@@ -3,209 +3,49 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { destroySession, requireSession, requireAdmin, isAdmin, isLead, userLabel } from "@/lib/auth";
+import {
+  asStatus,
+  asPriority,
+  asPhase,
+  smartDefaultPhase,
+  asCategory,
+  asBool,
+  asTaskType,
+  asServiceClass,
+  safeHttpUrl,
+  displayName,
+  makeActivity,
+  readForm,
+  ownerFromAssignees,
+  idsFromForm,
+  appendActivity,
+} from "@/lib/task-form";
 import { serviceClient } from "@/lib/supabase-server";
 import { logAudit } from "@/lib/audit";
 import { onTaskClosed, recomputeBlockedState } from "@/lib/dep-flow";
 import { addDependency, removeDependency } from "@/lib/dependencies";
 import {
-  getActions,
   saveItems,
+  STATUSES,
+  TASK_TYPES,
+  type TaskType,
+  type Priority,
+  type ActionStatus,
+  normalizeItem,
+  newId,
   listItemsByIds,
-  saveActions,
+  deleteItemsByIds,
+  listUnownedItems,
+  sweepAutoArchive,
   getItem,
   saveItem,
-  newId,
   insertItem,
-  normalizeItem,
   type ActionItem,
-  type ActionStatus,
-  type Priority,
   type Phase,
-  type TaskType,
   type Comment,
   type TaskUpdate,
-  type ActivityEvent,
   type ReviewStatus,
-  STATUSES,
-  PRIORITIES,
-  PHASES,
-  CATEGORIES,
-  TASK_TYPES,
-  SERVICE_CLASSES,
-  type ServiceClass,
 } from "@/lib/data";
-
-function asStatus(v: unknown): ActionStatus {
-  return STATUSES.includes(v as ActionStatus) ? (v as ActionStatus) : "TODO";
-}
-function asPriority(v: unknown): Priority {
-  return PRIORITIES.includes(v as Priority) ? (v as Priority) : "P2";
-}
-function asPhase(v: unknown): Phase {
-  return PHASES.includes(v as Phase) ? (v as Phase) : "Define";
-}
-
-// Smart DMAIC default based on context
-function smartDefaultPhase(priority: Priority, due: string, status: ActionStatus): Phase {
-  if (status === "DONE") return "Control"; // Done = control
-  if (due && new Date(due).getTime() < Date.now()) return "Improve"; // Overdue = improve/fix
-  if (due && new Date(due).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000) return "Measure"; // Due soon = measure progress
-  if (priority === "P1") return "Improve"; // High priority = improve
-  return "Define"; // Default = define
-}
-function asCategory(v: unknown): string {
-  const s = String(v ?? "Other").trim();
-  return CATEGORIES.includes(s as (typeof CATEGORIES)[number]) ? s : "Other";
-}
-function asBool(v: unknown): boolean {
-  if (typeof v === "boolean") return v;
-  const s = String(v ?? "").trim().toLowerCase();
-  return s === "1" || s === "true" || s === "on" || s === "yes";
-}
-function asTaskType(v: unknown): TaskType | undefined {
-  return TASK_TYPES.includes(v as TaskType) ? (v as TaskType) : undefined;
-}
-function asServiceClass(v: unknown): ServiceClass {
-  return SERVICE_CLASSES.includes(v as ServiceClass) ? (v as ServiceClass) : "Standard";
-}
-// User-provided link fields (videoUrl) are rendered as <a href>. Only accept
-// https URLs so a javascript:/data: scheme can't be stored and executed on
-// click (security audit). Empty/invalid -> null.
-function safeHttpUrl(v: unknown): string | null {
-  const s = String(v ?? "").trim();
-  if (!s) return null;
-  try {
-    return new URL(s).protocol === "https:" ? s : null;
-  } catch {
-    return null;
-  }
-}
-
-function displayName(user: string): string {
-  return user.charAt(0).toUpperCase() + user.slice(1);
-}
-
-function makeActivity(
-  user: string,
-  action: string,
-  detail?: string,
-  at?: string,
-): ActivityEvent {
-  return {
-    id: `a-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    userId: user,
-    displayName: displayName(user),
-    action,
-    detail,
-    createdAt: at || new Date().toISOString(),
-  };
-}
-
-function readForm(form: FormData, id: string, actor: string, prev?: ActionItem): ActionItem {
-  const now = new Date().toISOString();
-  const taskTypeRaw = form.get("taskType");
-  const hasApprovalField = form.get("_hasRequiresApproval") === "1";
-  const ownerVal = String(form.get("owner") ?? prev?.owner ?? "Open").trim();
-  // Brands come from the QuickAdd NL parser (web) or hashtag parsing (bot).
-  // Multiple `brands` FormData entries -> array. Unknown brand strings are
-  // tolerated here; canonicalization happens in normalizeItem/data.ts.
-  const brandEntries = form.getAll("brands").map((v) => String(v).trim()).filter(Boolean);
-  const brands = brandEntries.length > 0 ? brandEntries : prev?.brands ?? [];
-
-  // Prepare values for smart defaulting
-  const status = asStatus(form.get("status") ?? prev?.status);
-  const priority = asPriority(form.get("priority") ?? prev?.priority);
-  const due = String(form.get("due") ?? prev?.due ?? "").trim();
-
-  // Smart DMAIC default: if phase not explicitly provided, infer from context
-  const phaseExplicit = form.get("phase");
-  const phase = phaseExplicit
-    ? asPhase(phaseExplicit)
-    : prev?.phase ? prev.phase
-    : smartDefaultPhase(priority, due, status);
-
-  const next = normalizeItem({
-    id,
-    // Carry the Supabase UUID through so applyDiff() targets the existing row
-    // for an UPDATE. Without it the item looks new and applyDiff attempts an
-    // INSERT, which trips the UNIQUE(legacy_source, legacy_id) constraint and
-    // 500s every full "Save Changes" (owner/title/status) from the task panel.
-    dbId: prev?.dbId,
-    title: String(form.get("title") ?? prev?.title ?? "").trim(),
-    createdBy: prev?.createdBy || actor,
-    owner: ownerVal,
-    status,
-    category: asCategory(form.get("category") ?? prev?.category),
-    priority,
-    important: asBool(form.get("important") ?? prev?.important),
-    urgent: asBool(form.get("urgent") ?? prev?.urgent),
-    phase,
-    due,
-    notes: String(form.get("notes") ?? prev?.notes ?? "").trim(),
-    brands,
-    createdAt: prev?.createdAt || now,
-    updatedAt: now,
-    completedAt: prev?.completedAt || "",
-    completedBy: prev?.completedBy || "",
-    // Operational fields
-    taskType: asTaskType(taskTypeRaw) ?? prev?.taskType,
-    requiresApproval: hasApprovalField
-      ? asBool(form.get("requiresApproval"))
-      : prev?.requiresApproval,
-    assignedTo: String(form.get("assignedTo") ?? prev?.assignedTo ?? "").trim() || undefined,
-    // Preserve operational data unchanged
-    comments: prev?.comments,
-    updates: prev?.updates,
-    activity: prev?.activity,
-    // Auto-claimable: Open owner means anyone can claim it
-    claimable: ownerVal === "Open",
-    // Doc 763 F2: service class (Standard/FixedDate/Expedite/Intangible)
-    serviceClass:
-      form.get("serviceClass") != null
-        ? asServiceClass(form.get("serviceClass"))
-        : prev?.serviceClass ?? "Standard",
-    // Doc 763 F4: archive flag survives edits
-    archivedAt: prev?.archivedAt ?? null,
-    // Doc 763 F3: PR linkage carried through
-    prUrl: prev?.prUrl ?? null,
-    prNumber: prev?.prNumber ?? null,
-    prState: prev?.prState ?? null,
-    // Doc 764 F5: video walkthrough URL (Loom / YouTube / Vimeo)
-    videoUrl: (form.get("videoUrl") != null
-      ? safeHttpUrl(form.get("videoUrl"))
-      : prev?.videoUrl ?? null),
-    // Doc 765 Phase I: project layer
-    projectId: (form.get("projectId") != null
-      ? String(form.get("projectId") ?? "").trim() || null
-      : prev?.projectId ?? null),
-    // Doc 765 decision 2: source taxonomy. New rows from web are
-    // human-web; if a writer (bot / meeting / research) set it explicitly
-    // they pass via form, else inherit prev. Default "human-web" since
-    // readForm is called from server actions invoked by the web UI.
-    source: ((form.get("source") as string) ?? prev?.source ?? "human-web") as ActionItem["source"],
-    // Event fields: tasks that are flagged as events with a scheduled date/time
-    isEvent: form.get("isEvent") === "true" || form.get("isEvent") === "1" || (taskTypeRaw === "event") || prev?.isEvent,
-    eventAt: (form.get("eventAt") != null
-      ? String(form.get("eventAt") ?? "").trim() || null
-      : prev?.eventAt ?? null),
-    eventLocation: (form.get("eventLocation") != null
-      ? String(form.get("eventLocation") ?? "").trim() || null
-      : prev?.eventLocation ?? null),
-    eventUrl: (form.get("eventUrl") != null
-      ? safeHttpUrl(form.get("eventUrl"))
-      : prev?.eventUrl ?? null),
-  });
-  if (prev) {
-    if (prev.status !== "DONE" && next.status === "DONE") {
-      next.completedAt = now;
-      next.completedBy = actor;
-    } else if (next.status !== "DONE") {
-      next.completedAt = "";
-      next.completedBy = "";
-    }
-  }
-  return next;
-}
 
 function revalidateAll() {
   revalidatePath("/");
@@ -245,9 +85,8 @@ export async function quickCreate(
   await insertItem(item);
   revalidateAll();
   // Return the new task's identity so the UI can show an obvious "created #N
-  // in <column>" confirmation with a jump-to link. Read item.id (not the
-  // optimistic newId) — saveActions/applyDiff overwrites it with the
-  // DB-assigned number.
+  // in <column>" confirmation with a jump-to link. item.id is the DB-assigned
+  // number: insertItem stamps it back onto the item after the INSERT returns.
   return { id: item.id, title, status, category, owner: item.owner };
 }
 
@@ -406,9 +245,7 @@ export async function deleteItem(form: FormData): Promise<void> {
   }
   const id = String(form.get("id") ?? "");
   if (!id) return;
-  const doc = await getActions();
-  doc.items = doc.items.filter((x) => x.id !== id);
-  await saveActions(doc, user, `delete #${id}`);
+  await deleteItemsByIds([id]);
   revalidateAll();
 }
 
@@ -660,17 +497,24 @@ export async function todoProcess(
     return { created: 0, updated: 0 };
   }
 
-  const doc = await getActions();
+  // Read only the tasks these actions name. Two actions can target the same
+  // task (a status change plus a note), so updates are chained through byId
+  // and the write set is keyed by id - otherwise the second action would
+  // overwrite the first instead of building on it.
+  const targetIds = todoActions
+    .map((a) => ("itemId" in a ? a.itemId : ""))
+    .filter(Boolean);
+  const byId = new Map((await listItemsByIds(targetIds)).map((it) => [it.id, it]));
+  const dirtyIds = new Set<string>();
   let created = 0;
   let updated = 0;
   const now = new Date().toISOString();
 
   for (const action of todoActions) {
     if (action.type === "create") {
-      const id = newId(doc.items);
       const ownerVal = action.owner ?? "Open";
       const item = normalizeItem({
-        id,
+        id: "",
         title: action.title,
         createdBy: user,
         owner: ownerVal,
@@ -690,15 +534,14 @@ export async function todoProcess(
       });
       item.activity = [makeActivity(user, "created", "via Todo", now)];
       if (!item.claimable) delete item.claimable;
-      doc.items.push(item);
+      await insertItem(item);
       created++;
     } else if (action.type === "update_status") {
       // Workers can't mark DONE directly — must go through review (mirrors
       // patchField; doc 766 finding #3). Skip the action rather than 500.
       if (!isLead(user) && action.newStatus === "DONE") continue;
-      const idx = doc.items.findIndex((x) => x.id === action.itemId);
-      if (idx >= 0) {
-        const cur = doc.items[idx];
+      const cur = byId.get(action.itemId);
+      if (cur) {
         const prevStatus = cur.status;
         let completedAt = cur.completedAt;
         let completedBy = cur.completedBy;
@@ -709,7 +552,7 @@ export async function todoProcess(
           completedAt = "";
           completedBy = "";
         }
-        doc.items[idx] = {
+        byId.set(action.itemId, {
           ...cur,
           status: action.newStatus,
           completedAt,
@@ -724,15 +567,15 @@ export async function todoProcess(
               now,
             ),
           ],
-        };
+        });
+        dirtyIds.add(action.itemId);
         updated++;
       }
     } else if (action.type === "add_note") {
-      const idx = doc.items.findIndex((x) => x.id === action.itemId);
-      if (idx >= 0) {
-        const cur = doc.items[idx];
+      const cur = byId.get(action.itemId);
+      if (cur) {
         const sep = cur.notes ? "\n\n" : "";
-        doc.items[idx] = {
+        byId.set(action.itemId, {
           ...cur,
           notes: cur.notes + sep + action.note,
           updatedAt: now,
@@ -740,16 +583,20 @@ export async function todoProcess(
             ...(cur.activity || []),
             makeActivity(user, "commented", "Note added via Todo", now),
           ],
-        };
+        });
+        dirtyIds.add(action.itemId);
         updated++;
       }
     }
   }
 
-  if (created > 0 || updated > 0) {
-    await saveActions(doc, user, `todo: +${created} created, ~${updated} updated`);
-    revalidateAll();
+  const dirty = [...dirtyIds]
+    .map((id) => byId.get(id))
+    .filter((it): it is ActionItem => Boolean(it));
+  if (dirty.length > 0) {
+    await saveItems(dirty, user, `todo: +${created} created, ~${updated} updated`);
   }
+  if (created > 0 || updated > 0) revalidateAll();
 
   return { created, updated };
 }
@@ -785,11 +632,6 @@ export async function claimTask(form: FormData): Promise<void> {
 //   0 selected -> "Open", 1 -> that person, 2+ -> "Both" (multi marker).
 // effectiveAssignees() always prefers the explicit list, so matching is exact
 // regardless of the derived owner.
-function ownerFromAssignees(slugs: string[]): string {
-  if (slugs.length === 0) return "Open";
-  if (slugs.length === 1) return userLabel(slugs[0]);
-  return "Both";
-}
 
 export async function setAssignees(form: FormData): Promise<void> {
   const user = await requireSession();
@@ -853,13 +695,12 @@ export async function approveProposal(form: FormData): Promise<void> {
   if (!id) return;
   const prop = await getProposal(id);
   if (!prop || prop.status !== "pending") return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === prop.task_id);
-  if (idx < 0) {
+  // The one task this proposal is about, not the whole board.
+  const cur = await getItem(prop.task_id);
+  if (!cur) {
     await decideProposalRow(id, "rejected", userLabel(user));
     return;
   }
-  const cur = doc.items[idx];
   const now = new Date().toISOString();
   const next: ActionItem = { ...cur, updatedAt: now };
   let detail = "";
@@ -919,8 +760,7 @@ export async function approveProposal(form: FormData): Promise<void> {
     ...(cur.activity ?? []),
     makeActivity(user, `proposal_${prop.action_type}_approved`, `[${prop.source}] ${detail}`, now),
   ];
-  doc.items[idx] = next;
-  await saveActions(doc, user, `approve proposal ${id} -> #${prop.task_id}`);
+  await saveItem(next, user, `approve proposal ${id} -> #${prop.task_id}`);
   await decideProposalRow(id, "approved", userLabel(user));
   await logAudit({
     actor: userLabel(user),
@@ -1010,10 +850,9 @@ export async function triageRoute(form: FormData): Promise<void> {
   const serviceClass = asServiceClass(form.get("serviceClass"));
   const brand = String(form.get("brand") ?? "").trim();
 
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const cur = doc.items[idx];
+  // One task by id. This read the whole board to find one row.
+  const cur = await getItem(id);
+  if (!cur) return;
   if (cur.status !== "TRIAGE") return; // Already routed, no-op.
 
   const now = new Date().toISOString();
@@ -1031,8 +870,7 @@ export async function triageRoute(form: FormData): Promise<void> {
       makeActivity(user, "triage_routed", `to ${owner} / ${priority} / ${serviceClass}${brand ? ` / ${brand}` : ""}`, now),
     ],
   };
-  doc.items[idx] = next;
-  await saveActions(doc, user, `triage route #${id}`);
+  await saveItem(next, user, `triage route #${id}`);
   await logAudit({
     actor: userLabel(user),
     entity_type: "task",
@@ -1053,23 +891,24 @@ export async function triageReject(form: FormData): Promise<void> {
   }
   const id = String(form.get("id") ?? "");
   if (!id) return;
-  const doc = await getActions();
-  const idx = doc.items.findIndex((x) => x.id === id);
-  if (idx < 0) return;
-  const cur = doc.items[idx];
+  const cur = await getItem(id);
+  if (!cur) return;
   if (cur.status !== "TRIAGE") return;
 
   const now = new Date().toISOString();
-  doc.items[idx] = {
-    ...cur,
-    archivedAt: now,
-    updatedAt: now,
-    activity: [
-      ...(cur.activity || []),
-      makeActivity(user, "triage_rejected", undefined, now),
-    ],
-  };
-  await saveActions(doc, user, `triage reject #${id}`);
+  await saveItem(
+    {
+      ...cur,
+      archivedAt: now,
+      updatedAt: now,
+      activity: [
+        ...(cur.activity || []),
+        makeActivity(user, "triage_rejected", undefined, now),
+      ],
+    },
+    user,
+    `triage reject #${id}`,
+  );
   await logAudit({
     actor: userLabel(user),
     entity_type: "task",
@@ -1091,18 +930,7 @@ export async function triageReject(form: FormData): Promise<void> {
 // so for now we just emit a single activity event per touched task with the
 // bulk action label so individual task timelines stay legible.
 
-function idsFromForm(form: FormData): string[] {
-  return form
-    .getAll("ids")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
-}
 
-function appendActivity(item: ActionItem, user: string, action: string, detail?: string): void {
-  const ev = makeActivity(user, action, detail);
-  item.activity = [...(item.activity || []), ev];
-  item.updatedAt = ev.createdAt;
-}
 
 export async function bulkSetStatus(form: FormData): Promise<void> {
   const user = await requireSession();
@@ -1272,12 +1100,8 @@ export async function bulkDelete(form: FormData): Promise<void> {
   const user = await requireAdmin();
   const ids = new Set(idsFromForm(form));
   if (ids.size === 0) return;
-  const doc = await getActions();
-  const before = doc.items.length;
-  doc.items = doc.items.filter((it) => !ids.has(it.id));
-  const removed = before - doc.items.length;
+  const removed = await deleteItemsByIds(Array.from(ids));
   if (removed) {
-    await saveActions(doc, user, `bulk delete ${removed} item${removed === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1304,11 +1128,13 @@ export async function bulkMarkDone(form: FormData): Promise<void> {
   // Workers can mark DONE via the cleanup UI - same approval rules as
   // patchField: their DONE goes to pending review.
   const note = String(form.get("note") ?? "").trim();
-  const doc = await getActions();
+  // Only the selected tasks, not all 1314. saveItems then writes back just
+  // the ones this loop actually changed.
+  const picked = await listItemsByIds(Array.from(ids));
+  const dirty: ActionItem[] = [];
   const now = new Date().toISOString();
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.has(it.id)) continue;
+  for (const it of picked) {
     if (it.status === "DONE") continue;
     if (!isLead(user)) {
       // Worker bulk-done -> add an update entry awaiting review instead of
@@ -1348,14 +1174,15 @@ export async function bulkMarkDone(form: FormData): Promise<void> {
       ];
     }
     it.updatedAt = now;
+    dirty.push(it);
     touched++;
   }
   if (touched > 0) {
-    await saveActions(doc, user, `bulk mark done ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk mark done ${touched} item${touched === 1 ? "" : "s"}`);
     // Unblock dependent tasks for each marked-done item (leads only)
     if (isLead(user)) {
-      for (const it of doc.items) {
-        if (ids.has(it.id) && it.status === "DONE") {
+      for (const it of picked) {
+        if (it.status === "DONE") {
           await onTaskClosed(it.id);
         }
       }
@@ -1378,11 +1205,13 @@ export async function bulkArchive(form: FormData): Promise<void> {
   const ids = new Set(idsFromForm(form));
   if (ids.size === 0) return;
   const note = String(form.get("note") ?? "").trim();
-  const doc = await getActions();
+  // Only the selected tasks, not all 1314. saveItems then writes back just
+  // the ones this loop actually changed.
+  const picked = await listItemsByIds(Array.from(ids));
+  const dirty: ActionItem[] = [];
   const now = new Date().toISOString();
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.has(it.id)) continue;
+  for (const it of picked) {
     if (it.archivedAt) continue;
     it.archivedAt = now;
     it.updatedAt = now;
@@ -1402,10 +1231,11 @@ export async function bulkArchive(form: FormData): Promise<void> {
       ...(it.activity || []),
       makeActivity(user, "bulk_archived", note ? note.slice(0, 80) : undefined, now),
     ];
+    dirty.push(it);
     touched++;
   }
   if (touched > 0) {
-    await saveActions(doc, user, `bulk archive ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk archive ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1425,11 +1255,13 @@ export async function bulkMoveToTriage(form: FormData): Promise<void> {
   const ids = new Set(idsFromForm(form));
   if (ids.size === 0) return;
   const note = String(form.get("note") ?? "").trim();
-  const doc = await getActions();
+  // Only the selected tasks, not all 1314. saveItems then writes back just
+  // the ones this loop actually changed.
+  const picked = await listItemsByIds(Array.from(ids));
+  const dirty: ActionItem[] = [];
   const now = new Date().toISOString();
   let touched = 0;
-  for (const it of doc.items) {
-    if (!ids.has(it.id)) continue;
+  for (const it of picked) {
     if (it.status === "TRIAGE") continue;
     const from = it.status;
     it.status = "TRIAGE";
@@ -1450,10 +1282,11 @@ export async function bulkMoveToTriage(form: FormData): Promise<void> {
       ...(it.activity || []),
       makeActivity(user, "bulk_to_triage", `${from} -> TRIAGE${note ? `: ${note.slice(0, 60)}` : ""}`, now),
     ];
+    dirty.push(it);
     touched++;
   }
   if (touched > 0) {
-    await saveActions(doc, user, `bulk move to triage ${touched} item${touched === 1 ? "" : "s"}`);
+    await saveItems(dirty, user, `bulk move to triage ${touched} item${touched === 1 ? "" : "s"}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1473,18 +1306,20 @@ export async function bulkAssignUnowned(form: FormData): Promise<{ assigned: num
   const user = await requireLeadOrAdmin();
   const owner = String(form.get("owner") ?? "").trim();
   if (!owner) return { assigned: 0 };
-  const doc = await getActions();
+  // owner_id IS NULL in SQL, which is exactly what `owner === "Open"` means
+  // after normalisation - see listUnownedItems. 320 rows instead of 1314.
+  const unowned = await listUnownedItems();
+  const dirty: ActionItem[] = [];
   let touched = 0;
-  for (const it of doc.items) {
-    const current = String(it.owner ?? "").trim();
-    if (current && current !== "Open") continue;
+  for (const it of unowned) {
     it.owner = owner;
     it.claimable = false;
     appendActivity(it, user, "bulk_assign_unowned", `Open -> ${owner}`);
+    dirty.push(it);
     touched++;
   }
   if (touched) {
-    await saveActions(doc, user, `bulk assign ${touched} unowned -> ${owner}`);
+    await saveItems(dirty, user, `bulk assign ${touched} unowned -> ${owner}`);
     revalidateAll();
     await logAudit({
       actor: userLabel(user),
@@ -1544,11 +1379,11 @@ export async function createSubtask(form: FormData): Promise<{ ok: boolean; id?:
   }
 
   try {
-    const doc = await getActions();
-    const id = newId(doc.items);
+    // No board read: insertItem lets the DB trigger assign the id and reads
+    // it back, so the returned id is real rather than an optimistic guess.
     const now = new Date().toISOString();
     const subtask: ActionItem = {
-      id,
+      id: "",
       title,
       status: "TODO",
       priority: "P3",
@@ -1570,10 +1405,9 @@ export async function createSubtask(form: FormData): Promise<{ ok: boolean; id?:
       activity: [makeActivity(user, "created", undefined, now)],
     };
 
-    doc.items.push(subtask);
-    await saveActions(doc, user, `created subtask #${id} under ${parentTaskId}`);
+    const created = await insertItem(subtask);
     revalidateAll();
-    return { ok: true, id };
+    return { ok: true, id: created.id };
   } catch (e) {
     console.error("createSubtask failed:", e);
     return { ok: false, error: "Failed to create subtask" };
@@ -1646,34 +1480,12 @@ export async function unlinkSubtask(form: FormData): Promise<{ ok: boolean; erro
 
 // Auto-archive completed tasks older than daysOld (default 14 days, archive-only, never delete)
 export async function autoArchiveOldDone(daysOld: number = 14): Promise<{ ok: boolean; archived: number; error?: string }> {
-  const user = await requireSession();
+  await requireSession();
 
   try {
-    const doc = await getActions();
-    const items = doc.items;
-    const now = Date.now();
-    const cutoffTime = now - daysOld * 24 * 60 * 60 * 1000;
-
-    let archived = 0;
-    for (const item of items) {
-      // Archive only: DONE items, not already archived, older than cutoff
-      if (
-        item.status === "DONE" &&
-        !item.archivedAt &&
-        item.completedAt &&
-        new Date(item.completedAt).getTime() < cutoffTime
-      ) {
-        item.archivedAt = new Date(now).toISOString();
-        item.updatedAt = new Date(now).toISOString();
-        await saveItem(
-          item,
-          user,
-          `auto-archived completed task (${daysOld}+ days old)`
-        );
-        archived++;
-      }
-    }
-
+    // One UPDATE ... WHERE. This used to read every task, filter in JS, then
+    // issue a separate saveItem write per matching row.
+    const { archived } = await sweepAutoArchive(daysOld);
     revalidateAll();
     return { ok: true, archived };
   } catch (e) {

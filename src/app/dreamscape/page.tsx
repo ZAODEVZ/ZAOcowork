@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import { relativeTime, type ActionItem } from "@/lib/types";
 import { NavBar } from "@/components/NavBar";
 
@@ -76,8 +76,9 @@ export default async function DreamScapePage() {
   const session = await getSession();
   if (!session) redirect("/login?from=/dreamscape");
 
-  const doc = await getActions();
-  const open = (doc.items ?? []).filter((i) => i.status !== "DONE");
+  // openOnly drops DONE and archived in SQL - the same set this filtered
+  // for in JS, minus the archived rows it should never have shown.
+  const open = await listItems({ openOnly: true });
   const brandon = open.filter(isBrandon).sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
   const gated = open.filter(needsZaal).sort((a, b) => (a.due || "z").localeCompare(b.due || "z"));
 

@@ -2,7 +2,9 @@
 //
 // Composite signal answers "what should I work on RIGHT NOW?" without
 // making the user filter the board. Combined ranking per Zaal's call:
-//   - Expedite service class (any owner) -> always tops the list
+//   - Urgent mine -> always tops the list. This was originally the Expedite
+//     service class (any owner), but that field is uniformly "Standard" on
+//     every open task, so the branch never fired. See lib/priority.ts.
 //   - Stale mine (no activity 5+ days, owner = me or "Both" or claimable)
 //   - Overdue mine (due date past, status != DONE)
 //   - P1 priority mine in WIP/BLOCKED (actively trying to ship)
@@ -13,9 +15,10 @@
 
 import type { ActionItem } from "./types";
 import { isStale, ageDays } from "./types";
+import { priorityRank } from "./priority";
 
 export type FocusReason =
-  | "expedite"
+  | "urgent"
   | "stale"
   | "overdue"
   | "p1-wip"
@@ -28,7 +31,7 @@ export interface FocusEntry {
 }
 
 const REASON_LABELS: Record<FocusReason, string> = {
-  expedite: "Expedite",
+  urgent: "Urgent",
   stale: "Stale",
   overdue: "Overdue",
   "p1-wip": "P1 in WIP",
@@ -36,7 +39,7 @@ const REASON_LABELS: Record<FocusReason, string> = {
 };
 
 const REASON_COLORS: Record<FocusReason, string> = {
-  expedite: "bg-red-500/20 text-red-200 border-red-500/40",
+  urgent: "bg-red-500/20 text-red-200 border-red-500/40",
   stale: "bg-amber-500/20 text-amber-200 border-amber-500/40",
   overdue: "bg-orange-500/20 text-orange-200 border-orange-500/40",
   "p1-wip": "bg-rose-500/20 text-rose-200 border-rose-500/40",
@@ -90,12 +93,22 @@ export function computeTopFive(
     const reasons: FocusReason[] = [];
     let score = 0;
 
-    if (it.serviceClass === "Expedite") {
-      reasons.push("expedite");
+    const mine = isMine(it, user);
+
+    // Was `serviceClass === "Expedite"`, ANY owner. That field is set on 0 of
+    // 309 open tasks, so the highest-weighted branch of this ranker was
+    // unreachable and the top slot could never be claimed. `urgent` is the
+    // signal humans actually set, and is what cockpit already gated on.
+    //
+    // Gated on `mine`, unlike the Expedite branch it replaces. Expedite meant
+    // "the workspace drops everything", so any-owner was right for it.
+    // `urgent` does not mean that - it is a personal flag, and 16 of the 19
+    // urgent open tasks are Zaal's. Left any-owner, Iman's top-5 would be
+    // filled with Zaal's urgent work and none of his own overdue items.
+    if (mine && it.urgent) {
+      reasons.push("urgent");
       score += 1000;
     }
-
-    const mine = isMine(it, user);
 
     if (mine && isStale(it)) {
       reasons.push("stale");
@@ -111,7 +124,7 @@ export function computeTopFive(
       }
     }
 
-    if (mine && it.priority === "P1" && (it.status === "WIP" || it.status === "BLOCKED")) {
+    if (mine && priorityRank(it.priority) === 0 && (it.status === "WIP" || it.status === "BLOCKED")) {
       reasons.push("p1-wip");
       score += 200;
     }

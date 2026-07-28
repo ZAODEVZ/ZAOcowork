@@ -1,5 +1,5 @@
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import { logout } from "../actions";
 import { NavBar } from "@/components/NavBar";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
@@ -14,13 +14,15 @@ export default async function PathsPage() {
   const user = await getSession();
   if (!user) redirect("/");
 
-  const [navBrands, activeProjects, doc] = await Promise.all([
+  const [navBrands, activeProjects, portalItems] = await Promise.all([
     listActiveBrands(),
     listActiveProjects().catch(() => []),
-    getActions(),
+    listItems(),
   ]);
 
-  const portalItems = doc.items;
+  // listItems is the same board minus archived rows, read once without the
+  // two structuredClone copies getActions makes for its write-diff snapshot.
+
   const userLabelStr = userLabel(user);
 
   return (

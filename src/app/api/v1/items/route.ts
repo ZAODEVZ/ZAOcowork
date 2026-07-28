@@ -1,9 +1,8 @@
 import { NextRequest } from "next/server";
 import { guardBot, botError, botOk } from "@/lib/bot-route";
 import {
-  getActions,
-  saveActions,
-  newId,
+  queryItems,
+  insertItem,
   normalizeItem,
   TASK_SOURCES,
   type TaskSource,
@@ -29,28 +28,28 @@ export async function GET(req: NextRequest) {
   const q = sp.get("q")?.trim().toLowerCase() || "";
   const limit = Math.min(Math.max(Number(sp.get("limit")) || 100, 1), 500);
 
-  let items: ActionItem[];
+  // status/q/archived/TRIAGE are pushed into SQL. assignee cannot be - it
+  // lives in the metadata jsonb - so it stays a JS filter, and that is
+  // exactly why `exact` (which lets Postgres apply the LIMIT) is only set
+  // when no assignee filter follows.
+  let filtered: ActionItem[];
   try {
-    const doc = await getActions();
-    items = doc.items;
+    filtered = await queryItems({
+      status,
+      q,
+      limit,
+      exact: !assignee,
+      excludeTriage: true,
+    });
   } catch (err) {
     return botError(500, err instanceof Error ? err.message : "read failed");
   }
 
-  let filtered = items.filter((it) => !it.archivedAt && it.status !== "TRIAGE");
-  if (status) filtered = filtered.filter((it) => it.status === status);
   if (assignee) {
     filtered = filtered.filter(
       (it) =>
         (it.assignees ?? []).includes(assignee) ||
         String(it.owner ?? "").toLowerCase() === assignee,
-    );
-  }
-  if (q) {
-    filtered = filtered.filter(
-      (it) =>
-        it.title.toLowerCase().includes(q) ||
-        String(it.notes ?? "").toLowerCase().includes(q),
     );
   }
 
@@ -94,12 +93,13 @@ export async function POST(req: NextRequest) {
     ? (body.source as TaskSource)
     : "human-bot";
 
-  const doc = await getActions();
-  const id = newId(doc.items);
   const now = nowIso();
 
+  // No board read here. This used to call getActions() purely to compute a
+  // newId; insertItem sets legacy_id NULL and lets the DB trigger assign the
+  // id, which is both one INSERT instead of a full read+write and race-free.
   const item: ActionItem = normalizeItem({
-    id,
+    id: "",
     title,
     owner: assignee || "Open",
     status: "TODO",
@@ -115,13 +115,13 @@ export async function POST(req: NextRequest) {
     { id: `a-${Date.now()}`, userId: bot, displayName: bot, action: "created", detail: "via bot API", createdAt: now },
   ];
 
-  doc.items.push(item);
+  let created: ActionItem;
   try {
-    await saveActions(doc, bot, `bot ${bot} created #${id}: ${title.slice(0, 40)}`);
+    created = await insertItem(item);
   } catch (err) {
     return botError(500, err instanceof Error ? err.message : "save failed");
   }
 
-  // item.id is the DB-assigned number after save (not the optimistic newId).
-  return botOk({ id: item.id }, 201);
+  // created.id is the DB-assigned number, read back from the INSERT.
+  return botOk({ id: created.id }, 201);
 }
