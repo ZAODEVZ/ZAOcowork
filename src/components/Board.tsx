@@ -134,6 +134,14 @@ type Filters = {
   nextOwner: string;
   mineOnly: boolean;
   agingOnly: boolean;
+  // Phase 4: today's focus. P1 + due within a day + not blocked. Deliberately
+  // reuses the EXISTING priority field rather than adding a parallel A/B/C
+  // enum - the board already carries priority + important + urgent, and a
+  // fourth overlapping axis would make "which one is real?" unanswerable.
+  focusOnly: boolean;
+  // Phase 5: blocked work is parked, not deleted. Hidden from the active lanes
+  // by default so the active counts stay honest; this shows only the parking lot.
+  blockedOnly: boolean;
 };
 
 // Doc 983 taxonomy - keep in sync with the auto-tagger (metadata.themes /
@@ -152,6 +160,8 @@ const EMPTY_FILTERS: Filters = {
   nextOwner: "",
   mineOnly: true,
   agingOnly: false,
+  focusOnly: false,
+  blockedOnly: false,
 };
 
 // Backward-compat: localStorage from before this PR stored `brand: string`.
@@ -180,6 +190,10 @@ function tagBucket(it: ActionItem): number {
 type SavedView = { name: string; filters: Partial<Filters> };
 
 const VIEW_PRESETS: SavedView[] = [
+  // Phase 4: opens on ~a dozen must-dos instead of 300+.
+  { name: "Today's focus", filters: { mineOnly: true, focusOnly: true } },
+  // Phase 5: the parking lot, reachable but out of the active lanes.
+  { name: "Blocked", filters: { mineOnly: false, blockedOnly: true } },
   { name: "My tasks", filters: { mineOnly: true } },
   { name: "Everyone", filters: { mineOnly: false } },
   { name: "My P1s", filters: { mineOnly: true, priority: "P1" } },
@@ -627,6 +641,25 @@ export function Board({
         const o = String(it.owner).toLowerCase();
         const isOpenTask = it.claimable || o === "open";
         if (!isAssignedTo(it, effectiveUser) && !isOpenTask) return false;
+      }
+      // Phase 5: blocked work is excluded from every normal view. It is not
+      // active work and leaving it in the lanes inflates the counts, which is
+      // what makes "34 in progress" meaningless.
+      if (filters.blockedOnly) {
+        if (it.status !== "BLOCKED") return false;
+      } else if (it.status === "BLOCKED") {
+        return false;
+      }
+      // Phase 4: today's focus - P1, due within a day, not already done.
+      if (filters.focusOnly) {
+        if (it.status === "DONE") return false;
+        if (it.priority !== "P1") return false;
+        const d = parseDueDate(it.due);
+        if (!d) return false;
+        const cutoff = new Date();
+        cutoff.setHours(0, 0, 0, 0);
+        cutoff.setDate(cutoff.getDate() + 1);
+        if (d > cutoff) return false;
       }
       if (filters.agingOnly && it.status !== "DONE") {
         if (ageDays(it.createdAt) <= 14) return false;

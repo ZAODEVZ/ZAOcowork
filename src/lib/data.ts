@@ -528,6 +528,82 @@ export async function saveItem(
  * (tasks_legacy_id_seq), so the caller's optimistic id is overwritten anyway.
  * This does the one INSERT and reads the assigned id back.
  */
+export interface PersonRollup {
+  slug: string;
+  name: string;
+  total: number;
+  inProgress: number;
+  overdue: number;
+  atRisk: number;
+  blocked: number;
+}
+
+/** Unowned work is not a person; it is a queue that needs triage. */
+export const UNOWNED = "(needs an owner)";
+
+/**
+ * Per-person rollup for the sidebar.
+ *
+ * Same four-column scoped read as getBrandRollup - never getActions().
+ * Counts through the OWNER column rather than effectiveAssignees() because the
+ * sidebar is about accountability (whose queue is this in), not about
+ * "does this show in my list".
+ */
+export async function getPersonRollup(): Promise<PersonRollup[]> {
+  const team = await teamMaps();
+  const { data, error } = await db()
+    .from("tasks")
+    .select("owner_id, status, due")
+    .is("archived_at", null)
+    .neq("status", "done");
+  if (error) throw new Error(`person rollup failed: ${error.message}`);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const riskCutoff = new Date(today);
+  riskCutoff.setDate(riskCutoff.getDate() + AT_RISK_DAYS);
+
+  const acc = new Map<string, PersonRollup>();
+  for (const row of (data ?? []) as Array<{
+    owner_id: string | null;
+    status: string | null;
+    due: string | null;
+  }>) {
+    const raw = row.owner_id ? team.idToOwner.get(row.owner_id) : null;
+    const slug = raw ? raw.toLowerCase() : UNOWNED;
+    const cur =
+      acc.get(slug) ??
+      ({
+        slug,
+        name: raw ?? UNOWNED,
+        total: 0,
+        inProgress: 0,
+        overdue: 0,
+        atRisk: 0,
+        blocked: 0,
+      } as PersonRollup);
+    cur.total += 1;
+    const inProgress = row.status === "in_progress";
+    if (inProgress) cur.inProgress += 1;
+    if (row.status === "blocked") cur.blocked += 1;
+    if (row.due) {
+      const d = new Date(`${row.due}T00:00:00`);
+      if (!Number.isNaN(d.getTime())) {
+        if (d < today) cur.overdue += 1;
+        else if (d <= riskCutoff && !inProgress) cur.atRisk += 1;
+      }
+    }
+    acc.set(slug, cur);
+  }
+
+  // Unowned sorts last - it is a bin, not a teammate.
+  return [...acc.values()].sort((a, b) => {
+    if (a.slug === UNOWNED) return 1;
+    if (b.slug === UNOWNED) return -1;
+    return b.total - a.total || a.name.localeCompare(b.name);
+  });
+}
+
 export interface BrandRollup {
   brand: string;
   total: number;
