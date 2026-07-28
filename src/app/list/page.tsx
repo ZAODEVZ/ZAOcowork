@@ -65,9 +65,9 @@ const llmUrl = (hash: string) => `https://useicm.com/api/objects/${hash}/llm.txt
 
 export default function ListPage() {
   return (
-    <main className="min-h-screen bg-[#0a1628] text-slate-100">
+    <main className="min-h-screen bg-zao-navy text-slate-100">
       <div className="mx-auto max-w-3xl px-5 py-14 sm:py-20">
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#f5a623]">
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-zao-gold">
           The ZAO / context boxes
         </p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-4xl text-balance">
@@ -78,7 +78,7 @@ export default function ListPage() {
           Claude, or Cursor at a box and it knows the project - no re-explaining. Built on{" "}
           <a
             href="https://useicm.com"
-            className="text-[#f5a623] underline decoration-[#f5a623]/40 underline-offset-2"
+            className="text-zao-gold underline decoration-zao-gold/40 underline-offset-2"
           >
             useicm.com
           </a>
@@ -94,7 +94,7 @@ export default function ListPage() {
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <a
                   href={humanUrl(b.hash)}
-                  className="text-lg font-semibold text-white hover:text-[#f5a623]"
+                  className="text-lg font-semibold text-white hover:text-zao-gold"
                 >
                   {b.name}
                 </a>
@@ -119,7 +119,7 @@ export default function ListPage() {
           ))}
         </ul>
 
-        <div className="mt-12 rounded-xl border border-[#f5a623]/25 bg-[#f5a623]/[0.06] p-5">
+        <div className="mt-12 rounded-xl border border-zao-gold/25 bg-zao-gold/[0.06] p-5">
           <p className="text-sm font-semibold text-white">Use one in your assistant</p>
           <p className="mt-2 text-[14px] leading-relaxed text-slate-300">
             Paste the prompt into any AI chat:

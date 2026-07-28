@@ -6,7 +6,12 @@ export default {
     extend: {
       colors: {
         zao: {
-          navy: "#0a1628",
+          // Point at the theme CSS vars rather than literal hex, so bg-zao-navy
+          // / text-zao-gold follow light+dark like every other token. PR #231
+          // added these as hardcoded hex, which would have pinned any component
+          // using them to the dark palette.
+          navy: "var(--zao-navy)",
+          gold: "var(--zao-gold)",
           ink: "#0f1d33",
           accent: "#3b82f6",
         },
