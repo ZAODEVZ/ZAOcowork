@@ -14,7 +14,7 @@ import { listTeamMembers } from "@/lib/team";
 import { listBotsWithActiveTokens } from "@/lib/bot-tokens";
 import { listBrands, listActiveBrands } from "@/lib/brands-db";
 import { listAuditLogs, listAuditActors, type AuditEntityType } from "@/lib/audit";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +58,7 @@ export default async function AdminPage({
   // when their migrations aren't applied so each wrapped to never reject.
   const [
     membersRes,
-    doc,
+    boardItems,
     allBrands,
     proposalsRes,
     projectsRes,
@@ -71,7 +71,7 @@ export default async function AdminPage({
         rows: [] as Awaited<ReturnType<typeof listTeamMembers>>,
         error: err instanceof Error ? err.message : "team_members read failed",
       })),
-    getActions(),
+    listItems(),
     listBrands(),
     listProposals("pending").catch(() => ({ rows: [], available: false } as Awaited<ReturnType<typeof listProposals>>)),
     listProjects().catch(() => ({ rows: [], available: false } as Awaited<ReturnType<typeof listProjects>>)),
@@ -87,7 +87,7 @@ export default async function AdminPage({
   const members = membersRes.rows;
   const claudeBots = await listBotsWithActiveTokens();
   const membersError = membersRes.error;
-  const unownedCount = doc.items.filter((it) => {
+  const unownedCount = boardItems.filter((it) => {
     const o = String(it.owner ?? "").trim();
     return !o || o === "Open";
   }).length;
@@ -124,7 +124,7 @@ export default async function AdminPage({
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-          <TriageCallout itemsCount={doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
+          <TriageCallout itemsCount={boardItems.filter((it) => it.status === "TRIAGE" && !it.archivedAt).length} />
           <FeedCallout
             recentEvents={
               auditPageData.available
@@ -138,7 +138,7 @@ export default async function AdminPage({
           <ProjectsCallout count={projectsActiveCount} />
           <ProposalsCallout count={proposalsCount} />
           <CleanupCallout
-            staleCount={doc.items.filter((it) => {
+            staleCount={boardItems.filter((it) => {
               if (it.archivedAt || it.status === "DONE" || it.status === "TRIAGE") return false;
               const acts = it.activity ?? [];
               const latest = Math.max(

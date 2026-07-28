@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listProjects } from "@/lib/projects";
 import { listActiveBrands } from "@/lib/brands-db";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { ProjectsPanel } from "@/components/admin/ProjectsPanel";
@@ -25,15 +25,15 @@ export default async function ProjectsAdminPage() {
   const userIsAdmin = await isAdmin(user);
   if (!userIsAdmin) redirect("/?not-allowed=projects-admin");
 
-  const [navBrands, projects, doc] = await Promise.all([
+  const [navBrands, projects, boardItems] = await Promise.all([
     listActiveBrands(),
     listProjects(),
-    getActions(),
+    listItems(),
   ]);
 
   // Per-project task counts so the admin sees scope at a glance.
   const taskCounts = new Map<string, { total: number; open: number; done: number }>();
-  for (const it of doc.items) {
+  for (const it of boardItems) {
     if (!it.projectId) continue;
     const c = taskCounts.get(it.projectId) ?? { total: 0, open: 0, done: 0 };
     c.total++;
@@ -41,7 +41,7 @@ export default async function ProjectsAdminPage() {
     else if (it.status !== "TRIAGE" && !it.archivedAt) c.open++;
     taskCounts.set(it.projectId, c);
   }
-  const unparentedCount = doc.items.filter(
+  const unparentedCount = boardItems.filter(
     (it) => !it.projectId && !it.archivedAt && it.status !== "TRIAGE",
   ).length;
 

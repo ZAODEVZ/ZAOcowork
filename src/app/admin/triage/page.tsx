@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, isAdmin, isLead } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { queryItems } from "@/lib/data";
 import { listActiveBrands } from "@/lib/brands-db";
 import { NavBar } from "@/components/NavBar";
 import { TriagePanel } from "@/components/admin/TriagePanel";
@@ -19,11 +19,12 @@ export default async function TriagePage() {
   // Both leads and admins can triage. Workers cannot.
   if (!isLead(user) && !(await isAdmin(user))) redirect("/?not-allowed=triage");
 
-  const [doc, navBrands] = await Promise.all([
-    getActions(),
+  const [triageItems, navBrands] = await Promise.all([
+    queryItems({ status: "TRIAGE" }),
     listActiveBrands(),
   ]);
-  const triageItems = doc.items.filter((it) => it.status === "TRIAGE" && !it.archivedAt);
+  // queryItems already excludes archived, so this is the same set in one
+  // indexed read instead of scanning the whole board for ~a dozen rows.
 
   return (
     <main className="min-h-screen relative text-white px-4 bg-[#0a0f1f] overflow-hidden">

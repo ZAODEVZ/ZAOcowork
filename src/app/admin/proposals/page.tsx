@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { listActiveBrands } from "@/lib/brands-db";
 import { listProposals } from "@/lib/proposals";
-import { getActions } from "@/lib/data";
+import { listItemsByIds } from "@/lib/data";
 import { logout } from "@/app/actions";
 import { NavBar } from "@/components/NavBar";
 import { ProposalsPanel } from "@/components/admin/ProposalsPanel";
@@ -26,15 +26,18 @@ export default async function ProposalsPage() {
   const userIsAdmin = await isAdmin(user);
   if (!isLead(user) && !userIsAdmin) redirect("/?not-allowed=proposals");
 
-  const [navBrands, proposals, doc] = await Promise.all([
+  const [navBrands, proposals] = await Promise.all([
     listActiveBrands(),
     listProposals("pending"),
-    getActions(),
   ]);
 
   // Build a tiny lookup so the UI can show task titles + current state next
-  // to each proposal without doing N selects from the client.
-  const tasksById = new Map(doc.items.map((it) => [it.id, it]));
+  // to each proposal without doing N selects from the client. Only the tasks
+  // these proposals actually reference are read - listProposals caps at 100,
+  // so this is bounded, where the old full-board read was not.
+  const tasksById = new Map(
+    (await listItemsByIds(proposals.rows.map((p) => p.task_id))).map((it) => [it.id, it]),
+  );
 
   const userLabelStr = userLabel(user);
 

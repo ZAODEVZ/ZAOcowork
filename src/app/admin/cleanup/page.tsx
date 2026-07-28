@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, isAdmin, isLead } from "@/lib/auth";
-import { getActions, ageDays, isStale } from "@/lib/data";
+import { listItems, ageDays, isStale } from "@/lib/data";
 import { listActiveBrands } from "@/lib/brands-db";
 import { NavBar } from "@/components/NavBar";
 import { CleanupPanel } from "@/components/admin/CleanupPanel";
@@ -27,14 +27,14 @@ export default async function CleanupPage() {
   if (!user) redirect("/login");
   if (!isLead(user) && !(await isAdmin(user))) redirect("/?not-allowed=cleanup");
 
-  const [doc, navBrands] = await Promise.all([
-    getActions(),
+  const [boardItems, navBrands] = await Promise.all([
+    listItems(),
     listActiveBrands(),
   ]);
 
   // Pre-bucket on the server so the client gets clean lists. Exclude
   // archived + TRIAGE everywhere - those have their own surfaces.
-  const active = doc.items.filter((it) => !it.archivedAt && it.status !== "TRIAGE");
+  const active = boardItems.filter((it) => !it.archivedAt && it.status !== "TRIAGE");
   const buckets = {
     stale: active.filter((it) => isStale(it)),
     aging: active.filter((it) => it.status !== "DONE" && ageDays(it.createdAt) > 14),

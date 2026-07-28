@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getSession, userLabel } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import { relativeTime, isAssignedTo, type ActionItem } from "@/lib/types";
 import { NavBar } from "@/components/NavBar";
 
@@ -130,9 +130,9 @@ export default async function InternPage() {
   const session = await getSession();
   if (!session) redirect("/login?from=/intern");
 
-  const [doc, prs] = await Promise.all([getActions(), fetchOpenPRs()]);
-  const items: ActionItem[] = doc.items ?? [];
-  const open = items.filter((i) => i.status !== "DONE");
+  // openOnly drops DONE and archived in SQL - the same set this filtered
+  // for in JS, minus the archived rows it should never have shown.
+  const [open, prs] = await Promise.all([listItems({ openOnly: true }), fetchOpenPRs()]);
 
   // Lane 1: PRs sitting unreviewed. The backlog that hit 70 open PRs.
   const stalePRs = (prs ?? []).filter((p) => !p.draft && p.ageHours >= PR_STALE_HOURS);

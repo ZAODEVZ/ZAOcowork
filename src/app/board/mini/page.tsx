@@ -1,5 +1,5 @@
 import { getSession, userLabel } from "@/lib/auth";
-import { getActions } from "@/lib/data";
+import { listItems } from "@/lib/data";
 import type { ActionStatus } from "@/lib/types";
 import { TgAuthGate } from "@/components/TgAuthGate";
 
@@ -26,8 +26,11 @@ export default async function MiniBoardPage() {
     return <TgAuthGate />;
   }
 
-  const doc = await getActions();
-  const active = doc.items
+  // openOnly drops DONE and archived in SQL - the same set this filtered
+  // for in JS, minus the archived rows it should never have shown.
+  const items = await listItems({ openOnly: true });
+  const todoCount = items.filter((x) => x.status === "TODO").length;
+  const active = items
     .filter((x) => x.status === "WIP" || x.status === "TODO")
     .slice(0, 40);
 
@@ -103,9 +106,9 @@ export default async function MiniBoardPage() {
               </li>
             ))}
           </ul>
-          {doc.items.filter((x) => x.status === "TODO").length > 20 && (
+          {todoCount > 20 && (
             <p className="mt-3 text-xs text-white/30 text-center">
-              + {doc.items.filter((x) => x.status === "TODO").length - 20} more on the full board
+              + {todoCount - 20} more on the full board
             </p>
           )}
         </section>
