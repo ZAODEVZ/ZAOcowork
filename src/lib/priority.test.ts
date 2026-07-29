@@ -107,15 +107,19 @@ describe("isHot", () => {
     expect(isHot(task({ serviceClass: "Expedite", priority: "P3", urgent: false } as Partial<ActionItem>))).toBe(false);
   });
 
-  it("ignores `important`, which no surface ranks on", () => {
-    // Stated explicitly so this is a decision on the record rather than an
-    // oversight: 41 tasks carry important=true and nothing reads it.
-    expect(isHot(task({ important: true, priority: "P2", urgent: false }))).toBe(false);
+  it("counts `important` as hot - Zaal ruled 2026-07-29 to wire it, not drop it", () => {
+    // This test previously asserted the OPPOSITE, pinning "important does
+    // nothing" as a decision on the record. The decision changed, so the
+    // assertion changed with it. It still ranks BELOW urgent/overdue in
+    // focus.ts - hot enough to surface, not hot enough to flood.
+    expect(isHot(task({ important: true, priority: "P2", urgent: false }))).toBe(true);
   });
 });
 
 describe("DEPRECATED_AXES", () => {
   it("names the axes that exist but rank nothing", () => {
-    expect([...DEPRECATED_AXES]).toEqual(["serviceClass", "phase", "important"]);
+    // `important` came off this list on 2026-07-29 when it was wired in.
+    expect([...DEPRECATED_AXES]).toEqual(["serviceClass", "phase"]);
+    expect([...DEPRECATED_AXES]).not.toContain("important");
   });
 });

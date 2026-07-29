@@ -8,6 +8,8 @@
 //   - Stale mine (no activity 5+ days, owner = me or "Both" or claimable)
 //   - Overdue mine (due date past, status != DONE)
 //   - P1 priority mine in WIP/BLOCKED (actively trying to ship)
+//   - Important mine (Eisenhower "schedule" quadrant - surfaces once nothing
+//     hotter is competing; weighted low so 41 flagged tasks cannot flood it)
 //   - Pending reviews for me (lead-only: worker updates awaiting approval)
 //
 // Server-only helper. Pass the full items list + current session user;
@@ -22,6 +24,7 @@ export type FocusReason =
   | "stale"
   | "overdue"
   | "p1-wip"
+  | "important"
   | "pending-review";
 
 export interface FocusEntry {
@@ -35,6 +38,7 @@ const REASON_LABELS: Record<FocusReason, string> = {
   stale: "Stale",
   overdue: "Overdue",
   "p1-wip": "P1 in WIP",
+  important: "Important",
   "pending-review": "Awaits review",
 };
 
@@ -42,6 +46,7 @@ const REASON_COLORS: Record<FocusReason, string> = {
   urgent: "bg-red-500/20 text-red-200 border-red-500/40",
   stale: "bg-amber-500/20 text-amber-200 border-amber-500/40",
   overdue: "bg-orange-500/20 text-orange-200 border-orange-500/40",
+  important: "bg-sky-500/20 text-sky-200 border-sky-500/40",
   "p1-wip": "bg-rose-500/20 text-rose-200 border-rose-500/40",
   "pending-review": "bg-blue-500/20 text-blue-200 border-blue-500/40",
 };
@@ -127,6 +132,21 @@ export function computeTopFive(
     if (mine && priorityRank(it.priority) === 0 && (it.status === "WIP" || it.status === "BLOCKED")) {
       reasons.push("p1-wip");
       score += 200;
+    }
+
+    // `important` - wired per Zaal's ruling 2026-07-29 (wire it, do not drop it).
+    //
+    // Weighted BELOW urgent/stale/overdue/p1-wip on purpose. In the Eisenhower
+    // split this is the important-but-not-urgent quadrant: work that should be
+    // scheduled, not dropped and not jumped to the front. 41 open tasks carry
+    // the flag against 19 urgent, so giving it a high weight would flood the
+    // list and bury the genuinely time-critical items.
+    //
+    // The effect is that an important task surfaces once nothing hotter is
+    // competing - which is exactly when you want to be told about it.
+    if (mine && it.important) {
+      reasons.push("important");
+      score += 150;
     }
 
     if (opts.isLead) {
