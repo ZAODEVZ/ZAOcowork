@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
+import { HowIUseMyToolsWidget } from "@/components/overview/HowIUseMyToolsWidget";
 import { AttentionStrip } from "@/components/overview/AttentionStrip";
 import { GoalsWidget } from "@/components/overview/GoalsWidget";
 import { TaskStatusWidget } from "@/components/overview/TaskStatusWidget";
@@ -29,6 +30,11 @@ export default async function OverviewPage() {
           <p className="text-slate-400 text-sm">
             ZAO ecosystem overview, goals, status, and key surfaces
           </p>
+        </div>
+
+        {/* How I Use My Tools - the toolkit reference, front and center */}
+        <div className="mb-6">
+          <HowIUseMyToolsWidget />
         </div>
 
         {/* Attention Strip - What needs you now */}
