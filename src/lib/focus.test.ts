@@ -95,3 +95,38 @@ describe("computeTopFive - urgent replaces the dead Expedite branch", () => {
     expect(ids(out)).toContain("shared");
   });
 });
+
+describe("computeTopFive - important (wired 2026-07-29 per Zaal's ruling)", () => {
+  it("surfaces an important task of mine that has no other signal", () => {
+    // Before the ruling this task had no reason at all and never appeared.
+    const out = computeTopFive([task({ id: "imp", owner: "zaal", important: true })], "zaal");
+    expect(ids(out)).toContain("imp");
+    expect(out[0].reasons).toContain("important");
+  });
+
+  it("ranks important BELOW urgent and below overdue", () => {
+    // 41 open tasks carry `important` against 19 `urgent`. If important
+    // outranked them it would bury the genuinely time-critical work - the
+    // whole reason the weight is 150 and not 1000.
+    const out = computeTopFive(
+      [
+        task({ id: "imp", owner: "zaal", important: true }),
+        task({ id: "late", owner: "zaal", due: "2026-01-01" }),
+        task({ id: "hot", owner: "zaal", urgent: true }),
+      ],
+      "zaal",
+    );
+    expect(ids(out)).toEqual(["hot", "late", "imp"]);
+  });
+
+  it("does not surface someone else's important task", () => {
+    // Same mine-gate as urgent, for the same reason.
+    expect(ids(computeTopFive([task({ id: "z", owner: "zaal", important: true })], "iman")))
+      .not.toContain("z");
+  });
+
+  it("stacks with other signals rather than replacing them", () => {
+    const out = computeTopFive([task({ id: "both", owner: "zaal", important: true, urgent: true })], "zaal");
+    expect(out[0].reasons).toEqual(expect.arrayContaining(["urgent", "important"]));
+  });
+});

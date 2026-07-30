@@ -43,8 +43,12 @@ import type { ActionItem, Priority } from "./types";
  * other signal a human actually sets (19 rows) and it is what cockpit's "Do
  * First" already gated on. Dropping it would silently change that surface.
  *
- * `important`, `serviceClass` and `phase` are NOT read here. See
- * DEPRECATED_AXES below for what that means and what is left to decide.
+ * `important` IS read, as of Zaal's ruling 2026-07-29: wire it, do not drop
+ * it. It ranks in focus.ts at a deliberately low weight - see isHot below and
+ * the comment on the focus branch for why the Eisenhower "schedule" quadrant
+ * does not get a high score.
+ *
+ * `serviceClass` and `phase` are NOT read here. See DEPRECATED_AXES.
  */
 
 /** Lower is hotter. Unset priority sorts as P2, which is the create default. */
@@ -75,7 +79,7 @@ export function byPriority(a: ActionItem, b: ActionItem): number {
  * the ranker dead code. `urgent` is the signal humans actually set.
  */
 export function isHot(it: ActionItem): boolean {
-  return Boolean(it.urgent) || it.priority === "P1";
+  return Boolean(it.urgent) || it.priority === "P1" || Boolean(it.important);
 }
 
 /**
@@ -89,9 +93,8 @@ export function isHot(it: ActionItem): boolean {
  *
  *   serviceClass - 0/309 non-default. Retiring it costs nothing.
  *   phase        - DMAIC leftover, 283/309 null, no reader.
- *   important    - 41/309 set, but NO surface has ever ranked on it. The
- *                  flag currently does nothing at all, which is worse than
- *                  either keeping or dropping it: users set it expecting an
- *                  effect. Either wire it in or take it out of the form.
+ *
+ * `important` was on this list until 2026-07-29. Zaal ruled: wire it. It now
+ * ranks in focus.ts, so it is no longer a flag that does nothing.
  */
-export const DEPRECATED_AXES = ["serviceClass", "phase", "important"] as const;
+export const DEPRECATED_AXES = ["serviceClass", "phase"] as const;
