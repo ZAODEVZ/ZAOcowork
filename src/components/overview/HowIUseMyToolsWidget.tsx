@@ -48,7 +48,7 @@ const GROUPS: ToolGroup[] = [
     tools: [
       { cmd: "/socials", use: "Platform-specific posts across all surfaces. Every post starts with ZM." },
       { cmd: "/clipboard", use: "A clean copyable page with history (~/.zao/clipboard). For AFK/phone copy moments." },
-      { cmd: "/newsletter", use: "The daily-3 newsletter build + publish, then socials after." },
+      { cmd: "/meeting", use: "Record + recap a meeting: transcript, top-3 clip, todo readback, Bonfire episode." },
     ],
   },
   {
@@ -68,6 +68,7 @@ const GROUPS: ToolGroup[] = [
       { cmd: "/ship", use: "The ship pipeline (secret scan, build, PR)." },
       { cmd: "/review", use: "Code review a change against the plan + standards." },
       { cmd: "/investigate", use: "Root-cause a bug before fixing." },
+      { cmd: "/vps", use: "Work on the VPS (deploys, the fleet loops, ZOE's runtime)." },
     ],
   },
   {
