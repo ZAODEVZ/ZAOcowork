@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, SectionHeader, StatTile } from "./ui";
 
 export function ReposWidget() {
@@ -17,12 +18,12 @@ export function ReposWidget() {
         </div>
       </div>
 
-      <a
+      <Link
         href="/repos"
         className="inline-block rounded-lg bg-green-500/20 hover:bg-green-500/30 border border-green-500/50 px-4 py-2 text-sm font-semibold text-green-200 transition-colors"
       >
         View all repos
-      </a>
+      </Link>
 
       <div className="mt-3 text-xs text-white/40">Link to /repos (under development)</div>
     </Card>

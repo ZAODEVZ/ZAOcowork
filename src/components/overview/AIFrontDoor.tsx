@@ -56,7 +56,7 @@ export function AIFrontDoor() {
           </a>
           <span className="text-slate-500">/</span>
           <a
-            href="https://thezao.xyz/list"
+            href="/list"
             target="_blank"
             rel="noopener noreferrer"
             className="text-amber-300 hover:text-amber-200 underline"

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 // Route-level error boundary. Without this, any thrown render error (e.g. a
 // task with malformed comment/update data hitting TaskRoom during SSR on a
@@ -47,12 +48,12 @@ export default function Error({
           >
             Try again
           </button>
-          <a
+          <Link
             href="/"
             className="rounded-xl border border-white/15 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 transition"
           >
             Back to board
-          </a>
+          </Link>
         </div>
       </div>
     </main>

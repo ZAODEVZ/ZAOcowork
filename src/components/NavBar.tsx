@@ -310,11 +310,19 @@ function NavMenu({
     { href: "/settings", label: "Settings", icon: "⚙", active: active.settings },
   ];
 
-  const zaoSurfaces = [
+  // external: a different site -> new tab, shows the arrow.
+  // hardNav: OUR page but not a Next route (next.config.mjs rewrites these to
+  //   static HTML), so <Link> cannot client-navigate to it - plain <a>, same tab.
+  // neither: a real Next route -> <Link>, client-side, same tab.
+  //
+  // These were all absolute https://thezao.xyz/... + external:true, which meant
+  // the app opened its OWN pages in a new tab and, on a preview deploy or
+  // localhost, sent you to production.
+  const zaoSurfaces: Array<{ href: string; label: string; external?: boolean; hardNav?: boolean }> = [
     { href: "https://thezao.xyz/fractals", label: "Fractals", external: true },
-    { href: "https://thezao.xyz", label: "The ZAO", external: true },
-    { href: "https://thezao.xyz/papers", label: "Papers", external: true },
-    { href: "https://thezao.xyz/list", label: "Directory", external: true },
+    { href: "/", label: "The ZAO" },
+    { href: "/papers", label: "Papers", hardNav: true },
+    { href: "/list", label: "Directory" },
     { href: "https://zao.frapps.xyz", label: "Governance", external: true },
     { href: "https://zabalnewsletterbuilder.vercel.app", label: "Newsletter", external: true },
   ];
@@ -366,7 +374,16 @@ function NavMenu({
               </div>
               <div className="space-y-0.5">
                 {zaoSurfaces.map((surface) =>
-                  surface.external ? (
+                  surface.hardNav ? (
+                    <a
+                      key={surface.href}
+                      href={surface.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs text-white/65 hover:text-white hover:bg-white/[0.06] transition"
+                    >
+                      {surface.label}
+                    </a>
+                  ) : surface.external ? (
                     <a
                       key={surface.href}
                       href={surface.href}

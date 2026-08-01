@@ -14,16 +14,15 @@ const DASHBOARDS: Link[] = [
   { label: "Board", url: "/board" },
   { label: "My Work", url: "/my-work" },
   { label: "Repos", url: "/repos" },
-  { label: "Fleet / Loops", url: "/fleet" },
-  { label: "Papers", url: "https://thezao.xyz/papers" },
+  { label: "Papers", url: "/papers" },
   { label: "Fractals", url: "https://thezao.xyz/fractals" },
 ];
 
 const SURFACES: Link[] = [
-  { label: "The ZAO", url: "https://thezao.xyz" },
-  { label: "ZAO Directory", url: "https://thezao.xyz/list" },
+  { label: "The ZAO", url: "/" },
+  { label: "ZAO Directory", url: "/list" },
   { label: "Research", url: "https://github.com/ZAODEVZ/ZAOOS/tree/main/research" },
-  { label: "What is the ZAO", url: "https://thezao.xyz/what-is-the-zao" },
+  { label: "What is the ZAO", url: "/what-is-the-zao" },
 ];
 
 const BOTS = [
