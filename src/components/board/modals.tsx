@@ -91,7 +91,7 @@ export function HelpModal({ onClose }: { onClose: () => void }) {
           <button
             onClick={onClose}
             className="text-white/50 hover:text-white text-xl leading-none"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>
@@ -221,7 +221,7 @@ export function TourModal({
           <button
             onClick={onClose}
             className="text-white/50 hover:text-white text-xl leading-none"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>
@@ -318,7 +318,7 @@ export function DailyReminderModal({
           <button
             onClick={onClose}
             className="text-white/50 hover:text-white text-xl leading-none"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>
@@ -415,7 +415,7 @@ export function Toast({
           <button
             onClick={onClose}
             className="text-white/50 hover:text-white text-lg leading-none"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>

@@ -361,7 +361,7 @@ function ActionCard({
           <button
             onClick={onRemove}
             className="flex-shrink-0 text-white/25 hover:text-white/60 transition text-base leading-none ml-1"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>
@@ -412,7 +412,7 @@ function ActionCard({
           <button
             onClick={onRemove}
             className="flex-shrink-0 text-white/25 hover:text-white/60 transition text-base leading-none ml-1"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>
@@ -438,7 +438,7 @@ function ActionCard({
           <button
             onClick={onRemove}
             className="flex-shrink-0 text-white/25 hover:text-white/60 transition text-base leading-none ml-1"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>

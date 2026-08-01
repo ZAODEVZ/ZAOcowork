@@ -124,7 +124,7 @@ export function CalendarView({
           <button
             onClick={prevMonth}
             className="w-8 h-8 rounded-lg border border-white/10 text-white/60 hover:bg-white/5 hover:text-white flex items-center justify-center transition text-sm"
-          >
+           aria-label="Previous month">
             ‹
           </button>
           <h2 className="text-lg font-semibold text-white min-w-[180px] text-center">
@@ -133,7 +133,7 @@ export function CalendarView({
           <button
             onClick={nextMonth}
             className="w-8 h-8 rounded-lg border border-white/10 text-white/60 hover:bg-white/5 hover:text-white flex items-center justify-center transition text-sm"
-          >
+           aria-label="Next month">
             ›
           </button>
           <button
