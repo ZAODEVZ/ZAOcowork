@@ -107,8 +107,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
         {isEditing ? (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Name</label>
-              <input
+              <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-name">Name</label>
+              <input id="contactsview-name"
                 type="text"
                 value={editData.name}
                 onChange={(e) => setEditData({ ...editData, name: e.target.value })}
@@ -116,8 +116,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Company</label>
-              <input
+              <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-company">Company</label>
+              <input id="contactsview-company"
                 type="text"
                 value={editData.company || ""}
                 onChange={(e) => setEditData({ ...editData, company: e.target.value || null })}
@@ -125,8 +125,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Superhero Name</label>
-              <input
+              <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-superhero-name">Superhero Name</label>
+              <input id="contactsview-superhero-name"
                 type="text"
                 value={editData.superheroName || ""}
                 onChange={(e) =>
@@ -137,8 +137,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Category</label>
-                <select
+                <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-category">Category</label>
+                <select id="contactsview-category"
                   value={editData.category || ""}
                   onChange={(e) => setEditData({ ...editData, category: e.target.value || null })}
                   className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
@@ -150,8 +150,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/80 mb-2">Priority</label>
-                <select
+                <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-priority">Priority</label>
+                <select id="contactsview-priority"
                   value={editData.priority || ""}
                   onChange={(e) => setEditData({ ...editData, priority: e.target.value || null })}
                   className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
@@ -164,8 +164,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">Bio</label>
-              <textarea
+              <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-bio">Bio</label>
+              <textarea id="contactsview-bio"
                 value={editData.bio || ""}
                 onChange={(e) => setEditData({ ...editData, bio: e.target.value || null })}
                 className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
@@ -173,8 +173,8 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-white/80 mb-2">How Can Help ZAO</label>
-              <textarea
+              <label className="block text-sm font-medium text-white/80 mb-2" htmlFor="contactsview-how-can-help-zao">How Can Help ZAO</label>
+              <textarea id="contactsview-how-can-help-zao"
                 value={editData.howHelpZao || ""}
                 onChange={(e) =>
                   setEditData({ ...editData, howHelpZao: e.target.value || null })

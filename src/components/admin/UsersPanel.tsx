@@ -104,8 +104,8 @@ function AddUserForm() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="space-y-1">
-          <label className="text-xs text-white/50">Name</label>
-          <input
+          <label className="text-xs text-white/50" htmlFor="userspanel-name">Name</label>
+          <input id="userspanel-name"
             name="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -118,8 +118,8 @@ function AddUserForm() {
           )}
         </div>
         <div className="space-y-1">
-          <label className="text-xs text-white/50">Password</label>
-          <input
+          <label className="text-xs text-white/50" htmlFor="userspanel-password">Password</label>
+          <input id="userspanel-password"
             name="password"
             type="password"
             placeholder="min 8 chars"
