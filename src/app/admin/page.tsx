@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession, isAdmin, isLead, userLabel } from "@/lib/auth";
 import { logout } from "@/app/actions";
@@ -208,7 +209,7 @@ export default async function AdminPage({
 
 function FactsCallout() {
   return (
-    <a
+    <Link
       href="/admin/facts"
       className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
     >
@@ -219,14 +220,14 @@ function FactsCallout() {
         </div>
         <span className="text-xs text-white/40">/admin/facts -&gt;</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function ProjectsCallout({ count }: { count: number }) {
   if (count === 0) {
     return (
-      <a
+      <Link
         href="/admin/projects"
         className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
       >
@@ -237,11 +238,11 @@ function ProjectsCallout({ count }: { count: number }) {
           </div>
           <span className="text-xs text-white/40">/admin/projects -&gt;</span>
         </div>
-      </a>
+      </Link>
     );
   }
   return (
-    <a
+    <Link
       href="/admin/projects"
       className="block rounded-2xl border border-indigo-500/30 bg-indigo-500/8 px-5 py-3 hover:bg-indigo-500/15 transition"
     >
@@ -254,14 +255,14 @@ function ProjectsCallout({ count }: { count: number }) {
         </div>
         <span className="text-xs text-indigo-200">Manage -&gt;</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function ProposalsCallout({ count }: { count: number }) {
   if (count === 0) {
     return (
-      <a
+      <Link
         href="/admin/proposals"
         className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
       >
@@ -272,11 +273,11 @@ function ProposalsCallout({ count }: { count: number }) {
           </div>
           <span className="text-xs text-white/40">/admin/proposals -&gt;</span>
         </div>
-      </a>
+      </Link>
     );
   }
   return (
-    <a
+    <Link
       href="/admin/proposals"
       className="block rounded-2xl border border-violet-500/40 bg-violet-500/10 px-5 py-3 hover:bg-violet-500/20 transition"
     >
@@ -289,7 +290,7 @@ function ProposalsCallout({ count }: { count: number }) {
         </div>
         <span className="text-xs text-violet-200">Review -&gt;</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
@@ -299,7 +300,7 @@ function FeedCallout({ recentEvents }: { recentEvents: number | null }) {
   // shows inside /admin/feed itself; the callout stays muted).
   if (recentEvents === null) {
     return (
-      <a
+      <Link
         href="/admin/feed"
         className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
       >
@@ -310,12 +311,12 @@ function FeedCallout({ recentEvents }: { recentEvents: number | null }) {
           </div>
           <span className="text-xs text-white/40">/admin/feed -&gt;</span>
         </div>
-      </a>
+      </Link>
     );
   }
   if (recentEvents === 0) {
     return (
-      <a
+      <Link
         href="/admin/feed"
         className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
       >
@@ -326,11 +327,11 @@ function FeedCallout({ recentEvents }: { recentEvents: number | null }) {
           </div>
           <span className="text-xs text-white/40">Browse history -&gt;</span>
         </div>
-      </a>
+      </Link>
     );
   }
   return (
-    <a
+    <Link
       href="/admin/feed"
       className="block rounded-2xl border border-blue-500/30 bg-blue-500/8 px-5 py-3 hover:bg-blue-500/15 transition"
     >
@@ -343,14 +344,14 @@ function FeedCallout({ recentEvents }: { recentEvents: number | null }) {
         </div>
         <span className="text-xs text-blue-200">Open feed -&gt;</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function CleanupCallout({ staleCount }: { staleCount: number }) {
   if (staleCount === 0) {
     return (
-      <a
+      <Link
         href="/admin/cleanup"
         className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
       >
@@ -361,11 +362,11 @@ function CleanupCallout({ staleCount }: { staleCount: number }) {
           </div>
           <span className="text-xs text-white/40">/admin/cleanup -&gt;</span>
         </div>
-      </a>
+      </Link>
     );
   }
   return (
-    <a
+    <Link
       href="/admin/cleanup"
       className="block rounded-2xl border border-amber-500/40 bg-amber-500/10 px-5 py-3 hover:bg-amber-500/20 transition"
     >
@@ -378,14 +379,14 @@ function CleanupCallout({ staleCount }: { staleCount: number }) {
         </div>
         <span className="text-xs text-amber-200">Clean up -&gt;</span>
       </div>
-    </a>
+    </Link>
   );
 }
 
 function TriageCallout({ itemsCount }: { itemsCount: number }) {
   if (itemsCount === 0) {
     return (
-      <a
+      <Link
         href="/admin/triage"
         className="block rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3 hover:bg-white/[0.06] transition"
       >
@@ -396,11 +397,11 @@ function TriageCallout({ itemsCount }: { itemsCount: number }) {
           </div>
           <span className="text-xs text-white/40">/admin/triage -&gt;</span>
         </div>
-      </a>
+      </Link>
     );
   }
   return (
-    <a
+    <Link
       href="/admin/triage"
       className="block rounded-2xl border border-fuchsia-500/40 bg-fuchsia-500/10 px-5 py-3 hover:bg-fuchsia-500/20 transition"
     >
@@ -413,7 +414,7 @@ function TriageCallout({ itemsCount }: { itemsCount: number }) {
         </div>
         <span className="text-xs text-fuchsia-200">Go to triage -&gt;</span>
       </div>
-    </a>
+    </Link>
   );
 }
 

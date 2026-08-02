@@ -28,8 +28,8 @@ const SURFACES = [
 ];
 
 const QUICK_LINKS = [
-  { label: "The ZAO", url: "https://thezao.xyz" },
-  { label: "Papers", url: "https://thezao.xyz/papers" },
+  { label: "The ZAO", url: "/" },
+  { label: "Papers", url: "/papers" },
   { label: "Fractals", url: "https://thezao.xyz/fractals" },
   { label: "Board", url: "/board" },
   { label: "Research", url: "https://github.com/ZAODEVZ/ZAOOS/tree/main/research" },

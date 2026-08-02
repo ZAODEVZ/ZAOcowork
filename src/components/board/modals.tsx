@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 // board/modals.tsx - the self-contained overlay components lifted out of
 // Board.tsx (help, welcome, tour, daily reminder, toast, project picker) plus
@@ -447,7 +448,7 @@ export function ProjectPickerBar({
         <span className="text-[10px] uppercase tracking-wider text-white/45 px-2 flex-shrink-0">
           Project
         </span>
-        <a
+        <Link
           href="/board"
           className={`text-xs rounded-md px-2 py-1 border whitespace-nowrap transition flex-shrink-0 ${
             !activeId
@@ -456,7 +457,7 @@ export function ProjectPickerBar({
           }`}
         >
           All projects
-        </a>
+        </Link>
         {projects.map((p) => {
           const active = activeId === p.id;
           return (
