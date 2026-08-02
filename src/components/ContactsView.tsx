@@ -99,7 +99,7 @@ function DetailDrawer({ contact, onClose, onUpdate }: DetailDrawerProps) {
           <button
             onClick={onClose}
             className="text-white/60 hover:text-white text-2xl font-light"
-          >
+           aria-label="Close">
             ×
           </button>
         </div>

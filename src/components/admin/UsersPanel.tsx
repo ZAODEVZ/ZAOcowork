@@ -289,7 +289,7 @@ function UserRow({ member, hasClaude }: { member: TeamMember; actorLabel: string
             </button>
             {member.password_set_at && (
               <span className="text-[10px] text-white/35">
-                set {new Date(member.password_set_at).toLocaleDateString()}
+                set {new Date(member.password_set_at).toLocaleDateString("en-US")}
               </span>
             )}
           </div>
