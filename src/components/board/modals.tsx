@@ -329,7 +329,7 @@ export function DailyReminderModal({
         <div className="mt-4 grid grid-cols-4 gap-2">
           <div className="rounded-xl bg-black/30 border border-white/10 px-3 py-2">
             <div className="text-[10px] uppercase tracking-wider text-white/45">My open</div>
-            <div className="mt-0.5 text-xl font-bold leading-none">{openMine.length}</div>
+            <div className="mt-0.5 text-xl font-bold leading-none text-white">{openMine.length}</div>
             <div className="text-[9px] text-white/35 mt-0.5">
               of {openAll.length} team · {openUnowned.length} unowned
             </div>
@@ -348,7 +348,7 @@ export function DailyReminderModal({
           </div>
           <div className={`rounded-xl bg-black/30 border ${pendingReviews > 0 ? "border-amber-500/30" : "border-white/10"} px-3 py-2`}>
             <div className="text-[10px] uppercase tracking-wider text-white/45">Reviews</div>
-            <div className={`mt-0.5 text-xl font-bold leading-none ${pendingReviews > 0 ? "text-amber-200" : ""}`}>
+            <div className={`mt-0.5 text-xl font-bold leading-none ${pendingReviews > 0 ? "text-amber-200" : "text-white"}`}>
               {pendingReviews}
             </div>
           </div>
