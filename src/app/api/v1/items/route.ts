@@ -8,6 +8,8 @@ import {
   type TaskSource,
   type ActionItem,
 } from "@/lib/data";
+import { isAgentSource } from "@/lib/types";
+import { checkAgentIntake } from "@/lib/agent-intake";
 import { readJsonObject, reqString, apiError } from "@/lib/api-validate";
 
 // /api/v1/items — bot fleet task surface. See docs/BOT-API.md.
@@ -92,6 +94,34 @@ export async function POST(req: NextRequest) {
   const source = TASK_SOURCES.includes(body.source as TaskSource)
     ? (body.source as TaskSource)
     : "human-bot";
+  const notes = typeof body.notes === "string" ? body.notes : "";
+
+  // Doc 2193: agent writers are gated here. A human at the QuickAdd box gets
+  // dismissable warnings (task-quality.ts); an agent gets a refusal, because
+  // there is nobody at the screen to read a warning. Measured before this
+  // shipped: 93 of 93 open escalator rows had no body, 35 were near-dupes of
+  // each other, and 1 of 94 had ever been completed.
+  if (isAgentSource(source)) {
+    let open: ActionItem[];
+    try {
+      open = await queryItems({ status: "", q: "", limit: 500, exact: true, excludeTriage: false });
+    } catch (err) {
+      return botError(500, err instanceof Error ? err.message : "dedup read failed");
+    }
+    const rejection = checkAgentIntake(
+      { title, notes, source },
+      open.map((it) => ({ id: it.id, title: it.title })),
+    );
+    if (rejection) {
+      // 409 for a collision with existing work, 422 for a task that is not
+      // well-formed enough to act on. Both are permanent for this payload -
+      // the caller must change something, so neither should be retried as-is.
+      return botError(rejection.code === "duplicate" ? 409 : 422, rejection.message, {
+        code: rejection.code,
+        ...(rejection.relatedIds ? { related_ids: rejection.relatedIds } : {}),
+      });
+    }
+  }
 
   const now = nowIso();
 
@@ -104,7 +134,7 @@ export async function POST(req: NextRequest) {
     owner: assignee || "Open",
     status: "TODO",
     due: typeof body.due_date === "string" ? body.due_date : "",
-    notes: typeof body.notes === "string" ? body.notes : "",
+    notes,
     createdBy: bot,
     createdAt: now,
     updatedAt: now,
