@@ -873,6 +873,7 @@ export function Board({
                 <option value="owner">Owner</option>
                 <option value="priority">Priority</option>
                 <option value="brand">Brand</option>
+                <option value="goal">Brand &rsaquo; Goal</option>
               </select>
             </label>
           )}
@@ -907,6 +908,7 @@ export function Board({
           items={filtered}
           onOpenRoom={setTaskRoomId}
           groupBy={groupBy}
+          projects={projects}
           collapsedGroups={collapsedGroups}
           onToggleGroup={toggleGroup}
         />
@@ -1495,7 +1497,7 @@ function ExpediteSwimlane({
 // same filtered items and opens the TaskRoom on row click. Read-only here;
 // editing still happens in the card/TaskRoom (keeps this slice low-risk).
 type SortKey = "id" | "title" | "status" | "owner" | "priority" | "age" | "due";
-type GroupKey = "none" | "status" | "owner" | "priority" | "brand";
+type GroupKey = "none" | "status" | "owner" | "priority" | "brand" | "goal";
 
 // PortfolioRollup (research roadmap B): one row per brand with open/WIP/blocked/
 // aging counts + a RAG health pill, for an at-a-glance ecosystem view above the
@@ -1639,12 +1641,14 @@ function TableView({
   groupBy,
   collapsedGroups,
   onToggleGroup,
+  projects,
 }: {
   items: ActionItem[];
   onOpenRoom: (id: string) => void;
   groupBy: GroupKey;
   collapsedGroups: Set<string>;
   onToggleGroup: (key: string) => void;
+  projects?: Array<{ id: string; slug: string; name: string; color: string }>;
 }) {
   const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [dir, setDir] = useState<"asc" | "desc">("asc");
@@ -1701,6 +1705,14 @@ function TableView({
     { k: "due", label: "Due", cls: "w-28" },
   ];
 
+  // Goal lookup for the "goal" axis. A task carries projectId; the goal's
+  // display name lives on the project row.
+  const goalName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of projects ?? []) m.set(p.id, p.name);
+    return m;
+  }, [projects]);
+
   // Group the (already sorted) rows. Order group headers sensibly per axis.
   const groups = useMemo(() => {
     if (groupBy === "none") return [{ key: "", label: "", rows: sorted, overdue: 0 }];
@@ -1710,7 +1722,15 @@ function TableView({
       if (groupBy === "status") keys = [it.status];
       else if (groupBy === "owner") keys = [String(it.owner) || "Open"];
       else if (groupBy === "priority") keys = [it.priority || "P2"];
-      else keys = (it.brands ?? []).length ? (it.brands as string[]) : ["(no brand)"];
+      else if (groupBy === "goal") {
+        // Brand · Goal, so the three goals of a brand sort together and read
+        // as one block. Work with no goal yet is NOT hidden - it lands in the
+        // brand's "Unsorted" bucket, visible and countable. Silently dropping
+        // unassigned work is how a rollup starts lying about the board.
+        const brands = (it.brands ?? []).length ? (it.brands as string[]) : ["(no brand)"];
+        const goal = it.projectId ? goalName.get(it.projectId) : undefined;
+        keys = brands.map((b) => `${b} · ${goal ?? "Unsorted"}`);
+      } else keys = (it.brands ?? []).length ? (it.brands as string[]) : ["(no brand)"];
       for (const k of keys) {
         const arr = map.get(k) ?? [];
         arr.push(it);
@@ -1719,7 +1739,18 @@ function TableView({
     }
     let keys = Array.from(map.keys());
     if (groupBy === "status") keys.sort((a, b) => (statusRank[a] ?? 9) - (statusRank[b] ?? 9));
-    else keys = keys.sort((a, b) => a.localeCompare(b));
+    else if (groupBy === "goal") {
+      // Alphabetical by brand, but "Unsorted" always sinks to the bottom of
+      // its own brand - it is a to-triage pile, not a goal.
+      keys = keys.sort((a, b) => {
+        const [ab, ag] = a.split(" · ");
+        const [bb, bg] = b.split(" · ");
+        if (ab !== bb) return ab.localeCompare(bb);
+        if (ag === "Unsorted") return 1;
+        if (bg === "Unsorted") return -1;
+        return ag.localeCompare(bg);
+      });
+    } else keys = keys.sort((a, b) => a.localeCompare(b));
     return keys.map((k) => {
       const rows = map.get(k)!;
       return {
@@ -1732,7 +1763,7 @@ function TableView({
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sorted, groupBy]);
+  }, [sorted, groupBy, goalName]);
 
   if (items.length === 0) {
     return <div className="text-xs text-white/30 italic px-1 py-6">No items match the current filters.</div>;
