@@ -219,8 +219,14 @@ export type ActionItem = {
   // picker, NL parser (`^slug` prefix), or bot `/add #project-slug ...`.
   projectId?: string | null;
   // Doc 765 decision 2: source taxonomy. Who wrote this row? Set at
-  // creation time by the writer, never re-set after. Defaults to
-  // 'human-web' for the existing web QuickAdd path.
+  // creation time by the writer, never re-set after. The web QuickAdd path
+  // sets 'human-web' explicitly in task-form.ts.
+  //
+  // NOTE (doc 2193): this must be set by the writer. It used to fall back to
+  // 'human-web' inside itemToRow(), which meant every programmatic writer
+  // that forgot to declare itself was recorded as a human using the web UI -
+  // 93 escalator rows were mislabelled that way, and the board hides the
+  // source chip for 'human-web', so they carried no provenance at all.
   source?: TaskSource;
   // Legacy identity fields - track origin (GitHub PR, research doc, meeting,
   // or cowork-actions.json). Used by source-resolver to build origin links.
@@ -256,7 +262,8 @@ export type TaskSource =
   | "pr-test-task"
   | "ai-proposal"
   | "system-cleanup"
-  | "external-api";
+  | "external-api"
+  | "escalated";
 
 export const TASK_SOURCES: TaskSource[] = [
   "human-web",
@@ -267,7 +274,21 @@ export const TASK_SOURCES: TaskSource[] = [
   "ai-proposal",
   "system-cleanup",
   "external-api",
+  "escalated",
 ];
+
+/**
+ * Sources written by an agent with no human in the loop at capture time.
+ *
+ * These get the stricter intake policy in `agent-intake.ts`: a duplicate is
+ * a rejection rather than a dismissable warning, and a task with no body is
+ * refused outright. The asymmetry is deliberate - see that file for why.
+ */
+export const AGENT_SOURCES: TaskSource[] = ["escalated", "ai-proposal", "external-api"];
+
+export function isAgentSource(s: TaskSource | null | undefined): boolean {
+  return s ? AGENT_SOURCES.includes(s) : false;
+}
 
 export const TASK_SOURCE_LABELS: Record<TaskSource, string> = {
   "human-web": "Web",
@@ -278,6 +299,7 @@ export const TASK_SOURCE_LABELS: Record<TaskSource, string> = {
   "ai-proposal": "AI proposal",
   "system-cleanup": "Cleanup",
   "external-api": "External",
+  escalated: "Escalated",
 };
 
 // Tailwind chip colors per source. Picked so writer types are visually
@@ -291,6 +313,7 @@ export const TASK_SOURCE_COLORS: Record<TaskSource, string> = {
   "ai-proposal": "bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-500/30",
   "system-cleanup": "bg-slate-500/15 text-slate-200 border-slate-500/30",
   "external-api": "bg-pink-500/15 text-pink-200 border-pink-500/30",
+  escalated: "bg-orange-500/15 text-orange-200 border-orange-500/30",
 };
 
 // Project type (doc 765 Phase I). Cross-task grouping for time-bounded

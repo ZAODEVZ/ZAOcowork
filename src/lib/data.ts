@@ -368,7 +368,16 @@ function itemToRow(item: ActionItem, team: TeamMaps): Record<string, unknown> {
     archived_at: item.archivedAt ?? null,
     // Doc 765 Phase I
     project_id: item.projectId ?? null,
-    source: item.source ?? "human-web",
+    // Doc 2193: this used to default to "human-web". That silently stamped a
+    // HUMAN provenance on every programmatic writer that did not declare
+    // itself - measured on 2026-08-04, all 93 open escalator rows claimed to
+    // be a person using the web UI. Board.tsx hides the source chip for
+    // "human-web", so those rows also showed no provenance badge.
+    //
+    // The web QuickAdd path sets source explicitly in task-form.ts, so it is
+    // unaffected. Anything reaching here without a source is by definition
+    // not the web form.
+    source: item.source ?? "external-api",
   };
   row.parent_task_id = item.parentTaskId ?? null;
   // Event fields are stored in metadata (no dedicated columns)
