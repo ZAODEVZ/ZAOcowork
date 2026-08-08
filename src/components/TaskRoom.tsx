@@ -13,6 +13,13 @@ import type {
 } from "@/lib/types";
 import { useTeamPeople } from "@/lib/use-team";
 import {
+  applyMention,
+  getMentionQuery,
+  moveHighlight,
+  rankCandidates,
+  type MentionQuery,
+} from "@/lib/mention-autocomplete";
+import {
   effectiveAssignees,
   BOARD_STATUSES,
   PRIORITIES,
@@ -1671,6 +1678,39 @@ function LogPanel({ item, currentUser }: { item: ActionItem; currentUser: string
 }
 
 function UnifiedUpdateBox({ item, currentUser }: { item: ActionItem; currentUser: string }) {
+  const taRef = useRef<HTMLTextAreaElement | null>(null);
+  // The @-picker. The comment box has always invited "tag with @name" while
+  // giving no way to discover the names, so mentions in practice only reached
+  // the two or three people you could remember. The roster comes from
+  // useTeamPeople (the live one) - the hardcoded list this repo used to share
+  // was missing 7 of 14 members, and a picker showing a stale subset is worse
+  // than no picker because it looks complete.
+  const mentionPeople = useTeamPeople();
+  const [mq, setMq] = useState<MentionQuery>({ active: false, query: "", start: -1, end: -1 });
+  const [mIdx, setMIdx] = useState(0);
+  const mentionHits = mq.active ? rankCandidates(mq.query, mentionPeople) : [];
+
+  function syncMention(el: HTMLTextAreaElement | null) {
+    if (!el) return;
+    const q = getMentionQuery(el.value, el.selectionStart ?? el.value.length);
+    setMq(q);
+    setMIdx(0);
+  }
+
+  function choose(slug: string) {
+    const el = taRef.current;
+    if (!el) return;
+    const { text, caret } = applyMention(el.value, mq, slug);
+    setContent(text);
+    setMq({ active: false, query: "", start: -1, end: -1 });
+    // Restore the caret after React re-renders, so typing continues where the
+    // handle ended rather than jumping to the end of the box.
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
+
   const [pending, start] = useTransition();
   const { value: content, update: setContent, clear: clearContent } = useDraft(
     `zao-draft:comment:${item.id}`,
@@ -1737,11 +1777,84 @@ function UnifiedUpdateBox({ item, currentUser }: { item: ActionItem; currentUser
       )}
 
       {/* Unified input */}
-      <div className="rounded-xl border border-white/10 bg-black/25 overflow-hidden">
+      <div className="relative rounded-xl border border-white/10 bg-black/25 overflow-visible">
+        {mq.active && mentionHits.length > 0 && (
+          <div
+            className="absolute bottom-full left-3 mb-1 z-30 w-64 max-h-64 overflow-y-auto rounded-lg border border-white/15 bg-[#0a1628] shadow-xl"
+            role="listbox"
+            aria-label="Mention someone"
+          >
+            {mentionHits.map((c, i) => (
+              <button
+                key={c.slug}
+                type="button"
+                role="option"
+                aria-selected={i === mIdx}
+                // onMouseDown, not onClick: blur fires first on click and would
+                // close the menu before the selection registered.
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  choose(c.slug);
+                }}
+                onMouseEnter={() => setMIdx(i)}
+                className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm ${
+                  i === mIdx ? "bg-white/10 text-white" : "text-white/70"
+                }`}
+              >
+                <span className="truncate">
+                  <span className="text-white/40">@</span>
+                  {c.slug}
+                </span>
+                <span className="truncate text-[11px] text-white/40">
+                  {c.isBot ? "assistant" : c.name}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         <textarea
+          ref={taRef}
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          onChange={(e) => {
+            setContent(e.target.value);
+            syncMention(e.target);
+          }}
+          onClick={(e) => syncMention(e.currentTarget)}
+          onBlur={() => {
+            // Delay so a click on a row lands before the menu unmounts.
+            setTimeout(() => setMq({ active: false, query: "", start: -1, end: -1 }), 120);
+          }}
+          onKeyUp={(e) => {
+            // Arrow keys move the caret without firing onChange.
+            if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+              syncMention(e.currentTarget);
+            }
+          }}
           onKeyDown={(e) => {
+            // The menu owns these keys while it is open, so Enter picks a name
+            // instead of sending a half-typed comment.
+            if (mq.active && mentionHits.length > 0) {
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setMIdx((i) => moveHighlight(i, 1, mentionHits.length));
+                return;
+              }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setMIdx((i) => moveHighlight(i, -1, mentionHits.length));
+                return;
+              }
+              if (e.key === "Enter" || e.key === "Tab") {
+                e.preventDefault();
+                choose(mentionHits[Math.min(mIdx, mentionHits.length - 1)].slug);
+                return;
+              }
+              if (e.key === "Escape") {
+                e.preventDefault();
+                setMq({ active: false, query: "", start: -1, end: -1 });
+                return;
+              }
+            }
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
               handleSubmit();
