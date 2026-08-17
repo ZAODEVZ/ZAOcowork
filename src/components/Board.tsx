@@ -17,6 +17,9 @@ import {
   TASK_SOURCE_COLORS,
   TASK_SOURCE_LABELS,
   COLUMN_DOD,
+  EFFORTS,
+  EFFORT_LABELS,
+  EFFORT_COLORS,
   ageDays,
   cycleDays,
   isStale,
@@ -26,6 +29,7 @@ import {
   type Owner,
   type Priority,
   type ServiceClass,
+  type Effort,
 } from "@/lib/types";
 import {
   PSEUDO_OWNERS,
@@ -132,6 +136,9 @@ type Filters = {
   // Doc 983: cross-cutting theme (single-select) + judgment-routing owner.
   theme: string;
   nextOwner: string;
+  // Effort filter: quick/focus/heavy/capital. Empty array = no effort constraint.
+  // Multi-select like brands.
+  efforts: string[];
   mineOnly: boolean;
   agingOnly: boolean;
   // Phase 4: today's focus. P1 + due within a day + not blocked. Deliberately
@@ -142,6 +149,8 @@ type Filters = {
   // Phase 5: blocked work is parked, not deleted. Hidden from the active lanes
   // by default so the active counts stay honest; this shows only the parking lot.
   blockedOnly: boolean;
+  // Three-bucket view mode: false = normal board, true = TOP PRIORITY / EASY KNOCKOUTS / TAKES TIME+ENERGY
+  threeBucketMode: boolean;
 };
 
 // Doc 983 taxonomy - keep in sync with the auto-tagger (metadata.themes /
@@ -158,10 +167,12 @@ const EMPTY_FILTERS: Filters = {
   brands: [],
   theme: "",
   nextOwner: "",
+  efforts: [],
   mineOnly: true,
   agingOnly: false,
   focusOnly: false,
   blockedOnly: false,
+  threeBucketMode: false,
 };
 
 // Backward-compat: localStorage from before this PR stored `brand: string`.

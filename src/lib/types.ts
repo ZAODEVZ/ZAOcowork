@@ -16,6 +16,21 @@ export const BOARD_STATUSES: BoardStatus[] = ["TODO", "WIP", "BLOCKED", "DONE"];
 export type Priority = "P1" | "P2" | "P3";
 export const PRIORITIES: Priority[] = ["P1", "P2", "P3"];
 
+export type Effort = "quick" | "focus" | "heavy" | "capital";
+export const EFFORTS: Effort[] = ["quick", "focus", "heavy", "capital"];
+export const EFFORT_LABELS: Record<Effort, string> = {
+  quick: "Quick",
+  focus: "Focus",
+  heavy: "Heavy",
+  capital: "Capital",
+};
+export const EFFORT_COLORS: Record<Effort, string> = {
+  quick: "bg-emerald-500/20 text-emerald-300 border-emerald-500/40",
+  focus: "bg-blue-500/20 text-blue-300 border-blue-500/40",
+  heavy: "bg-orange-500/20 text-orange-300 border-orange-500/40",
+  capital: "bg-red-500/20 text-red-300 border-red-500/40",
+};
+
 // Service classes (doc 763 F2). Layer above priority that captures the
 // shape-of-cost-of-delay. Standard = linear, FixedDate = step function,
 // Expedite = immediate (1 card max workspace-wide), Intangible =
@@ -170,6 +185,9 @@ export type ActionItem = {
   status: ActionStatus;
   category: Category | string;
   priority: Priority;
+  // Effort indicator: quick (small/fast), focus (moderate), heavy (significant),
+  // capital (costs money). Stored in metadata.effort; default "focus" on creation.
+  effort?: Effort;
   important: boolean;
   urgent: boolean;
   completedAt: string;

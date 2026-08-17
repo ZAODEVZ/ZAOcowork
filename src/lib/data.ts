@@ -303,6 +303,10 @@ function rowToItem(row: TaskRow, team: TeamMaps): ActionItem {
   if (typeof meta.eventAt === "string") item.eventAt = meta.eventAt;
   if (typeof meta.eventLocation === "string") item.eventLocation = meta.eventLocation;
   if (typeof meta.eventUrl === "string") item.eventUrl = meta.eventUrl;
+  // Effort indicator: quick/focus/heavy/capital (stored in metadata.effort)
+  if (meta.effort === "quick" || meta.effort === "focus" || meta.effort === "heavy" || meta.effort === "capital") {
+    item.effort = meta.effort;
+  }
   return item;
 }
 
@@ -330,6 +334,8 @@ function buildMetadata(item: ActionItem): Record<string, unknown> {
   if (item.eventAt !== undefined && item.eventAt !== null) meta.eventAt = item.eventAt;
   if (item.eventLocation !== undefined && item.eventLocation !== null) meta.eventLocation = item.eventLocation;
   if (item.eventUrl !== undefined && item.eventUrl !== null) meta.eventUrl = item.eventUrl;
+  // Effort indicator: quick/focus/heavy/capital (stored in metadata.effort)
+  if (item.effort !== undefined) meta.effort = item.effort;
   return meta;
 }
 
