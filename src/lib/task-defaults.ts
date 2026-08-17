@@ -15,7 +15,7 @@
 // they are useful for slicing, but a task with no brand is still workable, and
 // forcing them would add friction for no throughput gain.
 
-import type { ActionItem, Priority, ServiceClass } from "@/lib/types";
+import type { ActionItem, Priority, ServiceClass, Effort } from "@/lib/types";
 
 /**
  * Where unowned work goes. Zaal is the operational backstop for the ZAO board:
@@ -27,6 +27,9 @@ export const FALLBACK_OWNER = "Zaal";
 
 /** Applied when the creator did not pick one. P2 = normal. */
 export const FALLBACK_PRIORITY: Priority = "P2";
+
+/** Applied when effort is absent. focus = moderate effort. */
+export const FALLBACK_EFFORT: Effort = "focus";
 
 /**
  * Days-until-due per service class. The `service_class` column has existed
@@ -78,6 +81,7 @@ export interface AppliedDefaults {
   owner: boolean;
   priority: boolean;
   due: boolean;
+  effort: boolean;
 }
 
 export interface DefaultsResult<T> {
@@ -99,7 +103,7 @@ export function applyTaskDefaults<T extends Partial<ActionItem>>(
   item: T,
   now: Date = new Date(),
 ): DefaultsResult<T> {
-  const applied: AppliedDefaults = { owner: false, priority: false, due: false };
+  const applied: AppliedDefaults = { owner: false, priority: false, due: false, effort: false };
   const next = { ...item } as T;
 
   if (item.status === "DONE") {
@@ -126,6 +130,11 @@ export function applyTaskDefaults<T extends Partial<ActionItem>>(
     applied.due = true;
   }
 
+  if (!item.effort) {
+    (next as Partial<ActionItem>).effort = FALLBACK_EFFORT;
+    applied.effort = true;
+  }
+
   return { item: next, applied };
 }
 
@@ -135,5 +144,6 @@ export function describeDefaults(applied: AppliedDefaults): string {
   if (applied.owner) parts.push(`owner=${FALLBACK_OWNER}`);
   if (applied.priority) parts.push(`priority=${FALLBACK_PRIORITY}`);
   if (applied.due) parts.push("due=SLA");
+  if (applied.effort) parts.push(`effort=${FALLBACK_EFFORT}`);
   return parts.join(", ");
 }

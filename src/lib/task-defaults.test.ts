@@ -130,9 +130,9 @@ describe("applyTaskDefaults", () => {
 
 describe("describeDefaults", () => {
   it("summarises only what was applied", () => {
-    expect(describeDefaults({ owner: true, priority: false, due: true })).toBe(
+    expect(describeDefaults({ owner: true, priority: false, due: true, effort: false })).toBe(
       `owner=${FALLBACK_OWNER}, due=SLA`,
     );
-    expect(describeDefaults({ owner: false, priority: false, due: false })).toBe("");
+    expect(describeDefaults({ owner: false, priority: false, due: false, effort: false })).toBe("");
   });
 });
