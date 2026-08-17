@@ -636,6 +636,8 @@ export function Board({
       // Doc 983: theme (metadata.themes overlap) + next-owner (judgment routing).
       if (filters.theme && !(it.themes ?? []).includes(filters.theme)) return false;
       if (filters.nextOwner && (it.nextOwner ?? "") !== filters.nextOwner) return false;
+      // Effort filter: quick/focus/heavy/capital. Empty array = no filter.
+      if (filters.efforts.length > 0 && !filters.efforts.includes(it.effort ?? "focus")) return false;
       // URL-driven brand tab takes precedence over localStorage filters.brands.
       // Single-brand match - a task whose `brands` array contains urlBrand.
       if (urlBrand) {
