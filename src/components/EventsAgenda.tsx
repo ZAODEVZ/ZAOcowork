@@ -4,14 +4,18 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ActionItem } from "@/lib/data";
 
-function formatEventDate(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleDateString("en-US", {
-    weekday: "short",
+// "2026-08-16" parsed by `new Date()` is UTC midnight, which renders as the
+// previous day for anyone west of Greenwich. Parse the parts as local instead.
+function dateKeyToLocal(dateKey: string): Date {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatDayHeading(dateKey: string): string {
+  return dateKeyToLocal(dateKey).toLocaleDateString("en-US", {
+    weekday: "long",
     month: "short",
     day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
   });
 }
 
@@ -50,7 +54,7 @@ export function EventsAgenda({ events }: { events: ActionItem[] }) {
 
   if (events.length === 0) {
     return (
-      <div className="text-center py-12 text-white/50">
+      <div className="text-center py-12 text-ink-tertiary">
         <p>No upcoming events scheduled.</p>
       </div>
     );
@@ -73,33 +77,31 @@ export function EventsAgenda({ events }: { events: ActionItem[] }) {
       {sortedUpcoming.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-sm font-semibold text-blue-400">Upcoming</span>
-            <span className="text-xs text-white/40">{upcomingEvents.length} events</span>
+            <span className="text-sm font-semibold text-accent">Upcoming</span>
+            <span className="text-xs text-ink-tertiary">
+              {upcomingEvents.length} event{upcomingEvents.length === 1 ? "" : "s"}
+            </span>
           </div>
           {sortedUpcoming.map(([dateKey, dayEvents]) => (
             <div key={dateKey} className="space-y-2">
-              <div className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-                {new Date(dateKey).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "short",
-                  day: "numeric",
-                })}
+              <div className="text-xs font-semibold text-ink-secondary uppercase tracking-wider">
+                {formatDayHeading(dateKey)}
               </div>
               <div className="space-y-2 pl-0">
                 {dayEvents.map((event) => (
                   <Link
                     key={event.id}
                     href={`/todo/${event.id}`}
-                    className="block p-3 rounded-lg bg-white/5 hover:bg-white/10 transition border border-white/10 hover:border-blue-500/50"
+                    className="block p-3 rounded-lg bg-surface hover:bg-surface-hover transition border border-border hover:border-accent/50"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="font-medium text-white truncate">{event.title}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-white/60">
+                        <div className="font-medium text-ink-primary truncate">{event.title}</div>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-ink-secondary">
                           <span>{formatEventTime(event.eventAt || "")}</span>
                           {event.eventLocation && (
                             <>
-                              <span className="text-white/30">•</span>
+                              <span className="text-ink-tertiary">•</span>
                               <span className="truncate">{event.eventLocation}</span>
                             </>
                           )}
@@ -110,7 +112,7 @@ export function EventsAgenda({ events }: { events: ActionItem[] }) {
                           href={event.eventUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-400 hover:text-blue-300 text-xs flex-shrink-0"
+                          className="text-accent hover:text-accent-light text-xs flex-shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
                           Link
@@ -124,40 +126,38 @@ export function EventsAgenda({ events }: { events: ActionItem[] }) {
           ))}
         </div>
       ) : (
-        <div className="text-center py-8 text-white/40 text-sm">
-          No upcoming events. Check back soon!
+        <div className="text-center py-8 text-ink-tertiary text-sm">
+          No upcoming events. Check back soon.
         </div>
       )}
 
       {/* Past Events Toggle */}
       {pastEvents.length > 0 && (
-        <div className="pt-4 border-t border-white/10">
+        <div className="pt-4 border-t border-border">
           <button
             onClick={() => setShowPast(!showPast)}
-            className="text-xs text-white/50 hover:text-white/70 transition"
+            aria-expanded={showPast}
+            className="text-xs text-ink-secondary hover:text-ink-primary transition"
           >
-            {showPast ? "Hide" : "Show"} {pastEvents.length} past events
+            {showPast ? "Hide" : "Show"} {pastEvents.length} past event
+            {pastEvents.length === 1 ? "" : "s"}
           </button>
           {showPast && (
-            <div className="mt-4 space-y-3 opacity-60">
+            <div className="mt-4 space-y-3 opacity-75">
               <div className="flex items-center gap-2 mb-4">
-                <span className="text-sm font-semibold text-white/40">Past</span>
+                <span className="text-sm font-semibold text-ink-tertiary">Past</span>
               </div>
               {sortedPast.map(([dateKey, dayEvents]) => (
                 <div key={dateKey} className="space-y-2">
-                  <div className="text-xs font-semibold text-white/30 uppercase tracking-wider">
-                    {new Date(dateKey).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                  <div className="text-xs font-semibold text-ink-tertiary uppercase tracking-wider">
+                    {formatDayHeading(dateKey)}
                   </div>
                   <div className="space-y-1 pl-0">
                     {dayEvents.map((event: ActionItem) => (
                       <Link
                         key={event.id}
                         href={`/todo/${event.id}`}
-                        className="block p-2 rounded text-xs text-white/30 hover:text-white/50 transition"
+                        className="block p-2 rounded text-xs text-ink-tertiary hover:text-ink-primary transition"
                       >
                         {formatEventTime(event.eventAt || "")} - {event.title}
                       </Link>
