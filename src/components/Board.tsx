@@ -714,6 +714,46 @@ export function Board({
     return map;
   }, [filtered]);
 
+  // Three-bucket view: TOP PRIORITY (P1 or overdue) / EASY KNOCKOUTS (quick) / TAKES TIME
+  type ThreeBucket = "priority" | "quick" | "time";
+  const byBucket = useMemo(() => {
+    const map: Record<ThreeBucket, ActionItem[]> = {
+      priority: [],
+      quick: [],
+      time: [],
+    };
+    for (const it of filtered) {
+      // Skip DONE and archived (same as board view)
+      if (it.status === "DONE" || it.archivedAt) continue;
+      // Skip BLOCKED (parking lot)
+      if (it.status === "BLOCKED") continue;
+      // P1 or overdue
+      if (it.priority === "P1") {
+        map.priority.push(it);
+      } else if (it.effort === "quick") {
+        // Easy knockouts: quick effort
+        map.quick.push(it);
+      } else {
+        // Takes time/energy/capital: heavy + capital
+        map.time.push(it);
+      }
+    }
+    // Sort each bucket by urgency/importance (same as byStatus)
+    for (const b of Object.keys(map) as ThreeBucket[]) {
+      map[b].sort((a, b) => {
+        const sa = isStale(a) ? 0 : 1;
+        const sb = isStale(b) ? 0 : 1;
+        if (sa !== sb) return sa - sb;
+        const tb = tagBucket(a) - tagBucket(b);
+        if (tb !== 0) return tb;
+        const pr = PRIORITIES.indexOf(a.priority) - PRIORITIES.indexOf(b.priority);
+        if (pr !== 0) return pr;
+        return ageDays(b.createdAt) - ageDays(a.createdAt);
+      });
+    }
+    return map;
+  }, [filtered]);
+
   const taskRoomItem = taskRoomId ? items.find((x) => x.id === taskRoomId) : null;
   const claimableCount = items.filter((it) => it.claimable).length;
   // Doc 763 F2: Expedite swimlane. Only active (non-DONE, non-archived) items
@@ -738,6 +778,15 @@ export function Board({
     filters.mineOnly ||
     filters.agingOnly ||
     !!urlBrand;
+
+  // Daily-3 advisory: count in-progress tasks for the current user
+  const currentUserInProgress = useMemo(() => {
+    return items.filter(
+      (it) =>
+        it.status === "WIP" &&
+        (isAssignedTo(it, effectiveUser) || it.claimable || it.owner === "Open"),
+    ).length;
+  }, [items, effectiveUser]);
 
   return (
     <div className="space-y-4">
@@ -818,6 +867,12 @@ export function Board({
 
       <SavedViews filters={filters} onApply={setFilters} userKey={effectiveUser} />
 
+      {currentUserInProgress > 3 && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+          {currentUserInProgress} active - daily cap is 3. Park something.
+        </div>
+      )}
+
       <PortfolioRollup items={items} />
 
       <div className="flex items-center justify-between gap-3">
@@ -892,19 +947,35 @@ export function Board({
           )}
           {/* View switcher: Board vs Table — only in power mode */}
           {density === "power" && (
-            <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5">
-              {(["board", "table"] as const).map((v) => (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5 rounded-lg bg-zao-ink border border-white/10 p-0.5">
+                {(["board", "table"] as const).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
+                      view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
+                    }`}
+                    aria-pressed={view === v}
+                  >
+                    {v === "board" ? "▦ Board" : "▤ Table"}
+                  </button>
+                ))}
+              </div>
+              {/* Three-bucket view toggle — only in board mode */}
+              {view === "board" && (
                 <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded-md transition ${
-                    view === v ? "bg-white/10 text-white" : "text-white/55 hover:text-white/85"
+                  onClick={() => setFilters({ ...filters, threeBucketMode: !filters.threeBucketMode })}
+                  className={`px-3 py-1 text-xs font-medium rounded-lg border transition ${
+                    filters.threeBucketMode
+                      ? "border-amber-500/60 bg-amber-500/15 text-amber-200"
+                      : "border-white/10 text-white/60 hover:bg-white/5 hover:text-white"
                   }`}
-                  aria-pressed={view === v}
+                  title={filters.threeBucketMode ? "Switch to normal board view" : "Switch to three-bucket view"}
                 >
-                  {v === "board" ? "▦ Board" : "▤ Table"}
+                  {filters.threeBucketMode ? "3-Bucket" : "Normal"}
                 </button>
-              ))}
+              )}
             </div>
           )}
         </div>
@@ -995,13 +1066,31 @@ export function Board({
         </div>
       )}
 
-      {/* Desktop: 4 columns */}
-      <div className={`${(density === "power" && view === "table") || filtered.length === 0 ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
-        {BOARD_STATUSES.map((s) => (
-          <Column
-            key={s}
-            status={s}
-            items={byStatus[s]}
+      {/* Desktop: 4 columns (normal view) or 3 buckets (three-bucket mode) */}
+      {!filters.threeBucketMode ? (
+        <div className={`${(density === "power" && view === "table") || filtered.length === 0 ? "hidden" : "hidden md:grid"} md:grid-cols-2 lg:grid-cols-4 gap-4`}>
+          {BOARD_STATUSES.map((s) => (
+            <Column
+              key={s}
+              status={s}
+              items={byStatus[s]}
+              onOpenRoom={setTaskRoomId}
+              currentUser={currentUser}
+              defaultCategory={defaultCategory}
+              isWorker={isWorker}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
+              depCounts={depCounts}
+              defaultCollapsed={s === "DONE"}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={`${(density === "power" && view === "table") || filtered.length === 0 ? "hidden" : "hidden md:grid"} md:grid-cols-1 lg:grid-cols-3 gap-4`}>
+          <ThreeBucketColumn
+            label="TOP PRIORITY"
+            items={byBucket.priority}
             onOpenRoom={setTaskRoomId}
             currentUser={currentUser}
             defaultCategory={defaultCategory}
@@ -1010,10 +1099,33 @@ export function Board({
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
             depCounts={depCounts}
-            defaultCollapsed={s === "DONE"}
           />
-        ))}
-      </div>
+          <ThreeBucketColumn
+            label="EASY KNOCKOUTS"
+            items={byBucket.quick}
+            onOpenRoom={setTaskRoomId}
+            currentUser={currentUser}
+            defaultCategory={defaultCategory}
+            isWorker={isWorker}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            depCounts={depCounts}
+          />
+          <ThreeBucketColumn
+            label="TAKES TIME/ENERGY/CAPITAL"
+            items={byBucket.time}
+            onOpenRoom={setTaskRoomId}
+            currentUser={currentUser}
+            defaultCategory={defaultCategory}
+            isWorker={isWorker}
+            selectMode={selectMode}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            depCounts={depCounts}
+          />
+        </div>
+      )}
 
       {/* Task Room */}
       {taskRoomItem && (
@@ -1222,6 +1334,41 @@ function FilterBar({
             options={["", ...PRIORITIES]}
             placeholder="Priority"
           />
+          <Divider />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-white/40 pr-1">Effort</span>
+            {EFFORTS.map((e) => {
+              const on = filters.efforts.includes(e);
+              return (
+                <button
+                  key={e}
+                  onClick={() => {
+                    const next = filters.efforts.includes(e)
+                      ? filters.efforts.filter((x) => x !== e)
+                      : [...filters.efforts, e];
+                    set({ efforts: next });
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-xs border transition whitespace-nowrap ${
+                    on
+                      ? EFFORT_COLORS[e] + " border-opacity-100"
+                      : "border-white/10 text-white/50 hover:text-white hover:bg-white/5"
+                  }`}
+                  title={on ? `Click to remove ${EFFORT_LABELS[e]} from filter` : `Click to add ${EFFORT_LABELS[e]} to filter`}
+                >
+                  {on ? "✓ " : ""}{EFFORT_LABELS[e]}
+                </button>
+              );
+            })}
+            {filters.efforts.length > 0 && (
+              <button
+                onClick={() => set({ efforts: [] })}
+                className="ml-1 text-[10px] uppercase tracking-wider text-white/40 hover:text-white/70 px-1"
+                title="Clear all effort filters"
+              >
+                clear
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -1285,6 +1432,41 @@ function FilterBar({
             options={["", ...THEME_OPTIONS]}
             placeholder="Theme"
           />
+          <Divider />
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-wider text-white/40 pr-1">Effort</span>
+            {EFFORTS.map((e) => {
+              const on = filters.efforts.includes(e);
+              return (
+                <button
+                  key={e}
+                  onClick={() => {
+                    const next = filters.efforts.includes(e)
+                      ? filters.efforts.filter((x) => x !== e)
+                      : [...filters.efforts, e];
+                    set({ efforts: next });
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-xs border transition whitespace-nowrap ${
+                    on
+                      ? EFFORT_COLORS[e] + " border-opacity-100"
+                      : "border-white/10 text-white/50 hover:text-white hover:bg-white/5"
+                  }`}
+                  title={on ? `Click to remove ${EFFORT_LABELS[e]} from filter` : `Click to add ${EFFORT_LABELS[e]} to filter`}
+                >
+                  {on ? "✓ " : ""}{EFFORT_LABELS[e]}
+                </button>
+              );
+            })}
+            {filters.efforts.length > 0 && (
+              <button
+                onClick={() => set({ efforts: [] })}
+                className="ml-1 text-[10px] uppercase tracking-wider text-white/40 hover:text-white/70 px-1"
+                title="Clear all effort filters"
+              >
+                clear
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -2047,6 +2229,67 @@ function Column({
           <div className="text-xs text-white/30 italic px-1 py-2">No items.</div>
         )}
       </div>
+      )}
+    </div>
+  );
+}
+
+function ThreeBucketColumn({
+  label,
+  items,
+  onOpenRoom,
+  currentUser,
+  defaultCategory,
+  isWorker,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+  depCounts,
+}: {
+  label: string;
+  items: ActionItem[];
+  onOpenRoom: (id: string) => void;
+  currentUser: string;
+  defaultCategory: string;
+  isWorker: boolean;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  depCounts?: Record<string, { blockedByOpen: number; blocks: number }>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? items : items.slice(0, 25);
+  const hiddenCount = items.length - visible.length;
+
+  return (
+    <div className="flex flex-col gap-2 min-w-0">
+      <div className="flex items-center justify-between border-b border-white/10 pb-2">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-white/80">
+          {label}
+        </h3>
+        <span className="text-xs text-white/50">{items.length}</span>
+      </div>
+      <div className="flex flex-col gap-2">
+        {visible.map((item) => (
+          <Card
+            key={item.id}
+            item={item}
+            onOpenRoom={onOpenRoom}
+            isWorker={isWorker}
+            selectMode={selectMode}
+            selected={selectedIds.has(item.id)}
+            onToggleSelect={onToggleSelect}
+            depCounts={depCounts}
+          />
+        ))}
+      </div>
+      {hiddenCount > 0 && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="text-xs text-white/50 hover:text-white/70 py-1 px-2 rounded hover:bg-white/5 transition"
+        >
+          Show {hiddenCount} more
+        </button>
       )}
     </div>
   );
