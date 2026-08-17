@@ -2278,6 +2278,19 @@ function Card({
         >
           {item.category}
         </span>
+        {item.effort && (
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider border font-medium ${EFFORT_COLORS[item.effort]}`}
+            title={`Effort: ${EFFORT_LABELS[item.effort]}`}
+          >
+            {item.effort === "capital" ? "COSTS MONEY" : EFFORT_LABELS[item.effort]}
+          </span>
+        )}
+        {item.effort === "capital" && (
+          <span className="text-[9px] px-2 py-1 rounded bg-red-500/30 border border-red-500/50 text-red-300 font-bold uppercase">
+            CAPITAL
+          </span>
+        )}
         {item.source && item.source !== "human-web" && (
           <span
             className={`px-1.5 py-0.5 rounded text-[10px] border ${TASK_SOURCE_COLORS[item.source]}`}
