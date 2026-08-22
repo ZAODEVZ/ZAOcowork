@@ -15,6 +15,9 @@ interface FleetRow {
   state: string;
   last_line: string | null;
   updated_at: string;
+  // true = has not reported inside LIVE_WINDOW_MS. Its `state` is then a stale
+  // claim and must not be rendered as current.
+  stale?: boolean;
 }
 interface BoardRow {
   id: string;
@@ -55,11 +58,18 @@ export async function GET() {
     ]);
 
     const now = Date.now();
+    // A lane that stopped reporting must READ AS LOST, not vanish. The original
+    // filter dropped stale rows entirely, which is the same defect the harness
+    // block below was written to avoid - and measured on 2026-08-22, six rows
+    // were 32-36 days stale with three still claiming state:"working". Dropping
+    // them hid a dead lane; showing them raw would have shown a lie. So: keep
+    // the row, overwrite the state it claims, and let the UI mark it.
     const fleet: FleetRow[] =
       fleetRes.status === "fulfilled" && fleetRes.value.data
-        ? (fleetRes.value.data as FleetRow[]).filter(
-            (r) => now - new Date(r.updated_at).getTime() < LIVE_WINDOW_MS,
-          )
+        ? (fleetRes.value.data as FleetRow[]).map((r) => ({
+            ...r,
+            stale: now - new Date(r.updated_at).getTime() >= LIVE_WINDOW_MS,
+          }))
         : [];
 
     const board: BoardRow[] =

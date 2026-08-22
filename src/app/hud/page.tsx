@@ -12,6 +12,7 @@ interface FleetRow {
   state: string;
   last_line: string | null;
   updated_at: string;
+  stale?: boolean;
 }
 interface BoardRow {
   id: string;
@@ -71,9 +72,14 @@ export default function HudPage() {
   }, []);
 
   const fleet = data?.fleet ?? [];
-  const waiting = fleet.filter((f) => f.state === "waiting");
-  const working = fleet.filter((f) => f.state === "working");
-  const idle = fleet.filter((f) => f.state === "idle");
+  // A stale row's `state` is a claim from up to weeks ago, so it is excluded
+  // from every live bucket and surfaced separately as lost contact. Measured
+  // 2026-08-22: three rows still claimed "working" after 36 days silent.
+  const live = fleet.filter((f) => !f.stale);
+  const lost = fleet.filter((f) => f.stale);
+  const waiting = live.filter((f) => f.state === "waiting");
+  const working = live.filter((f) => f.state === "working");
+  const idle = live.filter((f) => f.state === "idle");
   const board = data?.board ?? [];
   const harnesses = data?.harnesses ?? [];
   const harnessesDown = harnesses.filter((h) => h.status !== "up");
@@ -112,6 +118,21 @@ export default function HudPage() {
           <div className="text-[13px] text-[#4a5a70] py-1">Nothing needs you right now.</div>
         )}
       </section>
+
+      {/* LOST CONTACT - a lane that stopped reporting. Never dropped silently:
+          dropping it hides a dead lane, and trusting its last state shows a lie. */}
+      {lost.length > 0 && (
+        <Section title="Lost contact" count={lost.length}>
+          {lost.map((f) => (
+            <Row
+              key={f.session}
+              name={f.session}
+              dot="#8a6d3b"
+              sub={`silent ${ago(f.updated_at)} · last claimed "${f.state}"`}
+            />
+          ))}
+        </Section>
+      )}
 
       {/* HARNESSES - the standing bots (ZOE, ZAO Devz, ZAOstock, cowork, farscout,
           ...), not the ephemeral fleet lanes above. A row present but stale
