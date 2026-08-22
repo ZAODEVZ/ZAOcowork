@@ -6,7 +6,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // The ZAO HUD data feed: live fleet sessions (fleet_status, written by the Mac
-// pusher + the VPS loops) + the top open board items. The phone HUD polls this.
+// pusher + the VPS loops), the standing bot harnesses (bot_heartbeats - ZOE,
+// ZAO Devz, ZAOstock, cowork, farscout, ...), + the top open board items. The
+// phone HUD polls this.
 
 interface FleetRow {
   session: string;
@@ -19,8 +21,16 @@ interface BoardRow {
   title: string;
   legacy_id: string | null;
 }
+interface HarnessRow {
+  bot: string;
+  status: string;
+  updated_at: string;
+}
 
 const LIVE_WINDOW_MS = 45 * 60 * 1000;
+// Bots heartbeat roughly every minute; anything silent past 10x that is down,
+// not just between beats.
+const HARNESS_STALE_MS = 10 * 60 * 1000;
 
 function db() {
   const url = process.env.SUPABASE_URL;
@@ -38,9 +48,10 @@ export async function GET() {
 
   try {
     const supabase = db();
-    const [fleetRes, boardRes] = await Promise.allSettled([
+    const [fleetRes, boardRes, harnessRes] = await Promise.allSettled([
       supabase.from("fleet_status").select("session,state,last_line,updated_at").order("updated_at", { ascending: false }),
       supabase.from("tasks").select("id,title,legacy_id").eq("status", "todo").order("created_at", { ascending: false }).limit(15),
+      supabase.from("bot_heartbeats").select("bot,status,updated_at").order("bot", { ascending: true }),
     ]);
 
     const now = Date.now();
@@ -60,7 +71,18 @@ export async function GET() {
           }))
         : [];
 
-    return NextResponse.json({ ok: true, fleet, board, ts: new Date().toISOString() });
+    // A row present but stale is reported down, not silently dropped - a bot
+    // that stopped heartbeating an hour ago should read as down, not vanish.
+    const harnesses: HarnessRow[] =
+      harnessRes.status === "fulfilled" && harnessRes.value.data
+        ? (harnessRes.value.data as HarnessRow[]).map((r) => ({
+            bot: r.bot,
+            status: now - new Date(r.updated_at).getTime() < HARNESS_STALE_MS ? r.status : "down",
+            updated_at: r.updated_at,
+          }))
+        : [];
+
+    return NextResponse.json({ ok: true, fleet, board, harnesses, ts: new Date().toISOString() });
   } catch (err) {
     console.error("hud data error", err);
     return NextResponse.json({ ok: false, error: "Failed to load fleet" }, { status: 500 });
