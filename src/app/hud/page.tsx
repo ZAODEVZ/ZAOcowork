@@ -12,16 +12,23 @@ interface FleetRow {
   state: string;
   last_line: string | null;
   updated_at: string;
+  stale?: boolean;
 }
 interface BoardRow {
   id: string;
   title: string;
   legacy_id: string | null;
 }
+interface HarnessRow {
+  bot: string;
+  status: string;
+  updated_at: string;
+}
 interface HudData {
   ok: boolean;
   fleet: FleetRow[];
   board: BoardRow[];
+  harnesses: HarnessRow[];
   ts: string;
 }
 
@@ -65,10 +72,17 @@ export default function HudPage() {
   }, []);
 
   const fleet = data?.fleet ?? [];
-  const waiting = fleet.filter((f) => f.state === "waiting");
-  const working = fleet.filter((f) => f.state === "working");
-  const idle = fleet.filter((f) => f.state === "idle");
+  // A stale row's `state` is a claim from up to weeks ago, so it is excluded
+  // from every live bucket and surfaced separately as lost contact. Measured
+  // 2026-08-22: three rows still claimed "working" after 36 days silent.
+  const live = fleet.filter((f) => !f.stale);
+  const lost = fleet.filter((f) => f.stale);
+  const waiting = live.filter((f) => f.state === "waiting");
+  const working = live.filter((f) => f.state === "working");
+  const idle = live.filter((f) => f.state === "idle");
   const board = data?.board ?? [];
+  const harnesses = data?.harnesses ?? [];
+  const harnessesDown = harnesses.filter((h) => h.status !== "up");
 
   return (
     <main className="min-h-[100dvh] bg-[#0a1424] text-[#e8eef5] px-4 py-4 pb-24">
@@ -104,6 +118,48 @@ export default function HudPage() {
           <div className="text-[13px] text-[#4a5a70] py-1">Nothing needs you right now.</div>
         )}
       </section>
+
+      {/* LOST CONTACT - a lane that stopped reporting. Never dropped silently:
+          dropping it hides a dead lane, and trusting its last state shows a lie. */}
+      {lost.length > 0 && (
+        <Section title="Lost contact" count={lost.length}>
+          {lost.map((f) => (
+            <Row
+              key={f.session}
+              name={f.session}
+              dot="#8a6d3b"
+              sub={`silent ${ago(f.updated_at)} · last claimed "${f.state}"`}
+            />
+          ))}
+        </Section>
+      )}
+
+      {/* HARNESSES - the standing bots (ZOE, ZAO Devz, ZAOstock, cowork, farscout,
+          ...), not the ephemeral fleet lanes above. A row present but stale
+          reads "down", never silently missing. */}
+      {harnessesDown.length > 0 && (
+        <section className="rounded-2xl border border-[#d9534f]/40 bg-[#2a0f0f]/40 p-3 mb-4">
+          <h2 className="text-[11px] uppercase tracking-wider text-[#d9534f] mb-2">
+            Harness down · {harnessesDown.length}
+          </h2>
+          <div className="space-y-2">
+            {harnessesDown.map((h) => (
+              <Row key={h.bot} name={h.bot} dot="#d9534f" sub={`last seen ${ago(h.updated_at)}`} />
+            ))}
+          </div>
+        </section>
+      )}
+      <Section title="Harnesses" count={harnesses.length}>
+        {harnesses.map((h) => (
+          <Row
+            key={h.bot}
+            name={h.bot}
+            dot={h.status === "up" ? STATE_DOT.working : "#d9534f"}
+            sub={`${h.status} · ${ago(h.updated_at)}`}
+            small
+          />
+        ))}
+      </Section>
 
       {/* WORKING */}
       <Section title="Working" count={working.length}>
