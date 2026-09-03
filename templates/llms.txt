@@ -19,7 +19,7 @@ The ZAO is not a record label and not merely a "music community." It is an impac
 ## Production lanes
 
 - WaveWarZ - live-traded music battles (music prediction market; artists paid instantly, value stays in the ecosystem)
-- ZABAL Games - a three-month build-a-thon that runs builders through workshops and shipping sprints
+- ZABAL Gamez - a three-month build-a-thon that runs builders through workshops and shipping sprints
 - The ZAO festivals - ZAOstock, ZAOville, ZAO-PALOOZA, ZAO-CHELLA (real-world gatherings)
 - ZAO OS - the lab and monorepo where new ZAO things are prototyped before they graduate to their own homes
 
