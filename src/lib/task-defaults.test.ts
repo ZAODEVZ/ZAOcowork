@@ -117,7 +117,7 @@ describe("applyTaskDefaults", () => {
     );
     expect(out.owner).toBe("Open");
     expect(out.due).toBe("");
-    expect(applied).toEqual({ owner: false, priority: false, due: false });
+    expect(applied).toEqual({ owner: false, priority: false, due: false, effort: false });
   });
 
   it("does not mutate the input", () => {
