@@ -12,7 +12,7 @@ Triggers:
 
 - NO emojis anywhere
 - NO em dashes (use hyphens)
-- Brand spellings exact: WaveWarZ, COC Concertz, BetterCallZaal, ZABAL, SANG, ZOE, ZOLs, FISHBOWLZ, SongJam, Joseph Goats, The ZAO, ArDrive, Thy Revolution, BCZ Strategies, Huottoja, NERDDAO
+- Brand spellings exact: WaveWarZ, COC Concertz, BetterCallZaal, ZABAL, ZOE, ZOLs, FISHBOWLZ, Joseph Goats, The ZAO, ArDrive, Thy Revolution, BCZ Strategies, Huöttöja, NERDDAO
 - No fabrication. Subagents that cannot find a fact must write UNKNOWN
 
 ## How It Works

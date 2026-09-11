@@ -12,7 +12,7 @@ You are doing focused DEEP research on ONE dimension of a larger ZAO ecosystem t
 - NO emojis anywhere (no Unicode emoji-substitutes either - no checkmarks, warning triangles, play buttons)
 - NO em dashes - use hyphens
 - Caveman prose for the LLMS_TXT_POINTER section: drop articles, fragments OK, short synonyms
-- Brand spellings EXACT: WaveWarZ (not Wave Wars), COC Concertz (z not s), BetterCallZaal (one word camelCase), ZABAL (all caps), SANG (all caps), ZOE (all caps), ZOLs (this casing), FISHBOWLZ (all caps), SongJam (one word), Joseph Goats (full name), The ZAO (with "The"), ArDrive (camelCase), Thy Revolution (Thy not The), BCZ Strategies, Huottoja, NERDDAO
+- Brand spellings EXACT: WaveWarZ (not Wave Wars), COC Concertz (z not s), BetterCallZaal (one word camelCase), ZABAL (all caps), ZOE (all caps), ZOLs (this casing), FISHBOWLZ (all caps), Joseph Goats (full name), The ZAO (with "The"), ArDrive (camelCase), Thy Revolution (Thy not The), BCZ Strategies, Huöttöja (with umlauts), NERDDAO
 - No fabrication. If a fact is not in your sources, write UNKNOWN and move on. Do not invent dates, numbers, contract addresses, or quotes.
 
 # YOUR PROCESS
