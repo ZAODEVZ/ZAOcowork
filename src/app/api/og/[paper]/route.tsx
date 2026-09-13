@@ -67,11 +67,6 @@ const paperMetadata: Record<
     subtitle: "The front-end coordination token for The ZAO ecosystem",
     accentColor: ZAO_GOLD,
   },
-  songjam: {
-    title: "SongJam Whitepaper",
-    subtitle: "Live audio spaces for the ZABAL community",
-    accentColor: ZAO_GOLD,
-  },
   "zao-newsletter": {
     title: "The ZAO Newsletter Whitepaper",
     subtitle: "The daily build-in-public log of The ZAO ecosystem",

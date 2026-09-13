@@ -30,7 +30,6 @@ const DRAFT_SLUGS = [
   "fishbowlz",
   "history",
   "poidh",
-  "songjam",
   "wavewarz",
   "zabal-token",
   "zabalgamez",
