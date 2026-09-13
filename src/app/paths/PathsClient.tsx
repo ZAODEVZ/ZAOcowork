@@ -73,14 +73,13 @@ const CURATED_INITIATIVES: PathCard[] = [
   },
   {
     id: "zabal-games",
-    name: "ZABAL Games",
+    name: "ZABAL Gamez",
     nextAction: null,
     openCount: 0,
     blockedCount: 0,
     filterParam: "external",
     filterValue: "zabal-games",
     isExternal: true,
-    externalUrl: "https://magnetiq.io",
   },
 ];
 
@@ -194,6 +193,18 @@ export function PathsClient({
 
 function PathCard({ path }: { path: PathCard }) {
   if (path.isExternal) {
+    // An external path with no destination still belongs on the page, but it
+    // must not render as a link: an <a> with no href looks clickable, keeps the
+    // arrow, and goes nowhere. ZABAL Gamez is in this state since its old
+    // destination was a retired partner's site.
+    if (!path.externalUrl) {
+      return (
+        <div className="rounded-xl bg-slate-800/40 border border-slate-700/60 backdrop-blur-sm p-6">
+          <h3 className="text-lg font-semibold text-white mb-2">{path.name}</h3>
+          <p className="text-xs text-white/50">External initiative</p>
+        </div>
+      );
+    }
     return (
       <a
         href={path.externalUrl}
