@@ -770,6 +770,27 @@ export async function listItems(opts: { openOnly?: boolean } = {}): Promise<Acti
  * than dropping openOnly entirely, because the tasks table's done history
  * is unbounded and this route runs on every /overview page load.
  */
+/**
+ * How many of `doneItems` completed within `windowDays` of `now`. Pulled out
+ * as its own pure function (instead of inlined in the overview route) so the
+ * bug it exists to catch has a place to be tested: a done-empty input here
+ * looks identical to a correctly-computed zero, which is exactly what the
+ * openOnly regression this fixes produced - a plausible number nobody could
+ * tell was wrong without cross-checking the board by hand.
+ */
+export function countCompletedInWindow(
+  doneItems: Array<Pick<ActionItem, "completedAt">>,
+  windowDays: number,
+  now: number = Date.now()
+): number {
+  const windowStart = now - windowDays * 24 * 60 * 60 * 1000;
+  return doneItems.filter((x) => {
+    if (!x.completedAt) return false;
+    const completedTime = new Date(x.completedAt).getTime();
+    return completedTime >= windowStart && completedTime <= now;
+  }).length;
+}
+
 export async function listRecentlyDone(days: number): Promise<ActionItem[]> {
   const team = await teamMaps();
   const cutoffIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
