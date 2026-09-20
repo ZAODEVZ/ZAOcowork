@@ -760,6 +760,39 @@ export async function listItems(opts: { openOnly?: boolean } = {}): Promise<Acti
 }
 
 /**
+ * DONE tasks completed within the last `days` days - what /api/overview needs
+ * for "done this week/month" and cycle-time metrics.
+ *
+ * listItems({ openOnly: true }) drops every done row in SQL, so /api/overview
+ * used to filter that same (done-free) array for status === "DONE" and get
+ * zero every time - the board read 491 open / 0 done no matter how many
+ * cards actually closed that day. This is a second, bounded query rather
+ * than dropping openOnly entirely, because the tasks table's done history
+ * is unbounded and this route runs on every /overview page load.
+ */
+export async function listRecentlyDone(days: number): Promise<ActionItem[]> {
+  const team = await teamMaps();
+  const cutoffIso = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const PAGE = 1000;
+  const rows: TaskRow[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await db()
+      .from("tasks")
+      .select(TASK_COLUMNS)
+      .is("archived_at", null)
+      .eq("status", "done")
+      .gte("completed_at", cutoffIso)
+      .order("id", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    if (error) throw new Error(`recently-done tasks read failed: ${error.message}`);
+    const batch = (data ?? []) as unknown as TaskRow[];
+    rows.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  return rows.map((row) => normalizeItem(rowToItem(row, team))).sort((a, b) => compareIds(a.id, b.id));
+}
+
+/**
  * Tasks flagged as events with a scheduled date - what /calendar renders.
  * isEvent/eventAt live in the metadata jsonb, so the filter is applied after
  * normalisation; the win here is dropping DONE + archived rows in SQL first.
