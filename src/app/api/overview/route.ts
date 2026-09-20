@@ -1,36 +1,8 @@
 import { NextResponse } from "next/server";
-import { listItems, listRecentlyDone } from "@/lib/data";
-import type { ActionItem } from "@/lib/types";
+import { listItems, listRecentlyDone, countCompletedInWindow } from "@/lib/data";
 import { requireSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
-
-// Goal keyword matchers - case-insensitive
-const GOAL_MATCHERS: Record<string, string[]> = {
-  geo: ["geo", "llms.txt", "ai answer", "json-ld", "citable"],
-  zaostock: ["zaostock", "zao stock"],
-  zabal_games: ["zabal", "zabal games"],
-  artizen: ["artizen"],
-  fractal: ["fractal", "ordao", "respect"],
-  devcon: ["devcon", "zaotravelz", "mumbai", "festival"],
-  revenue: ["revenue", "wavewarz", "monetiz", "sponsor", "paid"],
-};
-
-interface GoalProgress {
-  key: string;
-  matched: number;
-  done: number;
-  pct: number | null;
-  tracked: boolean;
-}
-
-interface CycleTimeMetrics {
-  avgLeadTimeDays: number | null;
-  avgCycleTimeDays: number | null;
-  throughputPerWeek: number | null;
-  completedLast30Days: number;
-  note: string;
-}
 
 interface TaskStatusData {
   totalOpen: number;
@@ -45,75 +17,6 @@ interface TaskStatusData {
   blockedItems: Array<{ id: string; title: string; owner: string; blockedSinceDays?: number }>;
   dueSoon: Array<{ id: string; title: string; due: string; owner: string }>;
   recentlyAdded: Array<{ id: string; title: string; createdAt: string; owner: string }>;
-  goalProgress: GoalProgress[];
-  cycleTime: CycleTimeMetrics;
-}
-
-function computeGoalProgress(items: ActionItem[]): GoalProgress[] {
-  const goals: GoalProgress[] = [];
-
-  for (const [goalKey, keywords] of Object.entries(GOAL_MATCHERS)) {
-    // Find all tasks that match any keyword in this goal (case-insensitive search in title + notes)
-    const matchedTasks = items.filter((item) => {
-      const searchText = `${item.title} ${item.notes || ""}`.toLowerCase();
-      return keywords.some((keyword) => searchText.includes(keyword.toLowerCase()));
-    });
-
-    const totalMatched = matchedTasks.length;
-    const doneCount = matchedTasks.filter((t) => t.status === "DONE").length;
-    const pct = totalMatched > 0 ? Math.round((doneCount / totalMatched) * 100) : null;
-
-    goals.push({
-      key: goalKey,
-      matched: totalMatched,
-      done: doneCount,
-      pct,
-      tracked: totalMatched > 0,
-    });
-  }
-
-  return goals;
-}
-
-function computeCycleTimeMetrics(items: ActionItem[]): CycleTimeMetrics {
-  // Completed items in the last 30 days (using completedAt)
-  const now = Date.now();
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-
-  const completedRecently = items.filter((x) => {
-    if (x.status !== "DONE" || !x.completedAt) return false;
-    const completedTime = new Date(x.completedAt).getTime();
-    return completedTime >= thirtyDaysAgo && completedTime <= now;
-  });
-
-  // Lead time: created_at -> completed_at
-  const leadTimes = completedRecently
-    .map((x) => {
-      const createdTime = new Date(x.createdAt).getTime();
-      const completedTime = new Date(x.completedAt).getTime();
-      const daysDiff = (completedTime - createdTime) / (24 * 60 * 60 * 1000);
-      return daysDiff;
-    })
-    .filter((d) => Number.isFinite(d) && d >= 0);
-
-  const avgLeadTimeDays = leadTimes.length > 0 ? Math.round(leadTimes.reduce((a, b) => a + b) / leadTimes.length * 10) / 10 : null;
-
-  // Cycle time is ideally from first in-progress to done, but we don't track
-  // in_progress_at yet. For now, use lead time as proxy and note the limitation.
-  // Future: migrate to tracking in_progress_at in schema + activity_log.
-  const avgCycleTimeDays = avgLeadTimeDays; // Same as lead time until in_progress_at exists
-
-  // Throughput: completed items per week (over 30d window)
-  const weeksInPeriod = 30 / 7;
-  const throughputPerWeek = completedRecently.length > 0 ? Math.round((completedRecently.length / weeksInPeriod) * 10) / 10 : null;
-
-  return {
-    avgLeadTimeDays,
-    avgCycleTimeDays,
-    throughputPerWeek,
-    completedLast30Days: completedRecently.length,
-    note: "Lead/cycle time uses created_at to completed_at (in_progress_at tracking pending)",
-  };
 }
 
 export async function GET() {
@@ -144,21 +47,8 @@ export async function GET() {
 
     // Count done items this week and this month
     const now = Date.now();
-    const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
-    const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
-
-    const doneItems = recentlyDone;
-    const doneThisWeek = doneItems.filter((x) => {
-      if (!x.completedAt) return false;
-      const completedTime = new Date(x.completedAt).getTime();
-      return completedTime >= weekAgo && completedTime <= now;
-    }).length;
-
-    const doneThisMonth = doneItems.filter((x) => {
-      if (!x.completedAt) return false;
-      const completedTime = new Date(x.completedAt).getTime();
-      return completedTime >= monthAgo && completedTime <= now;
-    }).length;
+    const doneThisWeek = countCompletedInWindow(recentlyDone, 7, now);
+    const doneThisMonth = countCompletedInWindow(recentlyDone, 30, now);
 
     // Top owners (by count of open tasks)
     const ownerCounts = new Map<string, number>();
@@ -217,15 +107,6 @@ export async function GET() {
         owner: String(x.owner ?? "Open").trim(),
       }));
 
-    // Compute real goal progress from tasks. Note: "done" here only reaches
-    // back 30 days (recentlyDone's own bound) - a goal's true all-time
-    // completion % would need an unbounded done query, which this route
-    // deliberately does not run on every page load.
-    const goalProgress = computeGoalProgress([...items, ...recentlyDone]);
-
-    // Compute cycle-time metrics (already a 30-day window, matches recentlyDone)
-    const cycleTime = computeCycleTimeMetrics([...items, ...recentlyDone]);
-
     const data: TaskStatusData = {
       totalOpen: open.length,
       byStatus: statusCounts,
@@ -235,8 +116,6 @@ export async function GET() {
       blockedItems,
       dueSoon,
       recentlyAdded,
-      goalProgress,
-      cycleTime,
     };
 
     return NextResponse.json({ ok: true, data });
