@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { listItems } from "@/lib/data";
+import { listItems, listRecentlyDone } from "@/lib/data";
 import type { ActionItem } from "@/lib/types";
 import { requireSession } from "@/lib/auth";
 
@@ -125,7 +125,12 @@ export async function GET() {
 
   try {
     // openOnly drops DONE and archived in SQL; only TRIAGE is left to filter.
-    const items = await listItems({ openOnly: true });
+    // DONE rows are fetched separately (bounded to 30 days) rather than by
+    // dropping openOnly - see listRecentlyDone's own comment for why.
+    const [items, recentlyDone] = await Promise.all([
+      listItems({ openOnly: true }),
+      listRecentlyDone(30),
+    ]);
 
     const active = items.filter((x) => x.status !== "TRIAGE");
     const open = active.filter((x) => x.status !== "DONE");
@@ -142,7 +147,7 @@ export async function GET() {
     const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
     const monthAgo = now - 30 * 24 * 60 * 60 * 1000;
 
-    const doneItems = items.filter((x) => x.status === "DONE");
+    const doneItems = recentlyDone;
     const doneThisWeek = doneItems.filter((x) => {
       if (!x.completedAt) return false;
       const completedTime = new Date(x.completedAt).getTime();
@@ -212,11 +217,14 @@ export async function GET() {
         owner: String(x.owner ?? "Open").trim(),
       }));
 
-    // Compute real goal progress from tasks (all items, not just open ones)
-    const goalProgress = computeGoalProgress(items);
+    // Compute real goal progress from tasks. Note: "done" here only reaches
+    // back 30 days (recentlyDone's own bound) - a goal's true all-time
+    // completion % would need an unbounded done query, which this route
+    // deliberately does not run on every page load.
+    const goalProgress = computeGoalProgress([...items, ...recentlyDone]);
 
-    // Compute cycle-time metrics
-    const cycleTime = computeCycleTimeMetrics(items);
+    // Compute cycle-time metrics (already a 30-day window, matches recentlyDone)
+    const cycleTime = computeCycleTimeMetrics([...items, ...recentlyDone]);
 
     const data: TaskStatusData = {
       totalOpen: open.length,
