@@ -74,5 +74,11 @@ export async function GET() {
     console.warn(`[vault-status] dropped unknown key(s): ${result.droppedKeys.join(", ")}`);
   }
 
+  for (const [field, count] of Object.entries(result.truncatedCounts)) {
+    // A writer who published MAX_ITEMS + count entries has no other way to
+    // learn that count of them vanished - see src/lib/vaultStatus.ts header.
+    console.warn(`[vault-status] truncated "${field}": ${count} item(s) dropped over the cap`);
+  }
+
   return NextResponse.json({ ok: true, configured: true, status: result.status });
 }

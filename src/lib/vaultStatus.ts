@@ -23,7 +23,13 @@
 //     gets caught immediately, not shortened and shipped.
 //   - Array overflow (more than MAX_ITEMS entries) is a count problem on
 //     already-valid, already-capped strings, not a content problem - that
-//     one truncates rather than refuses.
+//     one truncates rather than refuses. But truncation is still silent
+//     unless someone checks for it, and a writer who believes they
+//     published N items when the page shows MAX_ITEMS has no way to know
+//     a line vanished - the same failure shape as a board reading zero
+//     done. So a truncation is reported (field name + how many dropped),
+//     same as an unknown key: dropped without refusing the payload, but
+//     never dropped in silence.
 
 export const MAX_STRING_LEN = 140;
 export const MAX_ITEMS = 6;
@@ -37,7 +43,7 @@ export interface VaultStatus {
 }
 
 export type VaultStatusResult =
-  | { ok: true; status: VaultStatus; droppedKeys: string[] }
+  | { ok: true; status: VaultStatus; droppedKeys: string[]; truncatedCounts: Record<string, number> }
   | { ok: false; reason: string };
 
 const REQUIRED_KEYS = ["date", "headline", "updatedAt"] as const;
@@ -65,8 +71,8 @@ function validateStringField(name: string, v: unknown): { ok: true; value: strin
 function validateStringArray(
   name: string,
   v: unknown
-): { ok: true; value: string[] } | { ok: false; reason: string } {
-  if (v === undefined) return { ok: true, value: [] };
+): { ok: true; value: string[]; truncated: number } | { ok: false; reason: string } {
+  if (v === undefined) return { ok: true, value: [], truncated: 0 };
   if (!Array.isArray(v)) {
     return { ok: false, reason: `field "${name}" must be an array of strings` };
   }
@@ -78,7 +84,9 @@ function validateStringArray(
   }
   // Array overflow truncates - a count problem on already-valid strings,
   // not a content problem. Unlike an over-cap string, this is safe to trim.
-  return { ok: true, value: out.slice(0, MAX_ITEMS) };
+  // But it is reported, not silent - see the file header.
+  const truncated = Math.max(0, out.length - MAX_ITEMS);
+  return { ok: true, value: out.slice(0, MAX_ITEMS), truncated };
 }
 
 /**
@@ -116,6 +124,10 @@ export function parseVaultStatus(raw: unknown): VaultStatusResult {
   const next = validateStringArray("next", obj.next);
   if (!next.ok) return next;
 
+  const truncatedCounts: Record<string, number> = {};
+  if (shipped.truncated > 0) truncatedCounts.shipped = shipped.truncated;
+  if (next.truncated > 0) truncatedCounts.next = next.truncated;
+
   return {
     ok: true,
     status: {
@@ -126,5 +138,6 @@ export function parseVaultStatus(raw: unknown): VaultStatusResult {
       updatedAt: updatedAt.value,
     },
     droppedKeys,
+    truncatedCounts,
   };
 }
