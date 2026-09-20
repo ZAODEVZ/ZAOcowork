@@ -23,6 +23,8 @@ const SURFACES: Link[] = [
   { label: "ZAO Directory", url: "/list" },
   { label: "Research", url: "https://github.com/ZAODEVZ/ZAOOS/tree/main/research" },
   { label: "What is the ZAO", url: "/what-is-the-zao" },
+  { label: "IMan Dashboard", url: "https://iman-desk.vercel.app" },
+  { label: "IMan Desk (repo)", url: "https://github.com/ZAODEVZ/iman-desk" },
 ];
 
 const BOTS = [
