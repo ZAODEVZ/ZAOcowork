@@ -80,6 +80,20 @@ describe("parseVaultStatus", () => {
     if (result.ok) {
       expect(result.status.shipped).toHaveLength(MAX_ITEMS);
       expect(result.status.shipped[0]).toBe("item 0");
+      // Truncation is silent-by-default the moment nobody checks for it - a
+      // writer who published 3 extra items has no other way to learn they
+      // vanished. This is the actual control: the count must be reported,
+      // not just the correctly-shortened array.
+      expect(result.truncatedCounts.shipped).toBe(3);
+      expect(result.truncatedCounts.next).toBeUndefined();
+    }
+  });
+
+  it("reports no truncation when arrays are within the cap", () => {
+    const result = parseVaultStatus(valid());
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.truncatedCounts).toEqual({});
     }
   });
 
