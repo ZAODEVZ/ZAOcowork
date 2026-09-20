@@ -1,20 +1,24 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { NavBar } from "@/components/NavBar";
-import { HowIUseMyToolsWidget } from "@/components/overview/HowIUseMyToolsWidget";
 import { AttentionStrip } from "@/components/overview/AttentionStrip";
-import { GoalsWidget } from "@/components/overview/GoalsWidget";
-import { TaskStatusWidget } from "@/components/overview/TaskStatusWidget";
-import { CycleTimeWidget } from "@/components/overview/CycleTimeWidget";
-import { DeadlinesWidget } from "@/components/overview/DeadlinesWidget";
-import { ReposWidget } from "@/components/overview/ReposWidget";
-import { SurfacesWidget } from "@/components/overview/SurfacesWidget";
-import { TerminalsWidget } from "@/components/overview/TerminalsWidget";
-import { AIFrontDoor } from "@/components/overview/AIFrontDoor";
+import { VaultStatusWidget } from "@/components/home/VaultStatusWidget";
+import { BoardSummary } from "@/components/home/BoardSummary";
 import { DirectoryWidget } from "@/components/overview/DirectoryWidget";
 
 export const dynamic = "force-dynamic";
 
+// REDESIGNED 2026-09-20. This page used to stack 11 widgets (tool-reference
+// cheatsheet, goals, task status, cycle time, deadlines, repos, surfaces,
+// terminals, an "AI front door" block, plus this and the directory) on one
+// screen. Removed entirely: HowIUseMyToolsWidget (a command reference, not
+// a daily-use status - it belongs in docs, not the homepage), AIFrontDoor,
+// TerminalsWidget, CycleTimeWidget, SurfacesWidget, GoalsWidget. What's
+// left is three things: what changed today (from the vault), what needs
+// you right now (unchanged - AttentionStrip was already doing this job
+// well), and a compact board summary that links out to /board for depth
+// instead of trying to be /board. DirectoryWidget stays as the one
+// link-out list, for anyone who wants a specific surface.
 export default async function OverviewPage() {
   const user = await getSession();
   if (!user) redirect("/");
@@ -23,66 +27,21 @@ export default async function OverviewPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <NavBar />
 
-      <main className="container mx-auto max-w-7xl px-4 py-8">
-        {/* Page Header */}
+      <main className="container mx-auto max-w-4xl px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Mission Control</h1>
-          <p className="text-slate-400 text-sm">
-            ZAO ecosystem overview, goals, status, and key surfaces
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-1">The ZAO</h1>
+          <p className="text-slate-400 text-sm">What changed, what needs you, what's open.</p>
         </div>
 
-        {/* How I Use My Tools - the toolkit reference, front and center */}
-        <div className="mb-6">
-          <HowIUseMyToolsWidget />
+        <div className="space-y-6">
+          <VaultStatusWidget />
+          <AttentionStrip />
+          <BoardSummary />
+          <DirectoryWidget />
         </div>
 
-        {/* Attention Strip - What needs you now */}
-        <AttentionStrip />
-
-        {/* AI Front Door - Jump-in context for AIs */}
-        <AIFrontDoor />
-
-        {/* Responsive grid layout */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 auto-rows-max">
-          {/* Row 1: Goals (full width) */}
-          <div className="lg:col-span-3">
-            <GoalsWidget />
-          </div>
-
-          {/* Row 1b: Directory (full width, all links) */}
-          <div className="lg:col-span-3">
-            <DirectoryWidget />
-          </div>
-
-          {/* Row 2: Task Status (2 cols) + Deadlines (1 col) */}
-          <div className="md:col-span-2">
-            <TaskStatusWidget />
-          </div>
-          <div>
-            <DeadlinesWidget />
-          </div>
-
-          {/* Row 3: Cycle Time (1 col) + Repos (1 col) + Surfaces (1 col) */}
-          <div>
-            <CycleTimeWidget />
-          </div>
-          <div>
-            <ReposWidget />
-          </div>
-          <div>
-            <SurfacesWidget />
-          </div>
-
-          {/* Row 4: Terminals (full width) */}
-          <div className="lg:col-span-3">
-            <TerminalsWidget />
-          </div>
-        </div>
-
-        {/* Footer note */}
         <div className="mt-12 text-center text-xs text-white/40">
-          Data refreshes every few minutes. Last sync time available on each widget.
+          Data refreshes on load.
         </div>
       </main>
     </div>
