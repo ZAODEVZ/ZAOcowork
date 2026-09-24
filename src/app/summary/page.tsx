@@ -30,6 +30,7 @@ const GROUPS: Group[] = [
     accent: "bg-violet-400",
     links: [
       { href: "/board", label: "Board", desc: "The full Kanban across every brand." },
+      { href: "/today", label: "Today", desc: "Overdue, due today, in flight, the next seven days - and the cards with no date that every other view skips." },
       { href: "/my-work", label: "My Work", desc: "Your tasks, mentions, and reviews - including personal items." },
       { href: "/shipped", label: "Shipped", desc: "Everything already done and archived." },
     ],
