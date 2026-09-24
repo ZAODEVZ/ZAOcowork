@@ -27,9 +27,11 @@ interface HarnessRow {
 }
 interface HudData {
   ok: boolean;
-  fleet: FleetRow[];
-  board: BoardRow[];
-  harnesses: HarnessRow[];
+  // null = the route could not read that source. Never the same as [].
+  fleet: FleetRow[] | null;
+  board: BoardRow[] | null;
+  harnesses: HarnessRow[] | null;
+  unread?: string[];
   ts: string;
 }
 
@@ -56,9 +58,14 @@ export default function HudPage() {
       try {
         const r = await fetch("/api/hud");
         const d = (await r.json()) as HudData;
-        if (alive && d.ok) {
+        if (!alive) return;
+        if (d.ok) {
           setData(d);
           setErr(false);
+        } else {
+          // A 401/500 used to leave the dot green over data that had stopped
+          // refreshing. Not ok is an error, whatever the transport said.
+          setErr(true);
         }
       } catch {
         if (alive) setErr(true);
@@ -71,6 +78,11 @@ export default function HudPage() {
     };
   }, []);
 
+  // Unread only once the route has answered and said so; before the first
+  // answer the page shows "..." rather than claiming anything.
+  const fleetUnread = data !== null && data.fleet === null;
+  const boardUnread = data !== null && data.board === null;
+  const harnessUnread = data !== null && data.harnesses === null;
   const fleet = data?.fleet ?? [];
   // A stale row's `state` is a claim from up to weeks ago, so it is excluded
   // from every live bucket and surfaced separately as lost contact. Measured
@@ -114,6 +126,8 @@ export default function HudPage() {
               </div>
             ))}
           </div>
+        ) : fleetUnread ? (
+          <div className="text-[13px] text-[#d9534f] py-1">UNKNOWN - the fleet could not be read.</div>
         ) : (
           <div className="text-[13px] text-[#4a5a70] py-1">Nothing needs you right now.</div>
         )}
@@ -149,7 +163,7 @@ export default function HudPage() {
           </div>
         </section>
       )}
-      <Section title="Harnesses" count={harnesses.length}>
+      <Section title="Harnesses" count={harnesses.length} unread={harnessUnread}>
         {harnesses.map((h) => (
           <Row
             key={h.bot}
@@ -162,21 +176,21 @@ export default function HudPage() {
       </Section>
 
       {/* WORKING */}
-      <Section title="Working" count={working.length}>
+      <Section title="Working" count={working.length} unread={fleetUnread}>
         {working.map((f) => (
           <Row key={f.session} name={f.session} dot={STATE_DOT.working} sub={`working · ${ago(f.updated_at)}`} />
         ))}
       </Section>
 
       {/* BOARD */}
-      <Section title="Board" count={board.length}>
+      <Section title="Board" count={board.length} unread={boardUnread}>
         {board.map((b) => (
           <Row key={b.id} name={b.title} dot="#f5a623" sub={b.legacy_id || ""} small />
         ))}
       </Section>
 
       {/* IDLE */}
-      <Section title="Idle" count={idle.length}>
+      <Section title="Idle" count={idle.length} unread={fleetUnread}>
         {idle.map((f) => (
           <Row key={f.session} name={f.session} dot={STATE_DOT.idle} sub={ago(f.updated_at)} />
         ))}
@@ -189,7 +203,17 @@ export default function HudPage() {
   );
 }
 
-function Section({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+function Section({
+  title,
+  count,
+  unread,
+  children,
+}: {
+  title: string;
+  count: number;
+  unread?: boolean;
+  children: React.ReactNode;
+}) {
   const items = Array.isArray(children) ? children.filter(Boolean) : children;
   const empty = Array.isArray(items) && items.length === 0;
   return (
@@ -197,7 +221,13 @@ function Section({ title, count, children }: { title: string; count: number; chi
       <h2 className="text-[11px] uppercase tracking-wider text-[#607089] mb-2">
         {title} {count ? `· ${count}` : ""}
       </h2>
-      {empty ? <div className="text-[12px] text-[#4a5a70]">none</div> : <div className="space-y-2">{items}</div>}
+      {unread ? (
+        <div className="text-[12px] text-[#d9534f]">UNKNOWN - could not be read</div>
+      ) : empty ? (
+        <div className="text-[12px] text-[#4a5a70]">none</div>
+      ) : (
+        <div className="space-y-2">{items}</div>
+      )}
     </section>
   );
 }
