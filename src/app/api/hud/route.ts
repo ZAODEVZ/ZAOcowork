@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { requireSession } from "@/lib/auth";
+import { rowsOrUnread, type QueryResult } from "@/lib/hud-read";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,35 +65,46 @@ export async function GET() {
     // were 32-36 days stale with three still claiming state:"working". Dropping
     // them hid a dead lane; showing them raw would have shown a lie. So: keep
     // the row, overwrite the state it claims, and let the UI mark it.
-    const fleet: FleetRow[] =
-      fleetRes.status === "fulfilled" && fleetRes.value.data
-        ? (fleetRes.value.data as FleetRow[]).map((r) => ({
+    // null = the query failed. Never [] - see src/lib/hud-read.ts.
+    const fleetRows = rowsOrUnread(fleetRes as PromiseSettledResult<QueryResult<FleetRow>>);
+    const fleet: FleetRow[] | null =
+      fleetRows === null
+        ? null
+        : fleetRows.map((r) => ({
             ...r,
             stale: now - new Date(r.updated_at).getTime() >= LIVE_WINDOW_MS,
-          }))
-        : [];
+          }));
 
-    const board: BoardRow[] =
-      boardRes.status === "fulfilled" && boardRes.value.data
-        ? (boardRes.value.data as BoardRow[]).map((r) => ({
+    const boardRows = rowsOrUnread(boardRes as PromiseSettledResult<QueryResult<BoardRow>>);
+    const board: BoardRow[] | null =
+      boardRows === null
+        ? null
+        : boardRows.map((r) => ({
             id: r.id,
             title: (r.title || "").replace("Inbox action:", "").trim(),
             legacy_id: r.legacy_id,
-          }))
-        : [];
+          }));
 
     // A row present but stale is reported down, not silently dropped - a bot
     // that stopped heartbeating an hour ago should read as down, not vanish.
-    const harnesses: HarnessRow[] =
-      harnessRes.status === "fulfilled" && harnessRes.value.data
-        ? (harnessRes.value.data as HarnessRow[]).map((r) => ({
+    const harnessRows = rowsOrUnread(harnessRes as PromiseSettledResult<QueryResult<HarnessRow>>);
+    const harnesses: HarnessRow[] | null =
+      harnessRows === null
+        ? null
+        : harnessRows.map((r) => ({
             bot: r.bot,
             status: now - new Date(r.updated_at).getTime() < HARNESS_STALE_MS ? r.status : "down",
             updated_at: r.updated_at,
-          }))
-        : [];
+          }));
 
-    return NextResponse.json({ ok: true, fleet, board, harnesses, ts: new Date().toISOString() });
+    // Which sources could not be read, so a partial answer says so.
+    const unread = [
+      fleet === null && "fleet_status",
+      board === null && "tasks",
+      harnesses === null && "bot_heartbeats",
+    ].filter((x): x is string => Boolean(x));
+
+    return NextResponse.json({ ok: true, fleet, board, harnesses, unread, ts: new Date().toISOString() });
   } catch (err) {
     console.error("hud data error", err);
     return NextResponse.json({ ok: false, error: "Failed to load fleet" }, { status: 500 });
