@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { startVisiblePoll } from "@/lib/visible-poll";
 
 // The ZAO HUD - phone-first command center. Shows the live fleet (Mac terminals
 // + VPS loops via fleet_status) attention-sorted (needs you / working / idle) +
@@ -63,11 +64,10 @@ export default function HudPage() {
         if (alive) setErr(true);
       }
     }
-    tick();
-    const id = setInterval(tick, 5000);
+    const stop = startVisiblePoll(tick, 5000);
     return () => {
       alive = false;
-      clearInterval(id);
+      stop();
     };
   }, []);
 
