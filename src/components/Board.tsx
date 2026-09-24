@@ -555,7 +555,10 @@ export function Board({
         (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
       if (typing || taskRoomId) return;
       router.refresh();
-    }, 120_000);
+    }, 120_000, { leading: false });
+    // leading: false - this effect re-runs on every task-panel open/close
+    // (taskRoomId is a dependency). A leading call would refresh on every
+    // close; before the gate the first refresh was always 120s away.
   }, [router, taskRoomId]);
 
   useEffect(() => {
