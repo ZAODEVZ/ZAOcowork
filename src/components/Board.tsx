@@ -62,6 +62,7 @@ import { QuickAdd } from "./quickadd/QuickAdd";
 import { BulkActionBar } from "./BulkActionBar";
 import { InsightsPanel } from "./InsightsPanel";
 import { DailyView } from "./DailyView";
+import { startVisiblePoll } from "@/lib/visible-poll";
 
 const STATUS_LABEL: Record<ActionStatus, string> = {
   TRIAGE: "TRIAGE",
@@ -542,7 +543,9 @@ export function Board({
   const todayKey = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
+    // Hidden tabs do not refresh at all (src/lib/visible-poll.ts); a tab that
+    // comes back refreshes once, still subject to the typing check below.
+    return startVisiblePoll(() => {
       // Don't auto-refresh while someone is typing or has a task panel open —
       // a refresh can wipe in-progress text (Jose's lost feedback). Resume once
       // they're idle and back on the board.
@@ -552,8 +555,10 @@ export function Board({
         (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
       if (typing || taskRoomId) return;
       router.refresh();
-    }, 120_000);
-    return () => window.clearInterval(id);
+    }, 120_000, { leading: false });
+    // leading: false - this effect re-runs on every task-panel open/close
+    // (taskRoomId is a dependency). A leading call would refresh on every
+    // close; before the gate the first refresh was always 120s away.
   }, [router, taskRoomId]);
 
   useEffect(() => {

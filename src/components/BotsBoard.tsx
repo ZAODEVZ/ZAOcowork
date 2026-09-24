@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { startVisiblePoll } from "@/lib/visible-poll";
 
 interface BotHealth {
   bot: string;
@@ -124,9 +125,8 @@ function AskPanel({ bot }: { bot: string }) {
         /* best-effort */
       }
     };
-    void check();
-    const timer = setInterval(() => void check(), 5_000);
-    return () => { alive = false; clearInterval(timer); };
+    const stop = startVisiblePoll(() => void check(), 5_000);
+    return () => { alive = false; stop(); };
   }, [bot, pendingId]);
 
   const send = useCallback(async (): Promise<void> => {
@@ -312,11 +312,10 @@ function CommandHistory({ bot, refreshKey }: { bot: string; refreshKey: number }
         /* best-effort */
       }
     };
-    void load();
-    const timer = setInterval(() => void load(), 10_000);
+    const stop = startVisiblePoll(() => void load(), 10_000);
     return () => {
       alive = false;
-      clearInterval(timer);
+      stop();
     };
   }, [bot, refreshKey]);
 
@@ -373,11 +372,10 @@ function BotDetail({ bot, isAdmin }: { bot: string; isAdmin: boolean }) {
         if (alive) setError(e instanceof Error ? e.message : 'failed');
       }
     };
-    void load();
-    const timer = setInterval(() => void load(), 30_000);
+    const stop = startVisiblePoll(() => void load(), 30_000);
     return () => {
       alive = false;
-      clearInterval(timer);
+      stop();
     };
   }, [bot]);
 
@@ -440,11 +438,10 @@ export function BotsBoard({ isAdmin = false }: { isAdmin?: boolean }) {
         if (alive) setError(e instanceof Error ? e.message : 'failed');
       }
     };
-    void load();
-    const timer = setInterval(() => void load(), 30_000);
+    const stop = startVisiblePoll(() => void load(), 30_000);
     return () => {
       alive = false;
-      clearInterval(timer);
+      stop();
     };
   }, []);
 
