@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://thezao.xyz"),
   title: "The ZAO Co-Works",
   description:
-    "Operational tracker for The ZAO ecosystem teams - tasks synced across the web board and @ZAOcoworkingBot on Telegram. Brand-tagged across ZAOstock, ZABAL Games, WaveWarZ, BCZ Strategies, and more.",
+    "Operational tracker for The ZAO ecosystem teams - tasks synced across the web board and @ZAOcoworkingBot on Telegram. Brand-tagged across ZAOstock, ZABAL Gamez, WaveWarZ, BCZ Strategies, and more.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

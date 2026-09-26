@@ -54,7 +54,7 @@ function PublicLanding() {
             <div className="flex items-start gap-4">
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-white group-hover:text-emerald-300 transition mb-2">
-                  Join: ZABAL Games
+                  Join: ZABAL Gamez
                 </h3>
                 <p className="text-sm text-white/60">
                   A three-month build-a-thon. Learn to ship products with ZAO creators, mentors, and builders. Next cohort starts soon.
