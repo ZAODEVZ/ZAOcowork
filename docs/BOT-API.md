@@ -148,7 +148,8 @@ heartbeat as itself).
 // A token may only pull its own bot's queue (bot param must equal the caller's
 // resolved identity, or be omitted). Only these commands are claimable this way:
 // restart, pause, resume, run_task, ask
-// 200 -> { "ok": true, "commands": [{ "id": 42, "bot": "hermes", "command": "restart", "args": {}, "status": "claimed", "created_at": "..." }] }
+// 200 -> { "ok": true, "commands": [{ "id": 42, "bot": "hermes", "command": "restart", "args": {}, "status": "claimed", "created_at": "...", "created_by": "zaal" }] }
+// created_by is the board user who queued the command (from the signed session, never the request body).
 
 // GET /api/v1/bots/commands?scope=host
 // Only the token that resolves to bot name "fleet" may call this - it claims
