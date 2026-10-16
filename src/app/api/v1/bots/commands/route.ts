@@ -30,6 +30,11 @@ interface CommandRow {
   args: Record<string, unknown> | null;
   status: string;
   created_at: string;
+  // Who queued it (the signed session user, set by POST below). A bot decides
+  // from this whether a command may run with its owner's privileges; ZOE runs
+  // `ask` / `run_task` with tools only for a trusted author (ZAOOS
+  // bot/src/zoe/board-trust.ts). Read-only here: a puller cannot change it.
+  created_by: string;
 }
 
 // ---- GET: a bot (or the fleet-agent) pulls + claims its pending commands -------
@@ -54,7 +59,7 @@ export async function GET(req: NextRequest) {
         .update({ status: "claimed", claimed_at: now })
         .eq("status", "pending")
         .in("command", HOST_COMMANDS as unknown as string[])
-        .select("id, bot, command, args, status, created_at");
+        .select("id, bot, command, args, status, created_at, created_by");
       if (error) return migrationHint(error.message);
       return Response.json({ ok: true, commands: (data ?? []) as CommandRow[] });
     }
@@ -70,7 +75,7 @@ export async function GET(req: NextRequest) {
       .eq("status", "pending")
       .eq("bot", self)
       .in("command", BOT_SELF_COMMANDS as unknown as string[])
-      .select("id, bot, command, args, status, created_at");
+      .select("id, bot, command, args, status, created_at, created_by");
     if (error) return migrationHint(error.message);
     return Response.json({ ok: true, commands: (data ?? []) as CommandRow[] });
   } catch (err) {
