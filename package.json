@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/apply-facts.mjs && next build",
+    "build": "node scripts/apply-facts.mjs && node scripts/research-pages.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
@@ -12,6 +12,8 @@
     "facts:apply": "node scripts/apply-facts.mjs",
     "facts:check": "node scripts/apply-facts.mjs --check",
     "check:papers": "node scripts/check-paper-rewrites.mjs",
+    "research:sync": "node scripts/sync-research.mjs",
+    "research:build": "node scripts/research-pages.mjs",
     "db:list": "supabase migration list",
     "db:new": "supabase migration new",
     "db:push": "supabase db push",

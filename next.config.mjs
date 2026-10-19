@@ -24,6 +24,10 @@ const nextConfig = {
       // src/app/what-is-the-zao/page.tsx with a hardcoded FAQ array; that
       // duplicated facts that live in the other papers and drifted from them).
       { source: '/what-is-the-zao', destination: '/papers/what-is-the-zao.html' },
+      // Public ZAO Research pages - static HTML generated at build time by
+      // scripts/research-pages.mjs from the docs in research-public/allowlist.json.
+      { source: '/research', destination: '/research/index.html' },
+      { source: '/research/:topic/:doc', destination: '/research/:topic/:doc.html' },
     ];
   },
 };
