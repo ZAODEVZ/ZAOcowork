@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { writeFileSync, mkdtempSync } from "node:fs";
+import { writeFileSync, mkdtempSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { buildPages, loadAllowlist, resolveDocLink, transformBody } from "./research-pages.mjs";
+import { buildPages, loadAllowlist, readRenderedDoc, resolveDocLink, transformBody } from "./research-pages.mjs";
 import { docTitle, stripFrontmatter, dropFirstH1 } from "./sync-research.mjs";
 
 const doc = (title, html = "<p>body</p>") => ({ meta: { title }, html });
@@ -70,7 +70,49 @@ describe("loadAllowlist", () => {
   });
 
   it("a missing allowlist means nothing is public", () => {
-    expect(loadAllowlist(join(tmpdir(), "does-not-exist", "allowlist.json"))).toEqual({ ids: [], invalid: [] });
+    expect(loadAllowlist(join(tmpdir(), "does-not-exist", "allowlist.json"))).toEqual({ ids: [], invalid: [], error: null });
+  });
+
+  it.each([
+    ["malformed JSON", '{"docs": ['],
+    ["null", "null"],
+    ["docs not an array", '{"docs": "a/1-x"}'],
+    ["a bare array", '["a/1-x"]'],
+  ])("a broken allowlist (%s) means nothing is public, without throwing", (_label, body) => {
+    const { ids, error } = loadAllowlist(write(body));
+    expect(ids).toEqual([]);
+    expect(error).toBeTruthy();
+  });
+});
+
+describe("readRenderedDoc", () => {
+  const docsDir = () => {
+    const dir = mkdtempSync(join(tmpdir(), "docs-"));
+    mkdirSync(join(dir, "a"));
+    return dir;
+  };
+
+  it("skips a doc whose meta file is malformed, instead of throwing", () => {
+    const dir = docsDir();
+    writeFileSync(join(dir, "a", "1-x.html"), "<p>x</p>");
+    writeFileSync(join(dir, "a", "1-x.json"), "{not json");
+    expect(readRenderedDoc("a/1-x", dir)).toBeNull();
+  });
+
+  it("skips a doc whose meta is null or has no title", () => {
+    const dir = docsDir();
+    writeFileSync(join(dir, "a", "1-x.html"), "<p>x</p>");
+    writeFileSync(join(dir, "a", "1-x.json"), "null");
+    expect(readRenderedDoc("a/1-x", dir)).toBeNull();
+    writeFileSync(join(dir, "a", "1-x.json"), "{}");
+    expect(readRenderedDoc("a/1-x", dir)).toBeNull();
+  });
+
+  it("reads a good copy", () => {
+    const dir = docsDir();
+    writeFileSync(join(dir, "a", "1-x.html"), "<p>x</p>");
+    writeFileSync(join(dir, "a", "1-x.json"), '{"title":"X"}');
+    expect(readRenderedDoc("a/1-x", dir)).toEqual({ meta: { title: "X" }, html: "<p>x</p>" });
   });
 });
 
@@ -95,6 +137,29 @@ describe("transformBody", () => {
       publicIds,
     );
     expect(out).toBe("repo");
+  });
+
+  it.each([
+    "https://raw.githubusercontent.com/ZAODEVZ/ZAOresearch/main/research/x/1-y/README.md",
+    "https://GITHUB.com/zaodevz/zaoresearch/blob/main/x.md",
+  ])("unlinks private-repo link %s", (href) => {
+    expect(transformBody(`<a href="${href}">repo</a>`, id, publicIds)).toBe("repo");
+  });
+
+  it("drops absolute images hosted in the private repo, keeping alt text", () => {
+    for (const src of [
+      "https://github.com/ZAODEVZ/ZAOresearch/raw/main/chart.png",
+      "https://raw.githubusercontent.com/ZAODEVZ/ZAOresearch/main/chart.png",
+    ]) {
+      const out = transformBody(`<p><img src="${src}" alt="chart"></p>`, id, publicIds);
+      expect(out).not.toMatch(/ZAOresearch/i);
+      expect(out).toContain("<em>[image: chart]</em>");
+    }
+  });
+
+  it("keeps a public absolute image", () => {
+    const img = '<img src="https://thezao.xyz/papers-og.png" alt="og">';
+    expect(transformBody(img, id, publicIds)).toBe(img);
   });
 
   it("keeps external links and in-page hashes", () => {
@@ -125,6 +190,11 @@ describe("sync helpers", () => {
 
   it("strips frontmatter so internal fields never reach the page", () => {
     expect(stripFrontmatter(md)).not.toContain("original-query");
+  });
+
+  it("strips frontmatter after a byte-order mark or leading blank lines", () => {
+    expect(stripFrontmatter(`\uFEFF${md}`)).not.toContain("original-query");
+    expect(stripFrontmatter(`\n\n${md}`)).not.toContain("original-query");
   });
 
   it("takes the title from the first H1 without the doc number", () => {

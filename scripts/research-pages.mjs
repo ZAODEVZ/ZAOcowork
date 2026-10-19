@@ -34,21 +34,33 @@ export function escapeHtml(s) {
     .replace(/'/g, "&#39;");
 }
 
-// Returns { ids, invalid }. A missing or unreadable allowlist means no public docs.
+// Returns { ids, invalid, error }. A missing, unparseable or wrongly shaped
+// allowlist means no public docs (never a build crash); `error` says why.
 export function loadAllowlist(path = join(SOURCE_DIR, "allowlist.json")) {
-  if (!existsSync(path)) return { ids: [], invalid: [] };
-  const raw = JSON.parse(readFileSync(path, "utf8"));
+  if (!existsSync(path)) return { ids: [], invalid: [], error: null };
+  let raw;
+  try {
+    raw = JSON.parse(readFileSync(path, "utf8"));
+  } catch (err) {
+    return { ids: [], invalid: [], error: `unreadable allowlist (${err instanceof Error ? err.message : String(err)})` };
+  }
+  if (!raw || typeof raw !== "object" || !Array.isArray(raw.docs)) {
+    return { ids: [], invalid: [], error: 'allowlist must be an object with a "docs" array' };
+  }
   const ids = [];
   const invalid = [];
-  for (const id of Array.isArray(raw.docs) ? raw.docs : []) {
+  for (const id of raw.docs) {
     if (typeof id === "string" && DOC_ID_RE.test(id)) {
       if (!ids.includes(id)) ids.push(id);
     } else {
       invalid.push(id);
     }
   }
-  return { ids, invalid };
+  return { ids, invalid, error: null };
 }
+
+// Any address inside the private research repo, on github.com or its raw host.
+export const PRIVATE_REPO_RE = /(github|githubusercontent)\.com\/ZAODEVZ\/ZAOresearch/i;
 
 function isRelative(href) {
   return !/^([a-z][a-z0-9+.-]*:|#|\/)/i.test(href);
@@ -77,14 +89,14 @@ export function transformBody(html, id, publicIds) {
   let out = html.replace(/<a id="user-content-[^"]*" class="anchor"[^>]*>[\s\S]*?<\/a>/g, "");
   out = out.replace(/<img\b[^>]*>/g, (tag) => {
     const src = (tag.match(/\ssrc="([^"]*)"/) || [])[1] || "";
-    if (src && !isRelative(src)) return tag;
+    if (src && !isRelative(src) && !PRIVATE_REPO_RE.test(src)) return tag;
     const alt = (tag.match(/\salt="([^"]*)"/) || [])[1] || "";
     return alt ? `<em>[image: ${alt}]</em>` : "";
   });
   out = out.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/g, (whole, attrs, text) => {
     const href = (attrs.match(/\shref="([^"]*)"/) || [])[1];
     if (href === undefined) return whole;
-    if (/github\.com\/ZAODEVZ\/ZAOresearch/i.test(href)) return text;
+    if (PRIVATE_REPO_RE.test(href)) return text;
     if (!isRelative(href)) return whole;
     const target = resolveDocLink(href.replace(/&amp;/g, "&"), id, publicIds);
     return target ? `<a href="${escapeHtml(target)}">${text}</a>` : text;
@@ -272,19 +284,27 @@ export function buildPages(ids, readDoc) {
   return { files, skipped };
 }
 
-function readRenderedDoc(id) {
-  const base = join(SOURCE_DIR, "docs", id);
+// Returns null (the doc is skipped with a warning) for a missing copy or a
+// meta file that is unparseable or has no title - never throws.
+export function readRenderedDoc(id, docsDir = join(SOURCE_DIR, "docs")) {
+  const base = join(docsDir, id);
   if (!existsSync(`${base}.html`) || !existsSync(`${base}.json`)) return null;
-  const meta = JSON.parse(readFileSync(`${base}.json`, "utf8"));
-  if (typeof meta.title !== "string" || !meta.title) return null;
+  let meta;
+  try {
+    meta = JSON.parse(readFileSync(`${base}.json`, "utf8"));
+  } catch {
+    return null;
+  }
+  if (!meta || typeof meta.title !== "string" || !meta.title) return null;
   return { meta, html: readFileSync(`${base}.html`, "utf8") };
 }
 
 function main() {
-  const { ids, invalid } = loadAllowlist();
+  const { ids, invalid, error } = loadAllowlist();
+  if (error) console.warn(`research-pages: ${error} - building with NO public docs`);
   for (const bad of invalid) console.warn(`research-pages: ignored invalid allowlist entry ${JSON.stringify(bad)}`);
   const { files, skipped } = buildPages(ids, readRenderedDoc);
-  for (const id of skipped) console.warn(`research-pages: SKIPPED ${id} - listed public but no rendered copy (run scripts/sync-research.mjs)`);
+  for (const id of skipped) console.warn(`research-pages: SKIPPED ${id} - listed public but no usable rendered copy (missing, or its .json is unreadable or has no title; run scripts/sync-research.mjs)`);
   for (const [rel, content] of Object.entries(files)) {
     const out = join(OUT_DIR, rel);
     mkdirSync(dirname(out), { recursive: true });

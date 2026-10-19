@@ -25,12 +25,15 @@ publish, and only those are built into pages.
 
 - Only ids in `allowlist.json` are built. A rendered copy in `docs/` that
   is not listed is never built. The build log names it as "not built".
-- A listed doc with no rendered copy is skipped with a warning, so the
-  site build never fails because of this folder.
+- A listed doc with no rendered copy, or with a `.json` that is unreadable
+  or has no title, is skipped with a warning. A missing, unparseable or
+  wrongly shaped `allowlist.json` builds with no public docs and a warning.
+  Either way the site build does not fail because of this folder.
 - A relative link to another public doc goes to that doc's public page.
-  Any other relative link, and any link into the private repo, keeps its
-  text but loses the link. Relative images are dropped, and their alt
-  text stays.
+  Any other relative link, and any link into the private repo (on
+  github.com or raw.githubusercontent.com), keeps its text but loses the
+  link. Relative images and images hosted in the private repo are dropped,
+  and their alt text stays.
 - The pages are static files. They are excluded from the auth middleware
   (`research(?:/|$)` in the matcher) and served through rewrites in
   `next.config.mjs`, so a page view runs no function and no middleware.

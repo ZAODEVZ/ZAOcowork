@@ -21,7 +21,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DOCS_DIR = join(__dirname, "..", "research-public", "docs");
 
 export function stripFrontmatter(md) {
-  return md.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
+  // Tolerates a byte-order mark and blank lines before the opening fence.
+  return md.replace(/^\uFEFF?\s*---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
 }
 
 // The doc's first H1, without the leading "NNNN - " the library puts on titles.
@@ -58,7 +59,11 @@ function main() {
     console.error("usage: node scripts/sync-research.mjs <path-to-ZAOresearch-clone>");
     process.exit(2);
   }
-  const { ids, invalid } = loadAllowlist();
+  const { ids, invalid, error } = loadAllowlist();
+  if (error) {
+    console.error(error);
+    process.exit(2);
+  }
   if (invalid.length) {
     console.error(`invalid allowlist entries: ${JSON.stringify(invalid)}`);
     process.exit(2);
