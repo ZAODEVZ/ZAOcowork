@@ -91,5 +91,8 @@ export const config = {
   // llms.txt / robots.txt / sitemap.xml are static crawler files - exclude from
   // the auth middleware entirely so they stay world-readable (they were being
   // redirected to /login, hiding them from AI crawlers).
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|paper|papers|llms.txt|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // research(?:/|$) - the public ZAO Research pages (static, see
+  // scripts/research-pages.mjs). Anchored so a future /research-something app
+  // route is NOT silently made public.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|paper|papers|research(?:/|$)|llms.txt|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
